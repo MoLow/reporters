@@ -1,0 +1,28 @@
+{
+  "name": "reporers",
+  "version": "1.0.0",
+  "description": "A collection of reporters for `node:test`",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --test --test-reporter=./src/github tests/example.js || node tests/dummy.js || echo ''"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MoLow/reporers.git"
+  },
+  "keywords": [
+    "junit",
+    "test",
+    "reporter",
+    "reporers"
+  ],
+  "author": "Moshe Atlow",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/MoLow/reporers/issues"
+  },
+  "homepage": "https://github.com/MoLow/reporers#readme",
+  "dependencies": {
+    "stack-utils": "^2.0.6"
+  }
+}
