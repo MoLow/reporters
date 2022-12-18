@@ -14,4 +14,4 @@ node --test \
 available reporters:
 
 - `github` - report to github actions
-- `jUnit` - **Coming soon:** report to jUnit 
+- `jUnit` - report to jUnit 

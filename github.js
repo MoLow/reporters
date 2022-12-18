@@ -41,7 +41,7 @@ const propsToString = (props = {}) => {
 
 const report = (command, message, pros) => process.stdout.write(`::${command}${propsToString(pros)}::${escapeData(message)}${EOL}`);
 
-module.exports = async function customReporter(source) {
+module.exports = async function githubReporter(source) {
   const counter = { pass: 0, fail: 0 };
   const diagnostics = [];
   let currentFile = null;

@@ -3,7 +3,6 @@
   "version": "1.0.1",
   "description": "A collection of reporters for `node:test`",
   "main": "index.js",
-  "type": "module",
   "scripts": {
     "test": "node --test --test-reporter=./src/github tests/fixtures/example.js || node tests/dummy.js || echo ''",
     "lint": "eslint ."
