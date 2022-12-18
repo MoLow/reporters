@@ -12,13 +12,7 @@ const lines = `
 ::error title=tests::[Error: 1 subtest failed] { failureType: 'subtestsFailed', cause: [Error: 1 subtest failed] { code: 'ERR_TEST_FAILURE' }, code: 'ERR_TEST_FAILURE' }
 ::error title=${WORKSPACE}/tests/example.js::[Error: test failed] { failureType: 'subtestsFailed', cause: 'test failed', code: 'ERR_TEST_FAILURE', exitCode: 1, signal: null }
 ::group::Test results (1 passed, 3 failed)
-::notice::tests 1
-::notice::pass 0
-::notice::fail 1
-::notice::cancelled 0
-::notice::skipped 0
-::notice::todo 0
-::notice::duration_ms 92.713125
+::notice::tests 1%0Apass 0%0Afail 1%0Acancelled 0%0Askipped 0%0Atodo 0%0Aduration_ms 94.123584
 ::endgroup::
 `;
 
