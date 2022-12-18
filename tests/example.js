@@ -1,4 +1,4 @@
-const { describe, it, test } = require('node:test');
+const { describe, it } = require('node:test');
 
 describe('tests', () => {
   it('is ok', () => {});

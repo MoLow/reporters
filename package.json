@@ -4,7 +4,8 @@
   "description": "A collection of reporters for `node:test`",
   "main": "index.js",
   "scripts": {
-    "test": "node --test --test-reporter=./src/github tests/example.js || node tests/dummy.js || echo ''"
+    "test": "node --test --test-reporter=./src/github tests/example.js || node tests/dummy.js || echo ''",
+    "lint": "eslint ."
   },
   "repository": {
     "type": "git",
@@ -24,5 +25,10 @@
   "homepage": "https://github.com/MoLow/reporers#readme",
   "dependencies": {
     "stack-utils": "^2.0.6"
+  },
+  "devDependencies": {
+    "eslint": "^7.32.0 || ^8.2.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.25.2"
   }
 }

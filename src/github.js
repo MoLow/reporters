@@ -3,29 +3,28 @@ const util = require('node:util');
 const { EOL } = require('node:os');
 const StackUtils = require('stack-utils');
 
-
-const WORKSPACE = process.env['GITHUB_WORKSPACE'] ?? '';
+const WORKSPACE = process.env.GITHUB_WORKSPACE ?? '';
 
 const stack = new StackUtils({ cwd: WORKSPACE, internals: StackUtils.nodeInternals() });
 
-const getCurrentFile =(name) => isFile(name) ? path.relative(WORKSPACE, name) : null;
-
 const isFile = (name) => name?.startsWith(WORKSPACE);
+
+const getCurrentFile = (name) => (isFile(name) ? path.relative(WORKSPACE, name) : null);
 
 const parseStack = (error, file) => {
   const stackLines = (error?.stack ?? '').split(/\r?\n/);
-  const line = stackLines.find(line => line.includes(file)) ??  stackLines[0];
+  const line = stackLines.find((l) => l.includes(file)) ?? stackLines[0];
   return line ? stack.parseLine(line) : null;
 };
 
 const escapeData = (s = '') => s
-    .replace(/%/g, '%25')
-    .replace(/\r/g, '%0D')
-    .replace(/\n/g, '%0A');
+  .replace(/%/g, '%25')
+  .replace(/\r/g, '%0D')
+  .replace(/\n/g, '%0A');
 
 const escapeProperty = (s = '') => escapeData(s)
-    .replace(/:/g, '%3A')
-    .replace(/,/g, '%2C');
+  .replace(/:/g, '%3A')
+  .replace(/,/g, '%2C');
 
 const propsToString = (props = {}) => {
   const entries = Object.entries(props);
@@ -34,15 +33,15 @@ const propsToString = (props = {}) => {
   }
 
   const result = entries
-    .filter(([key, value]) => Boolean(value))
+    .filter(([, value]) => Boolean(value))
     .map(([key, value]) => `${key}=${escapeProperty(String(value))}`).join(',');
 
   return ` ${result}`;
-}
+};
 
 const report = (command, message, pros) => process.stdout.write(`::${command}::${propsToString(pros)}::${escapeData(message)}${EOL}`);
 
-module.exports = async function * customReporter(source) {
+module.exports = async function customReporter(source) {
   const counter = { pass: 0, fail: 0 };
   const diagnostics = [];
   let currentFile = null;
@@ -53,23 +52,33 @@ module.exports = async function * customReporter(source) {
         report('debug', `starting to run ${event.data.name}`);
         break;
       case 'test:pass':
-        counter.pass++;
+        counter.pass += 1;
         report('debug', `completed running ${event.data.name}`);
         currentFile = isFile(event.data.name) ? null : currentFile;
         break;
-      case 'test:fail':
-        const error = util.inspect(event.data.details?.error, { colors: false, breakLength: Infinity  });
+      case 'test:fail': {
+        const error = util.inspect(
+          event.data.details?.error,
+          { colors: false, breakLength: Infinity },
+        );
         const location = parseStack(event.data.details?.error, currentFile);
-        report('error', error, { file: location?.file ?? currentFile, line: location?.line, col: location?.column, title: event.data.name });
-        counter.fail++;
+        report('error', error, {
+          file: location?.file ?? currentFile,
+          line: location?.line,
+          col: location?.column,
+          title: event.data.name,
+        });
+        counter.fail += 1;
         currentFile = isFile(event.data.name) ? null : currentFile;
         break;
-      case 'test:diagnostic':
+      } case 'test:diagnostic':
         if (currentFile) {
           report('notice', event.data.message, { file: currentFile });
         } else {
           diagnostics.push(event.data.message);
         }
+        break;
+      default:
         break;
     }
   }
@@ -77,5 +86,5 @@ module.exports = async function * customReporter(source) {
   for (const diagnostic of diagnostics) {
     report('notice', diagnostic);
   }
-  console.log('::endgroup::');
-}
+  process.stdout.write(`::endgroup::${EOL}`);
+};
