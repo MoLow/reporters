@@ -15,7 +15,7 @@ jobs:
         id: release
         with:
           release-type: node
-          package-name: test
+          package-name: rporting
   npm-publish:
     needs: release-please
     if: ${{ needs.release-please.outputs.release_created }}
