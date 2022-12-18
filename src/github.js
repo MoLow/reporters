@@ -83,8 +83,6 @@ module.exports = async function customReporter(source) {
     }
   }
   report('group', `Test results (${counter.pass} passed, ${counter.fail} failed)`);
-  for (const diagnostic of diagnostics) {
-    report('notice', diagnostic);
-  }
+  report('notice', diagnostic.join(EOL));
   report('endgroup');
 };
