@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.2](https://github.com/MoLow/rporting/compare/v1.0.1...v1.0.2) (2022-12-18)
+
+
+### Bug Fixes
+
+* fix release ([9df1d3b](https://github.com/MoLow/rporting/commit/9df1d3b4e62b66353437181ca61a797ecfcf428c))
+
 ## [1.0.1](https://github.com/MoLow/rporting/compare/v1.0.0...v1.0.1) (2022-12-18)
 
 
