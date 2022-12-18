@@ -39,7 +39,7 @@ const propsToString = (props = {}) => {
   return ` ${result}`;
 };
 
-const report = (command, message, pros) => process.stdout.write(`::${command}::${propsToString(pros)}::${escapeData(message)}${EOL}`);
+const report = (command, message, pros) => process.stdout.write(`::${command}${propsToString(pros)}::${escapeData(message)}${EOL}`);
 
 module.exports = async function customReporter(source) {
   const counter = { pass: 0, fail: 0 };
@@ -86,5 +86,5 @@ module.exports = async function customReporter(source) {
   for (const diagnostic of diagnostics) {
     report('notice', diagnostic);
   }
-  process.stdout.write(`::endgroup::${EOL}`);
+  report('endgroup');
 };
