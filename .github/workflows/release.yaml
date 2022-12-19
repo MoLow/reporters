@@ -23,12 +23,13 @@ jobs:
         with:
             github-token: ${{secrets.GITHUB_TOKEN}}
             script: |
+              const path = require('path');
               const outputs = ${{ toJSON(steps.release.outputs) }};
               return Object.keys(outputs)
                 .map((key) => {
                   const match = key.match(/^(.*\/.*)--release_created$/);
                   if (!match) return;
-                  return require(`./${match[1]}/package.json`).name;
+                  return require(path.join('${{ github.workspace }}', 'match[1], 'package.json')).name;
                 })
                 .filter(Boolean);
   
