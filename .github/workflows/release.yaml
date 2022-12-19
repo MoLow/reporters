@@ -50,6 +50,6 @@ jobs:
           node-version: lts/*
           registry-url: 'https://registry.npmjs.org'
       - run: yarn install
-      - run: yarn workspace ${{ matrix.package }} publish
+      - run: yarn workspace ${{ matrix.package }} publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
