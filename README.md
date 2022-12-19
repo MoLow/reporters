@@ -1,17 +1,17 @@
-# rporting
-reporters for `node:test`
+# reporters
+A collection of reporters for `node:test`
 
 
 ## Usage
 
 ```bash
 node --test \
-  --test-reporter=rporting/github --test-reporter-destination=stdout \
-  --test-reporter=rporting/jUnit --test-reporter-destination=junit.xml \
+  --test-reporter=@reporters/github --test-reporter-destination=stdout \
+  --test-reporter=@reporters/junit --test-reporter-destination=junit.xml \
   --test-reporter=spec --test-reporter-destination=stdout
 ```
 
-available reporters:
+Available reporters:
 
 - `github` - report to github actions
 - `jUnit` - report to jUnit 

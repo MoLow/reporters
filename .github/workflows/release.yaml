@@ -9,16 +9,17 @@ jobs:
   release-please:
     runs-on: ubuntu-latest
     outputs:
-      release_created:  ${{ steps.release.outputs.release_created }}
+      release_created:  ${{ steps.release.outputs.releases_created }}
     steps:
       - uses: google-github-actions/release-please-action@v3
         id: release
         with:
-          release-type: node
-          package-name: rporting
+          command: manifest
+          monorepo-tags: true
+      - run: echo '${{toJSON(steps.release.outputs)}}'
   npm-publish:
     needs: release-please
-    if: ${{ needs.release-please.outputs.release_created }}
+    if: ${{ needs.release-please.outputs.releases_created }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -27,6 +28,6 @@ jobs:
           node-version: lts/*
           registry-url: 'https://registry.npmjs.org'
       - run: yarn install
-      - run: yarn publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # - run: yarn publish
+      #   env:
+      #     NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
