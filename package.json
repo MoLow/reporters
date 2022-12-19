@@ -3,6 +3,7 @@
   "version": "1.0.2",
   "description": "A collection of reporters for `node:test`",
   "main": "index.js",
+  "private": true,
   "scripts": {
     "test": "node tests/dummy.js || echo ''",
     "lint": "eslint ."
