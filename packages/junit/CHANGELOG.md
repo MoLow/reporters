@@ -8,5 +8,3 @@
 * fix monorepos release ([d5610e2](https://github.com/MoLow/reporters/commit/d5610e29db730dc4ffa3f9721a85d5f3c7749b2c))
 * fix monorepos release ([6126b97](https://github.com/MoLow/reporters/commit/6126b972670fdbb0ecf71c996790e0f11fda5f21))
 * reset changelogs ([1e114ce](https://github.com/MoLow/reporters/commit/1e114ced7201cf9897f2cf79b5a4fb46f1b085fb))
-
-## Changelog
