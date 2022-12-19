@@ -9,7 +9,8 @@ jobs:
   release-please:
     runs-on: ubuntu-latest
     outputs:
-      releases:  ${{ steps.release.outputs }}
+      releases_created:  ${{ steps.release.outputs.releases_created }}
+      packages:  ${{ steps.get-released-packages.outputs.result }}
     steps:
       - uses: google-github-actions/release-please-action@v3
         id: release
@@ -17,7 +18,7 @@ jobs:
           command: manifest
           monorepo-tags: true
       - run: echo '${{toJSON(steps.release.outputs)}}'
-      - id: set-mono-repos
+      - id: get-released-packages
         uses: actions/github-script@v6
         with:
             github-token: ${{secrets.GITHUB_TOKEN}}
@@ -25,13 +26,13 @@ jobs:
               const outputs = ${{ steps.release.outputs }};
               return Object.keys(outputs.releases).map((key) => {
                 const match = key.match(/^(.*\/.*)--release_created$/)
-                if (!match || !value) continue
+                if (!match || !value) return;
                 return match[1];
               }).filter(Boolean);
   
   npm-publish:
     needs: release-please
-    if: ${{ needs.release-please.outputs.releases.releases_created }}
+    if: ${{ needs.release-please.outputs.releases_created }}
     
     runs-on: ubuntu-latest
     steps:
