@@ -1,0 +1,6 @@
+{
+  "packages": {
+    "packages/github": {},
+    "packages/junit": {}
+  }
+}

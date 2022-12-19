@@ -1,31 +1,20 @@
 {
-  "name": "rporting",
+  "name": "reporters",
   "version": "1.0.2",
   "description": "A collection of reporters for `node:test`",
   "main": "index.js",
   "scripts": {
-    "test": "node --test --test-reporter=./src/github tests/fixtures/example.js || node tests/dummy.js || echo ''",
+    "test": "node tests/dummy.js || echo ''",
     "lint": "eslint ."
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/MoLow/rporting.git"
-  },
-  "keywords": [
-    "junit",
-    "test",
-    "reporter",
-    "rporting"
-  ],
+  "workspaces": [],
+  "repository": "git+https://github.com/MoLow/reporters.git",
   "author": "Moshe Atlow",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/MoLow/rporting/issues"
+    "url": "https://github.com/MoLow/reporters/issues"
   },
-  "homepage": "https://github.com/MoLow/rporting#readme",
-  "dependencies": {
-    "stack-utils": "^2.0.6"
-  },
+  "homepage": "https://github.com/MoLow/reporters#readme",
   "devDependencies": {
     "eslint": "^7.32.0 || ^8.2.0",
     "eslint-config-airbnb-base": "^15.0.0",

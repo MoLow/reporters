@@ -1,0 +1,16 @@
+{
+  "name": "@reporters/junit",
+  "version": "1.0.0",
+  "description": "A junit reporter for `node:test`",
+  "keywords": [
+    "junit",
+    "node:test",
+    "test",
+    "reporter",
+    "reporters"
+  ],
+  "main": "index.js",
+  "repository": "https://github.com/MoLow/reporters.git",
+  "author": "Moshe Atlow",
+  "license": "MIT"
+}
