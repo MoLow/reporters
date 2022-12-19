@@ -23,7 +23,7 @@ jobs:
         with:
             github-token: ${{secrets.GITHUB_TOKEN}}
             script: |
-              const outputs = ${{ steps.release.outputs }};
+              const outputs = JSON.parse(${{ toJSON(steps.release.outputs) }});
               return Object.keys(outputs.releases).map((key) => {
                 const match = key.match(/^(.*\/.*)--release_created$/)
                 if (!match || !value) return;
