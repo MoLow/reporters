@@ -1,3 +1,5 @@
+[![npm version](https://img.shields.io/npm/v/@reporters/github)](https://www.npmjs.com/package/@reporters/github)
+
 # Github Actions Reporter
 A Github actions reporter for `node:test`
 

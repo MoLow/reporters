@@ -1,3 +1,4 @@
+[![npm version](https://img.shields.io/npm/v/@reporters/junit)](https://www.npmjs.com/package/@reporters/junit)
 # Junit Reporter
 A Junit reporter for `node:test`
 

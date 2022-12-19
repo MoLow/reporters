@@ -13,5 +13,5 @@ node --test \
 
 Available reporters:
 
-- `github` - report to github actions
-- `jUnit` - report to jUnit 
+- [github](https://www.npmjs.com/package/@reporters/junit) - report to github actions
+- [jUnit](https://www.npmjs.com/package/@reporters/junit) - report to jUnit 
