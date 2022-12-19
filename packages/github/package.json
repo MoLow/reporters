@@ -1,5 +1,5 @@
 {
-  "name": "@reporters/junit",
+  "name": "@reporters/github",
   "version": "1.0.0",
   "description": "A junit reporter for `node:test`",
   "keywords": [
