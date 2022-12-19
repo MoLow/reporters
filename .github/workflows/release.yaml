@@ -23,12 +23,14 @@ jobs:
         with:
             github-token: ${{secrets.GITHUB_TOKEN}}
             script: |
-              const outputs = JSON.parse(${{ toJSON(steps.release.outputs) }});
-              return Object.keys(outputs.releases).map((key) => {
-                const match = key.match(/^(.*\/.*)--release_created$/)
-                if (!match || !value) return;
-                return require(`./packages/${match[1]}/package.json`).name;
-              }).filter(Boolean);
+              const outputs = ${{ toJSON(steps.release.outputs) }};
+              return Object.keys(outputs)
+                .map((key) => {
+                  const match = key.match(/^(.*\/.*)--release_created$/);
+                  if (!match) return;
+                  return require(`./${match[1]}/package.json`).name;
+                })
+                .filter(Boolean);
   
   npm-publish:
     needs: release-please
