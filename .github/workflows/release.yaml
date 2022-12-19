@@ -17,6 +17,8 @@ jobs:
         with:
           command: manifest
           monorepo-tags: true
+      - uses: actions/checkout@v3
+        if: ${{ steps.release.outputs.releases_created }}
       - id: get-released-packages
         if: ${{ steps.release.outputs.releases_created }}
         uses: actions/github-script@v6
