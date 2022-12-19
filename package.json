@@ -7,7 +7,9 @@
     "test": "node tests/dummy.js || echo ''",
     "lint": "eslint ."
   },
-  "workspaces": [],
+  "workspaces": [
+    "packages/*"
+  ],
   "repository": "git+https://github.com/MoLow/reporters.git",
   "author": "Moshe Atlow",
   "license": "MIT",
