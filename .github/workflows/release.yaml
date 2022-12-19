@@ -29,7 +29,7 @@ jobs:
                 .map((key) => {
                   const match = key.match(/^(.*\/.*)--release_created$/);
                   if (!match) return;
-                  return require(path.join('${{ github.workspace }}', 'match[1], 'package.json')).name;
+                  return require(path.join('${{ github.workspace }}', match[1], 'package.json')).name;
                 })
                 .filter(Boolean);
   
