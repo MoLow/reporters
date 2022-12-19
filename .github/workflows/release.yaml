@@ -17,8 +17,8 @@ jobs:
         with:
           command: manifest
           monorepo-tags: true
-      - run: echo '${{toJSON(steps.release.outputs)}}'
       - id: get-released-packages
+        if: ${{ steps.release.outputs.releases_created }}
         uses: actions/github-script@v6
         with:
             github-token: ${{secrets.GITHUB_TOKEN}}
@@ -27,14 +27,17 @@ jobs:
               return Object.keys(outputs.releases).map((key) => {
                 const match = key.match(/^(.*\/.*)--release_created$/)
                 if (!match || !value) return;
-                return match[1];
+                return require(`./packages/${match[1]}/package.json`).name;
               }).filter(Boolean);
   
   npm-publish:
     needs: release-please
     if: ${{ needs.release-please.outputs.releases_created }}
-    
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: ${{ fromJson(needs.release-please.outputs.packages )}}
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
@@ -42,6 +45,6 @@ jobs:
           node-version: lts/*
           registry-url: 'https://registry.npmjs.org'
       - run: yarn install
-      # - run: yarn publish
-      #   env:
-      #     NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - run: yarn workspace ${{ matrix.package }} publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
