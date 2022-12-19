@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/MoLow/reporters/compare/github-v1.0.0...github-v1.0.1) (2022-12-19)
+
+
+### Bug Fixes
+
+* fix monorepos release ([d5610e2](https://github.com/MoLow/reporters/commit/d5610e29db730dc4ffa3f9721a85d5f3c7749b2c))
+
 ## 1.0.0 (2022-12-19)
 
 
