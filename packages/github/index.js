@@ -1,6 +1,7 @@
 const path = require('node:path');
 const util = require('node:util');
 const { EOL } = require('node:os');
+const core = require('@actions/core');
 const StackUtils = require('stack-utils');
 
 const WORKSPACE = process.env.GITHUB_WORKSPACE ?? '';
@@ -17,30 +18,6 @@ const parseStack = (error, file) => {
   return line ? stack.parseLine(line) : null;
 };
 
-const escapeData = (s = '') => s
-  .replace(/%/g, '%25')
-  .replace(/\r/g, '%0D')
-  .replace(/\n/g, '%0A');
-
-const escapeProperty = (s = '') => escapeData(s)
-  .replace(/:/g, '%3A')
-  .replace(/,/g, '%2C');
-
-const propsToString = (props = {}) => {
-  const entries = Object.entries(props);
-  if (entries.length === 0) {
-    return '';
-  }
-
-  const result = entries
-    .filter(([, value]) => Boolean(value))
-    .map(([key, value]) => `${key}=${escapeProperty(String(value))}`).join(',');
-
-  return ` ${result}`;
-};
-
-const report = (command, message, pros) => process.stdout.write(`::${command}${propsToString(pros)}::${escapeData(message)}${EOL}`);
-
 module.exports = async function githubReporter(source) {
   const counter = { pass: 0, fail: 0 };
   const diagnostics = [];
@@ -49,11 +26,11 @@ module.exports = async function githubReporter(source) {
     switch (event.type) {
       case 'test:start':
         currentFile = getCurrentFile(event.data.name) || currentFile;
-        report('debug', `starting to run ${event.data.name}`);
+        core.debug(`starting to run ${event.data.name}`);
         break;
       case 'test:pass':
         counter.pass += 1;
-        report('debug', `completed running ${event.data.name}`);
+        core.debug(`completed running ${event.data.name}`);
         currentFile = isFile(event.data.name) ? null : currentFile;
         break;
       case 'test:fail': {
@@ -62,10 +39,10 @@ module.exports = async function githubReporter(source) {
           { colors: false, breakLength: Infinity },
         );
         const location = parseStack(event.data.details?.error, currentFile);
-        report('error', error, {
+        core.error(error, {
           file: location?.file ?? currentFile,
-          line: location?.line,
-          col: location?.column,
+          startLine: location?.line,
+          startColumn: location?.column,
           title: event.data.name,
         });
         counter.fail += 1;
@@ -73,7 +50,7 @@ module.exports = async function githubReporter(source) {
         break;
       } case 'test:diagnostic':
         if (currentFile) {
-          report('notice', event.data.message, { file: currentFile });
+          core.notice(event.data.message, { file: currentFile });
         } else {
           diagnostics.push(event.data.message);
         }
@@ -82,7 +59,15 @@ module.exports = async function githubReporter(source) {
         break;
     }
   }
-  report('group', `Test results (${counter.pass} passed, ${counter.fail} failed)`);
-  report('notice', diagnostics.join(EOL));
-  report('endgroup');
+  core.startGroup(`Test results (${counter.pass} passed, ${counter.fail} failed)`);
+  core.notice(diagnostics.join(EOL));
+  core.endGroup();
+  await core.summary
+    .addHeading('Test Results')
+    .addTable([
+      ['Passed ✅', counter.pass],
+      ['Failed ❌', counter.fail],
+      ['Total', counter.pass + counter.fail],
+    ])
+    .write();
 };
