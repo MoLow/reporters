@@ -23,7 +23,7 @@ const DIAGNOSTIC_KEYS = {
   pass: 'Passed ✅',
   fail: 'Failed ❌',
   cancelled: 'Canceled 🚫',
-  skiped: 'Skipped ⏭️',
+  skipped: 'Skipped ⏭️',
   todo: 'Todo 📝',
   duration_ms: 'Duration',
 };
