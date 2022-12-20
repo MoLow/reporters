@@ -5,7 +5,7 @@ module.exports = [
     type: 'test:start',
     data: {
       nesting: 0,
-      name: `${WORKSPACE}/tests/fixtures/example.js`,
+      name: '/Users/moshe/repos/reporters/tests/fixtures/example.js',
     },
   },
   {
@@ -29,7 +29,7 @@ module.exports = [
       nesting: 2,
       testNumber: '1',
       details: {
-        duration_ms: 0.141459,
+        duration_ms: 0.139292,
       },
     },
   },
@@ -47,14 +47,15 @@ module.exports = [
       nesting: 2,
       testNumber: '2',
       details: {
-        duration_ms: 0.263875,
-        error: {
+        duration_ms: 0.275709,
+        error: Object.assign(new Error(''), {
           failureType: 'testCodeFailure',
           cause: {
             code: 'ERR_TEST_FAILURE',
           },
           code: 'ERR_TEST_FAILURE',
-        },
+          stack: "    at Object.<anonymous> (/Users/moshe/repos/reporters/tests/fixtures/example.js:6:11)\n    at ItTest.runInAsyncScope (node:async_hooks:204:9)\n    ... 5 lines matching cause stack trace ...\n    at async Suite.run (node:internal/test_runner/test:798:7) {\n  failureType: 'testCodeFailure',\n  cause:     at Object.<anonymous> (/Users/moshe/repos/reporters/tests/fixtures/example.js:6:11)\n      at ItTest.runInAsyncScope (node:async_hooks:204:9)\n      at ItTest.run (node:internal/test_runner/test:547:25)\n      at Suite.processPendingSubtests (node:internal/test_runner/test:302:27)\n      at ItTest.postRun (node:internal/test_runner/test:632:19)\n      at ItTest.run (node:internal/test_runner/test:575:10)\n      at async Promise.all (index 0)\n      at async Suite.run (node:internal/test_runner/test:798:7)",
+        }),
       },
     },
   },
@@ -72,14 +73,15 @@ module.exports = [
       nesting: 1,
       testNumber: '1',
       details: {
-        duration_ms: 3.116167,
-        error: {
+        duration_ms: 2.925542,
+        error: Object.assign(new Error('1 subtest failed'), {
           failureType: 'subtestsFailed',
           cause: {
             code: 'ERR_TEST_FAILURE',
           },
           code: 'ERR_TEST_FAILURE',
-        },
+          stack: '',
+        }),
       },
     },
   },
@@ -93,18 +95,19 @@ module.exports = [
   {
     type: 'test:fail',
     data: {
-      name: `${WORKSPACE}/tests/fixtures/example.js`,
+      name: '/Users/moshe/repos/reporters/tests/fixtures/example.js',
       nesting: 0,
       testNumber: 1,
       details: {
-        duration_ms: 83.583333,
-        error: {
+        duration_ms: 86.369584,
+        error: Object.assign(new Error('test failed'), {
           failureType: 'subtestsFailed',
           cause: 'test failed',
           code: 'ERR_TEST_FAILURE',
           exitCode: 1,
           signal: null,
-        },
+          stack: '',
+        }),
       },
     },
   },
@@ -161,7 +164,7 @@ module.exports = [
     type: 'test:diagnostic',
     data: {
       nesting: 0,
-      message: 'duration_ms 84.260333',
+      message: 'duration_ms 87.068833',
     },
   },
 ];
