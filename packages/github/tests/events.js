@@ -5,7 +5,7 @@ module.exports = [
     type: 'test:start',
     data: {
       nesting: 0,
-      name: '/Users/moshe/repos/reporters/tests/fixtures/example.js',
+      name: `${WORKSPACE}/tests/fixtures/example.js`,
     },
   },
   {
@@ -54,7 +54,7 @@ module.exports = [
             code: 'ERR_TEST_FAILURE',
           },
           code: 'ERR_TEST_FAILURE',
-          stack: "    at Object.<anonymous> (/Users/moshe/repos/reporters/tests/fixtures/example.js:6:11)\n    at ItTest.runInAsyncScope (node:async_hooks:204:9)\n    ... 5 lines matching cause stack trace ...\n    at async Suite.run (node:internal/test_runner/test:798:7) {\n  failureType: 'testCodeFailure',\n  cause:     at Object.<anonymous> (/Users/moshe/repos/reporters/tests/fixtures/example.js:6:11)\n      at ItTest.runInAsyncScope (node:async_hooks:204:9)\n      at ItTest.run (node:internal/test_runner/test:547:25)\n      at Suite.processPendingSubtests (node:internal/test_runner/test:302:27)\n      at ItTest.postRun (node:internal/test_runner/test:632:19)\n      at ItTest.run (node:internal/test_runner/test:575:10)\n      at async Promise.all (index 0)\n      at async Suite.run (node:internal/test_runner/test:798:7)",
+          stack: `    at Object.<anonymous> (${WORKSPACE}/tests/fixtures/example.js:6:11)\n    at ItTest.runInAsyncScope (node:async_hooks:204:9)\n    ... 5 lines matching cause stack trace ...\n    at async Suite.run (node:internal/test_runner/test:798:7) {\n  failureType: 'testCodeFailure',\n  cause:     at Object.<anonymous> (${WORKSPACE}/tests/fixtures/example.js:6:11)\n      at ItTest.runInAsyncScope (node:async_hooks:204:9)\n      at ItTest.run (node:internal/test_runner/test:547:25)\n      at Suite.processPendingSubtests (node:internal/test_runner/test:302:27)\n      at ItTest.postRun (node:internal/test_runner/test:632:19)\n      at ItTest.run (node:internal/test_runner/test:575:10)\n      at async Promise.all (index 0)\n      at async Suite.run (node:internal/test_runner/test:798:7)`,
         }),
       },
     },
@@ -95,7 +95,7 @@ module.exports = [
   {
     type: 'test:fail',
     data: {
-      name: '/Users/moshe/repos/reporters/tests/fixtures/example.js',
+      name: `${WORKSPACE}/tests/fixtures/example.js`,
       nesting: 0,
       testNumber: 1,
       details: {
