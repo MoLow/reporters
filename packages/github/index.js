@@ -18,6 +18,20 @@ const parseStack = (error, file) => {
   return line ? stack.parseLine(line) : null;
 };
 
+const DIAGNOSTIC_KEYS = {
+  tests: 'Total Tests',
+  pass: 'Passed ✅',
+  fail: 'Failed ❌',
+  cancelled: 'Canceled 🚫',
+  skiped: 'Skipped ⏭️',
+  todo: 'Todo 📝',
+  duration_ms: 'Duration',
+};
+
+const DIAGNOSTIC_VALUES = {
+  duration_ms: (value) => `${Number(value).toFixed(3)}ms`,
+};
+
 module.exports = async function githubReporter(source) {
   const counter = { pass: 0, fail: 0 };
   const diagnostics = [];
@@ -60,14 +74,19 @@ module.exports = async function githubReporter(source) {
     }
   }
   core.startGroup(`Test results (${counter.pass} passed, ${counter.fail} failed)`);
-  core.notice(diagnostics.join(EOL));
+  const formatedDiagnostics = diagnostics.map((d) => {
+    const [key, ...rest] = d.split(' ');
+    const value = rest.join(' ');
+    return [
+      DIAGNOSTIC_KEYS[key] ?? key,
+      DIAGNOSTIC_VALUES[key] ? DIAGNOSTIC_VALUES[key](value) : value,
+    ];
+  });
+  core.notice(formatedDiagnostics.map((d) => d.join(': ')).join(EOL));
   core.endGroup();
+
   await core.summary
     .addHeading('Test Results')
-    .addTable([
-      ['Passed ✅', counter.pass],
-      ['Failed ❌', counter.fail],
-      ['Total', counter.pass + counter.fail],
-    ])
+    .addTable(formatedDiagnostics)
     .write();
 };
