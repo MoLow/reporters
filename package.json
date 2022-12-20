@@ -5,7 +5,7 @@
   "main": "index.js",
   "private": true,
   "scripts": {
-    "test": "node tests/dummy.js || echo ''",
+    "test": "yarn workspace @reporters/github test && yarn workspace @reporters/junit test",
     "lint": "eslint ."
   },
   "workspaces": [

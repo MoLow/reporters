@@ -10,13 +10,13 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: [ 'current' ]
+        node: [v20.0.0-nightly20221218ca2ec902e9]
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: MoLow/setup-node@main # see https://github.com/actions/setup-node/issues/648
         with:
           node-version: ${{ matrix.node }}
       - run: yarn install
