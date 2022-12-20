@@ -1,4 +1,4 @@
-[![npm version](https://img.shields.io/npm/v/@reporters/junit)](https://www.npmjs.com/package/@reporters/junit)
+[![npm version](https://img.shields.io/npm/v/@reporters/github)](https://www.npmjs.com/package/@reporters/github) ![tests](https://github.com/MoLow/reporters/actions/workflows/test.yaml/badge.svg?branch=main)
 # Junit Reporter
 A Junit reporter for `node:test`
 
