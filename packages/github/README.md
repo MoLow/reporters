@@ -2,7 +2,7 @@
 
 # Github Actions Reporter
 A Github actions reporter for `node:test`
-
+ 
 ## Installation
 
 ```bash
