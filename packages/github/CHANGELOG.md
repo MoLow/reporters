@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.2](https://github.com/MoLow/reporters/compare/github-v1.0.1...github-v1.0.2) (2022-12-25)
+
+
+### Bug Fixes
+
+* fix package description ([cec07c7](https://github.com/MoLow/reporters/commit/cec07c70d37b3ed43947b17312a6bd58f095510f))
+* some package.json links ([c51a616](https://github.com/MoLow/reporters/commit/c51a61648e29f5baca539ded1b09c2af3f5e0a4a))
+
 ## [1.0.1](https://github.com/MoLow/reporters/compare/github-v1.0.0...github-v1.0.1) (2022-12-20)
 
 
