@@ -1,7 +1,7 @@
 {
   "name": "@reporters/github",
   "version": "1.0.1",
-  "description": "A junit reporter for `node:test`",
+  "description": "A github actions reporter for `node:test`",
   "keywords": [
     "github actions",
     "node:test",
@@ -14,7 +14,7 @@
     "stack-utils": "^2.0.6"
   },
   "scripts": {
-    "test": "node tests/index.test.js"
+    "test": "node --test"
   },
   "main": "index.js",
   "repository": "https://github.com/MoLow/reporters.git",
