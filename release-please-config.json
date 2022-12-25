@@ -1,6 +1,7 @@
 {
   "packages": {
     "packages/github": {},
-    "packages/junit": {}
+    "packages/junit": {},
+    "packages/silent": {}
   }
 }
