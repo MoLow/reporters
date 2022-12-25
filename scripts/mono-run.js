@@ -1,7 +1,7 @@
 const { spawnSync } = require('node:child_process');
 const { opendir } = require('node:fs/promises');
 
-const cmd = process.argv.slice(2);;
+const cmd = process.argv.slice(2);
 
 function runCommand(dir) {
   if (!dir.isDirectory()) {
