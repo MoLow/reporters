@@ -5,7 +5,8 @@
   "main": "index.js",
   "private": true,
   "scripts": {
-    "test": "node -v && yarn workspace @reporters/github test && yarn workspace @reporters/junit test",
+    "mono": "node scripts/mono-run.js",
+    "test": "yarn mono test",
     "lint": "eslint ."
   },
   "workspaces": [
