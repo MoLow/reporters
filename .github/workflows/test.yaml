@@ -7,7 +7,7 @@ on:
 
 jobs:
   tests:
-    runs-on: ubuntu-latest
+    runs-on: macos-12
     strategy:
       matrix:
         node: [v20.0.0-nightly20221225d5a08c7e11]
