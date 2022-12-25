@@ -1,7 +1,7 @@
 {
   "name": "@reporters/junit",
   "version": "1.0.1",
-  "description": "A junit reporter for `node:test`",
+  "description": "A jUnit reporter for `node:test`",
   "keywords": [
     "junit",
     "node:test",
@@ -12,7 +12,11 @@
   "scripts": {
     "test": "../../prebuilt --test"
   },
+  "bugs": {
+    "url": "https://github.com/MoLow/reporters/issues"
+  },
   "main": "index.js",
+  "homepage": "https://github.com/MoLow/reporters/tree/main/packages/junit",
   "repository": "https://github.com/MoLow/reporters.git",
   "author": "Moshe Atlow",
   "license": "MIT"

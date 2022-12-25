@@ -16,7 +16,11 @@
   "scripts": {
     "test": "../../prebuilt --test"
   },
+  "bugs": {
+    "url": "https://github.com/MoLow/reporters/issues"
+  },
   "main": "index.js",
+  "homepage": "https://github.com/MoLow/reporters/tree/main/packages/github",
   "repository": "https://github.com/MoLow/reporters.git",
   "author": "Moshe Atlow",
   "license": "MIT"
