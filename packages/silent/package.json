@@ -1,0 +1,22 @@
+{
+  "name": "@reporters/silent",
+  "version": "1.0.0",
+  "description": "A silent reporter for `node:test`",
+  "keywords": [
+    "node:test",
+    "test",
+    "reporter",
+    "reporters"
+  ],
+  "scripts": {
+    "test": "../../prebuilt --test"
+  },
+  "bugs": {
+    "url": "https://github.com/MoLow/reporters/issues"
+  },
+  "main": "index.js",
+  "homepage": "https://github.com/MoLow/reporters/tree/main/packages/silent",
+  "repository": "https://github.com/MoLow/reporters.git",
+  "author": "Moshe Atlow",
+  "license": "MIT"
+}
