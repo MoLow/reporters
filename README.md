@@ -15,3 +15,4 @@ Available reporters:
 
 - [github](https://www.npmjs.com/package/@reporters/github) - report to github actions
 - [jUnit](https://www.npmjs.com/package/@reporters/junit) - report to jUnit 
+- [silent](https://www.npmjs.com/package/@reporters/silent) - a silent reporter
