@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 const { spawnSync } = require('node:child_process');
 const { opendir } = require('node:fs/promises');
 
