@@ -14,7 +14,7 @@
     "stack-utils": "^2.0.6"
   },
   "scripts": {
-    "test": "../../prebuilt --test"
+    "test": "node --test-reporter=spec --test"
   },
   "bugs": {
     "url": "https://github.com/MoLow/reporters/issues"
