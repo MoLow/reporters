@@ -10,7 +10,7 @@
     "reporters"
   ],
   "scripts": {
-    "test": "../../prebuilt --test"
+    "test": "node --test-reporter=spec --test"
   },
   "bugs": {
     "url": "https://github.com/MoLow/reporters/issues"
