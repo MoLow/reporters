@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/MoLow/reporters/compare/github-v1.0.2...github-v1.1.0) (2023-02-02)
+
+
+### Features
+
+* use reported file ([#30](https://github.com/MoLow/reporters/issues/30)) ([4c70922](https://github.com/MoLow/reporters/commit/4c709222734de88af71c5a086622c3b022d51fd5))
+
 ## [1.0.2](https://github.com/MoLow/reporters/compare/github-v1.0.1...github-v1.0.2) (2022-12-25)
 
 
