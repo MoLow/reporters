@@ -80,8 +80,10 @@ module.exports = async function githubReporter(source) {
   core.notice(formatedDiagnostics.map((d) => d.join(': ')).join(EOL));
   core.endGroup();
 
-  await core.summary
-    .addHeading('Test Results')
-    .addTable(formatedDiagnostics)
-    .write();
+  if (process.env.GITHUB_STEP_SUMMARY) {
+    await core.summary
+      .addHeading('Test Results')
+      .addTable(formatedDiagnostics)
+      .write();
+  }
 };

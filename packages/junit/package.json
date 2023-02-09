@@ -10,7 +10,7 @@
     "reporters"
   ],
   "scripts": {
-    "test": "node --test-reporter=spec --test"
+    "test": "node --test-reporter=spec --test-reporter-destination=stdout --test-reporter=../github/index.js --test-reporter-destination=stdout --test"
   },
   "bugs": {
     "url": "https://github.com/MoLow/reporters/issues"
