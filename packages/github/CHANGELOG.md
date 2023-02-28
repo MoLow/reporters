@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/MoLow/reporters/compare/github-v1.1.1...github-v1.1.2) (2023-02-28)
+
+
+### Bug Fixes
+
+* **github:** remove redundant diagnostics ([b62df32](https://github.com/MoLow/reporters/commit/b62df3280b141af763386a68b0b4e386bef907e7))
+
 ## [1.1.1](https://github.com/MoLow/reporters/compare/github-v1.1.0...github-v1.1.1) (2023-02-28)
 
 
