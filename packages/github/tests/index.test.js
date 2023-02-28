@@ -11,7 +11,7 @@ const GITHUB_STEP_SUMMARY = join(tmpdir(), 'github-actions-test-reporter');
 writeFileSync(GITHUB_STEP_SUMMARY, '');
 
 const child = spawnSync(process.execPath, ['--test-reporter', './index.js', '../../tests/example'], {
-  env: { GITHUB_STEP_SUMMARY, GITHUB_WORKSPACE: path.resolve(__dirname, '../../../') },
+  env: { GITHUB_ACTIONS: true, GITHUB_STEP_SUMMARY, GITHUB_WORKSPACE: path.resolve(__dirname, '../../../') },
 });
 
 assert.strictEqual(child.stderr?.toString(), '');

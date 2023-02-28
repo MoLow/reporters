@@ -33,6 +33,11 @@ const DIAGNOSTIC_VALUES = {
 };
 
 module.exports = async function githubReporter(source) {
+  if (!process.env.GITHUB_ACTIONS) {
+    // eslint-disable-next-line no-unused-vars
+    for await (const _ of source);
+    return;
+  }
   const counter = { pass: 0, fail: 0 };
   const diagnostics = [];
   for await (const event of source) {
