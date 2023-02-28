@@ -64,9 +64,10 @@ module.exports = async function githubReporter(source) {
         counter.fail += 1;
         break;
       } case 'test:diagnostic':
-        core.notice(event.data.message, { file: getFilePath(event.data.file) });
         if (event.data.nesting === 0) {
           diagnostics.push(event.data.message);
+        } else {
+          core.notice(event.data.message, { file: getFilePath(event.data.file) });
         }
         break;
       default:
