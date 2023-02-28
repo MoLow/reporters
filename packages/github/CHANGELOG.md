@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/MoLow/reporters/compare/github-v1.1.0...github-v1.1.1) (2023-02-28)
+
+
+### Bug Fixes
+
+* **github:** silent if not running on github actions ([#33](https://github.com/MoLow/reporters/issues/33)) ([a480454](https://github.com/MoLow/reporters/commit/a480454ac7ca0471744ec00b69a6c67a1d3c8ada))
+
 ## [1.1.0](https://github.com/MoLow/reporters/compare/github-v1.0.2...github-v1.1.0) (2023-02-02)
 
 
