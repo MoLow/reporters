@@ -1,6 +1,6 @@
 {
   "name": "@reporters/junit",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A jUnit reporter for `node:test`",
   "keywords": [
     "junit",
