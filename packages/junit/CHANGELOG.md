@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.3](https://github.com/MoLow/reporters/compare/junit-v1.0.2...junit-v1.0.3) (2023-03-12)
+
+
+### Bug Fixes
+
+* **junit:** support more usecases ([72359c3](https://github.com/MoLow/reporters/commit/72359c3983334d7712c4d404a0ae297b9ef9e859))
+
 ## [1.0.2](https://github.com/MoLow/reporters/compare/junit-v1.0.1...junit-v1.0.2) (2022-12-25)
 
 
