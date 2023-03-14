@@ -17,3 +17,7 @@ const child = spawnSync(process.execPath, ['--test-reporter', './index.js', '../
 assert.strictEqual(child.stderr?.toString(), '');
 compareLines(child.stdout?.toString(), output.stdout);
 compareLines(readFileSync(GITHUB_STEP_SUMMARY).toString(), output.summary);
+
+const silentChild = spawnSync(process.execPath, ['--test-reporter', './index.js', '../../tests/example'], { env: { } });
+assert.strictEqual(silentChild.stderr?.toString(), '');
+assert.strictEqual(silentChild.stdout?.toString(), '');
