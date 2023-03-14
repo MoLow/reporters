@@ -5,7 +5,7 @@
   "main": "index.js",
   "private": true,
   "scripts": {
-    "mono": "node scripts/mono-run.js",
+    "mono": "c8 node scripts/mono-run.js",
     "test": "yarn mono test",
     "lint": "eslint ."
   },

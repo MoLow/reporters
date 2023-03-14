@@ -1,8 +1,7 @@
 {
-    "check-coverage": true,
-    "reporter": [
-        "lcov",
-        "text-summary"
-    ],
-    "exclude-after-remap": false
+  "check-coverage": true,
+  "reporter": [
+      "lcov",
+      "text-summary"
+  ]
 }
