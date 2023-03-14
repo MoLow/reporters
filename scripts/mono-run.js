@@ -13,7 +13,10 @@ function runCommand(dir) {
     const { name } = require(`../packages/${dir.name}/package.json`);
     const args = ['workspace', name, ...cmd];
     console.log(`Running "yarn ${args.join(' ')}" in ${name}`);
-    spawnSync('yarn', args, { stdio: 'inherit' });
+    const child = spawnSync('yarn', args, { stdio: 'inherit' });
+    if (child.status !== 0) {
+      process.exitCode = 1;
+    }
   } catch (err) {
     console.error(err);
   }
@@ -25,7 +28,7 @@ function runCommand(dir) {
     runCommand(dir);
   }
 }())
-  .then(() => process.exit(0))
+  .then(() => process.exit())
   .catch((err) => {
     console.error(err);
     process.exit(1);
