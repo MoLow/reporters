@@ -1,4 +1,5 @@
-[![npm version](https://img.shields.io/npm/v/@reporters/junit)](https://www.npmjs.com/package/@reporters/junit) ![tests](https://github.com/MoLow/reporters/actions/workflows/test.yaml/badge.svg?branch=main)
+[![npm version](https://img.shields.io/npm/v/@reporters/junit)](https://www.npmjs.com/package/@reporters/junit) ![tests](https://github.com/MoLow/reporters/actions/workflows/test.yaml/badge.svg?branch=main) [![codecov](https://codecov.io/gh/MoLow/reporters/branch/main/graph/badge.svg?token=0LFVC8SCQV)](https://codecov.io/gh/MoLow/reporters)
+
 # Junit Reporter
 A Junit reporter for `node:test`.
 intendend for use with major CI tools like Jenkins, CircleCI, etc that consume Junit reports.
