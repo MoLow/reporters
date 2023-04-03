@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.4](https://github.com/MoLow/reporters/compare/junit-v1.0.3...junit-v1.0.4) (2023-04-03)
+
+
+### Bug Fixes
+
+* allow multiple roots ([590df94](https://github.com/MoLow/reporters/commit/590df948f8a4626fc29e8ce185e08d2226a307ba))
+
 ## [1.0.3](https://github.com/MoLow/reporters/compare/junit-v1.0.2...junit-v1.0.3) (2023-03-12)
 
 

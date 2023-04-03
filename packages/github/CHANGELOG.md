@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.3](https://github.com/MoLow/reporters/compare/github-v1.1.2...github-v1.1.3) (2023-04-03)
+
+
+### Bug Fixes
+
+* allow multiple roots ([590df94](https://github.com/MoLow/reporters/commit/590df948f8a4626fc29e8ce185e08d2226a307ba))
+
 ## [1.1.2](https://github.com/MoLow/reporters/compare/github-v1.1.1...github-v1.1.2) (2023-02-28)
 
 
