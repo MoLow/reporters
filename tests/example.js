@@ -7,3 +7,7 @@ describe('tests', () => {
   });
   test('is a diagnostic', async (t) => { t.diagnostic('this is a diagnostic'); });
 });
+
+describe('more tests', () => {
+  it('is ok', () => {});
+});
