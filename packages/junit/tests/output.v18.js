@@ -21,6 +21,9 @@ module.exports = {
 \t\t</testcase>
 \t\t<testcase name="is a diagnostic" time=".*" classname="test"/>
 \t</testsuite>
+\t<testsuite name="more tests" time=".*" disabled="0" errors="0" tests="1" failures="0" skipped="0" hostname=".*">
+\t\t<testcase name="is ok" time=".*" classname="test"/>
+\t</testsuite>
 </testsuites>
 `,
 };

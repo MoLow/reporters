@@ -41,6 +41,7 @@ module.exports = async function* junitReporter(source) {
   yield '<?xml version="1.0" encoding="utf-8"?>\n';
   yield '<testsuites>\n';
   let currentSuite = null;
+  const roots = [];
 
   function startTest(event) {
     const originalSuite = currentSuite;
@@ -51,6 +52,9 @@ module.exports = async function* junitReporter(source) {
       children: [],
     };
     originalSuite?.children.push(currentSuite);
+    if (!currentSuite.parent) {
+      roots.push(currentSuite);
+    }
   }
 
   for await (const event of source) {
@@ -69,7 +73,7 @@ module.exports = async function* junitReporter(source) {
           startTest(event);
         }
         const currentTest = currentSuite;
-        if (currentSuite?.nesting === event.data.nesting && currentSuite?.parent) {
+        if (currentSuite?.nesting === event.data.nesting) {
           currentSuite = currentSuite.parent;
         }
         currentTest.props.time = (event.data.details.duration_ms / 1000).toFixed(6);
@@ -113,6 +117,8 @@ module.exports = async function* junitReporter(source) {
         break;
     }
   }
-  yield treeToXML(currentSuite);
+  for (const suite of roots) {
+    yield treeToXML(suite);
+  }
   yield '</testsuites>\n';
 };
