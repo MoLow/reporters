@@ -1,0 +1,185 @@
+# The configurations that used for the recording, feel free to edit them
+config:
+
+  # Specify a command to be executed
+  # like `/bin/bash -l`, `ls`, or any other commands
+  # the default is bash for Linux
+  # or powershell.exe for Windows
+  command: bash -l
+  
+  # Specify the current working directory path
+  # the default is the current working directory path
+  cwd: ~
+  
+  # Export additional ENV variables
+  env:
+    recording: true
+  
+  # Explicitly set the number of columns
+  # or use `auto` to take the current
+  # number of columns of your shell
+  cols: 166
+  
+  # Explicitly set the number of rows
+  # or use `auto` to take the current
+  # number of rows of your shell
+  rows: 23
+  
+  # Amount of times to repeat GIF
+  # If value is -1, play once
+  # If value is 0, loop indefinitely
+  # If value is a positive number, loop n times
+  repeat: 0
+  
+  # Quality
+  # 1 - 100
+  quality: 100
+  
+  # Delay between frames in ms
+  # If the value is `auto` use the actual recording delays
+  frameDelay: auto
+  
+  # Maximum delay between frames in ms
+  # Ignored if the `frameDelay` isn't set to `auto`
+  # Set to `auto` to prevent limiting the max idle time
+  maxIdleTime: 2000
+  
+  # The surrounding frame box
+  # The `type` can be null, window, floating, or solid`
+  # To hide the title use the value null
+  # Don't forget to add a backgroundColor style with a null as type
+  frameBox:
+    type: floating
+    title: Terminalizer
+    style:
+      border: 0px black solid
+      boxShadow: none
+      margin: 0px
+  
+  # Add a watermark image to the rendered gif
+  # You need to specify an absolute path for
+  # the image on your machine or a URL, and you can also
+  # add your own CSS styles
+  watermark:
+    imagePath: null
+    style:
+      position: absolute
+      right: 15px
+      bottom: 15px
+      width: 100px
+      opacity: 0.9
+  
+  # Cursor style can be one of
+  # `block`, `underline`, or `bar`
+  cursorStyle: block
+  
+  # Font family
+  # You can use any font that is installed on your machine
+  # in CSS-like syntax
+  fontFamily: "Monaco, Lucida Console, Ubuntu Mono, Monospace"
+  
+  # The size of the font
+  fontSize: 12
+  
+  # The height of lines
+  lineHeight: 1
+  
+  # The spacing between letters
+  letterSpacing: 0
+  
+  # Theme
+  theme:
+    background: "transparent"
+    foreground: "#afafaf"
+    cursor: "#c7c7c7"
+    black: "#232628"
+    red: "#fc4384"
+    green: "#b3e33b"
+    yellow: "#ffa727"
+    blue: "#75dff2"
+    magenta: "#ae89fe"
+    cyan: "#708387"
+    white: "#d5d5d0"
+    brightBlack: "#626566"
+    brightRed: "#ff7fac"
+    brightGreen: "#c8ed71"
+    brightYellow: "#ebdf86"
+    brightBlue: "#75dff2"
+    brightMagenta: "#ae89fe"
+    brightCyan: "#b1c6ca"
+    brightWhite: "#f9f9f4"
+  
+# Records, feel free to edit them
+records:
+  - delay: 0
+    content: '$ '
+  - delay: 651
+    content: testwatch
+  - delay: 713
+    content: "\r\n"
+  - delay: 688
+    content: "\ec▶ testwatch\r\n  \e[32m✔ should run all tests on initialization \e[90m(445.057167ms)\e[39m\e[39m\r\n  \e[32m✔ should handle CTR + C \e[90m(443.270375ms)\e[39m\e[39m\r\n"
+  - delay: 123
+    content: "  \e[32m✔ should handle CTR + D \e[90m(566.298666ms)\e[39m\e[39m\r\n"
+  - delay: 102
+    content: "  \e[32m✔ should run all tests on \"a\" \e[90m(668.500542ms)\e[39m\e[39m\r\n"
+  - delay: 11
+    content: "  \e[32m✔ should run all tests on Enter \e[90m(678.704958ms)\e[39m\e[39m\r\n  \e[32m✔ should show full menu on \"w\" after running tests \e[90m(638.493708ms)\e[39m\e[39m\r\n"
+  - delay: 25
+    content: "  ▶ filters\r\n    \e[32m✔ should filter tests on \"t\" \e[90m(701.858542ms)\e[39m\e[39m\r\n    \e[32m✔ should filter files on \"p\" \e[90m(668.653625ms)\e[39m\e[39m\r\n"
+  - delay: 201
+    content: "    \e[32m✔ should filter tests and files togetheer \e[90m(902.623166ms)\e[39m\e[39m\r\n    \e[32m✔ should mention when no files found \e[90m(669.483333ms)\e[39m\e[39m\r\n"
+  - delay: 234
+    content: "    \e[32m✔ should clear filters on \"c\" \e[90m(1136.047417ms)\e[39m\e[39m\r\n    \e[32m✔ prompt ESC should preserve previous state \e[90m(1101.547958ms)\e[39m\e[39m\r\n    \e[32m✔ backspace shoud remove last character \e[90m(627.751292ms)\e[39m\e[39m\r\n  \e[32m▶ \e[39mfilters \e[90m(1138.54675ms)\e[39m\r\n\r\n\e[32m▶ \e[39mtestwatch \e[90m(1143.543416ms)\e[39m\r\n\r\n"
+  - delay: 6
+    content: "\e[32m✔ j - sum \e[90m(0.458875ms)\e[39m\e[39m\r\n\e[32m✔ j - subtraction \e[90m(0.160625ms)\e[39m\e[39m\r\n\e[32m✔ index - sum \e[90m(0.454875ms)\e[39m\e[39m\r\n\e[32m✔ index - subtraction \e[90m(0.128083ms)\e[39m\e[39m\r\n\r\n\e[1mREPL Usage\e[22m\r\n\e[90m › Press \e[37m\e[1ma\e[22m\e[39m\e[90m to run all tests.\e[39m\r\n\e[90m › Press \e[37m\e[1mp\e[22m\e[39m\e[90m to filter by a file name pattern.\e[39m\r\n\e[90m › Press \e[37m\e[1mt\e[22m\e[39m\e[90m to filter by a test name pattern.\e[39m\r\n\e[90m › Press \e[37m\e[1mq\e[22m\e[39m\e[90m to quit.\e[39m\r\n\e[90m › Press \e[37m\e[1mEnter\e[22m\e[39m\e[90m to trigger a test run.\e[39m\r\n"
+  - delay: 1523
+    content: "\ec\r\n\e[1mFilter File\e[22m\r\n\e[90m › Press \e[37m\e[1mEnter\e[22m\e[39m\e[90m to filter by a file name pattern.\e[39m\r\n\e[90m › Press \e[37m\e[1mEsc\e[22m\e[39m\e[90m to exit pattern mode.\e[39m\r\n\e[90m\e[39m\r\n\e[90m pattern › \e[39m"
+  - delay: 1000
+    content: tests/fixtures/**
+  - delay: 500
+    content: "\ec"
+  - delay: 78
+    content: "\ec\e[32m✔ j - sum \e[90m(0.430167ms)\e[39m\e[39m\r\n\e[32m✔ j - subtraction \e[90m(0.127208ms)\e[39m\e[39m\r\n"
+  - delay: 5
+    content: "\e[32m✔ index - sum \e[90m(0.430083ms)\e[39m\e[39m\r\n\e[32m✔ index - subtraction \e[90m(0.124042ms)\e[39m\e[39m\r\n\e[90m\e[39m\r\n\e[90m\e[37m\e[1mREPL Usage\e[22m\e[39m\e[90m: Press \e[37m\e[1mw\e[22m\e[39m\e[90m to show more.\e[39m"
+  - delay: 1000
+    content: "\r\n\e[1A\e[2K\e[1A\e[2K\r\n\e[37m\e[1mActive Filters:\e[22m\e[39m file name \e[90m**/\e[39m\e[33mtests/fixtures/**\e[39m\e[90m.*\e[39m\r\n\r\n\e[1mREPL Usage\e[22m\r\n\e[90m › Press \e[37m\e[1mc\e[22m\e[39m\e[90m to clear the filters.\e[39m\r\n\e[90m › Press \e[37m\e[1ma\e[22m\e[39m\e[90m to run all tests.\e[39m\r\n\e[90m › Press \e[37m\e[1mp\e[22m\e[39m\e[90m to filter by a file name pattern.\e[39m\r\n\e[90m › Press \e[37m\e[1mt\e[22m\e[39m\e[90m to filter by a test name pattern.\e[39m\r\n\e[90m › Press \e[37m\e[1mq\e[22m\e[39m\e[90m to quit.\e[39m\r\n\e[90m › Press \e[37m\e[1mEnter\e[22m\e[39m\e[90m to trigger a test run.\e[39m\r\n"
+  - delay: 1000
+    content: "\ec\r\n\e[37m\e[1mActive Filters:\e[22m\e[39m file name \e[90m**/\e[39m\e[33mtests/fixtures/**\e[39m\e[90m.*\e[39m\r\n\r\n\e[1mFilter Test\e[22m\r\n\e[90m › Press \e[37m\e[1mEnter\e[22m\e[39m\e[90m to filter by a test name pattern.\e[39m\r\n\e[90m › Press \e[37m\e[1mEsc\e[22m\e[39m\e[90m to exit pattern mode.\e[39m\r\n\e[90m\e[39m\r\n\e[90m pattern › \e[39m"
+  - delay: 1000
+    content: sum
+  - delay: 1000
+    content: "\ec"
+  - delay: 68
+    content: "\ec\e[32m✔ j - sum \e[90m(0.44275ms)\e[39m\e[39m\r\n\e[90m﹣ j - subtraction \e[90m(0.12475ms)\e[39m # SKIP\e[39m\r\n"
+  - delay: 5
+    content: "\e[32m✔ index - sum \e[90m(0.4315ms)\e[39m\e[39m\r\n\e[90m﹣ index - subtraction \e[90m(0.12175ms)\e[39m # SKIP\e[39m\r\n\e[90m\e[39m\r\n\e[90m\e[37m\e[1mREPL Usage\e[22m\e[39m\e[90m: Press \e[37m\e[1mw\e[22m\e[39m\e[90m to show more.\e[39m"
+  - delay: 1000
+    content: "\r\n\e[1A\e[2K\e[1A\e[2K\r\n\e[37m\e[1mActive Filters:\e[22m\e[39m file name \e[90m**/\e[39m\e[33mtests/fixtures/**\e[39m\e[90m.*\e[39m, test name \e[33m/sum/\e[39m\r\n\r\n\e[1mREPL Usage\e[22m\r\n\e[90m › Press \e[37m\e[1mc\e[22m\e[39m\e[90m to clear the filters.\e[39m\r\n\e[90m › Press \e[37m\e[1ma\e[22m\e[39m\e[90m to run all tests.\e[39m\r\n\e[90m › Press \e[37m\e[1mp\e[22m\e[39m\e[90m to filter by a file name pattern.\e[39m\r\n\e[90m › Press \e[37m\e[1mt\e[22m\e[39m\e[90m to filter by a test name pattern.\e[39m\r\n\e[90m › Press \e[37m\e[1mq\e[22m\e[39m\e[90m to quit.\e[39m\r\n\e[90m › Press \e[37m\e[1mEnter\e[22m\e[39m\e[90m to trigger a test run.\e[39m\r\n"
+  - delay: 1000
+    content: "\ec\e[32m✔ j - sum \e[90m(0.422125ms)\e[39m\e[39m\r\n\e[90m﹣ j - subtraction \e[90m(0.123084ms)\e[39m # SKIP\e[39m\r\n"
+  - delay: 7
+    content: "\e[32m✔ index - sum \e[90m(0.424667ms)\e[39m\e[39m\r\n\e[90m﹣ index - subtraction \e[90m(0.119458ms)\e[39m # SKIP\e[39m\r\n\e[90m\e[39m\r\n\e[90m\e[37m\e[1mREPL Usage\e[22m\e[39m\e[90m: Press \e[37m\e[1mw\e[22m\e[39m\e[90m to show more.\e[39m"
+  - delay: 1000
+    content: "\r\n\e[1A\e[2K\e[1A\e[2K\r\n\e[37m\e[1mActive Filters:\e[22m\e[39m file name \e[90m**/\e[39m\e[33mtests/fixtures/**\e[39m\e[90m.*\e[39m, test name \e[33m/sum/\e[39m\r\n\r\n\e[1mREPL Usage\e[22m\r\n\e[90m › Press \e[37m\e[1mc\e[22m\e[39m\e[90m to clear the filters.\e[39m\r\n\e[90m › Press \e[37m\e[1ma\e[22m\e[39m\e[90m to run all tests.\e[39m\r\n\e[90m › Press \e[37m\e[1mp\e[22m\e[39m\e[90m to filter by a file name pattern.\e[39m\r\n\e[90m › Press \e[37m\e[1mt\e[22m\e[39m\e[90m to filter by a test name pattern.\e[39m\r\n\e[90m › Press \e[37m\e[1mq\e[22m\e[39m\e[90m to quit.\e[39m\r\n\e[90m › Press \e[37m\e[1mEnter\e[22m\e[39m\e[90m to trigger a test run.\e[39m\r\n"
+  - delay: 1000
+    content: "\ec▶ testwatch\r\n  \e[32m✔ should run all tests on initialization \e[90m(377.157833ms)\e[39m\e[39m\r\n"
+  - delay: 45
+    content: "  \e[32m✔ should handle CTR + C \e[90m(421.077417ms)\e[39m\e[39m\r\n"
+  - delay: 17
+    content: "  \e[32m✔ should handle CTR + D \e[90m(437.436042ms)\e[39m\e[39m\r\n"
+  - delay: 190
+    content: "  \e[32m✔ should run all tests on \"a\" \e[90m(626.754917ms)\e[39m\e[39m\r\n  \e[32m✔ should run all tests on Enter \e[90m(628.015583ms)\e[39m\e[39m\r\n"
+  - delay: 25
+    content: "  \e[32m✔ should show full menu on \"w\" after running tests \e[90m(652.595ms)\e[39m\e[39m\r\n"
+  - delay: 40
+    content: "  ▶ filters\r\n    \e[32m✔ should filter tests on \"t\" \e[90m(691.810209ms)\e[39m\e[39m\r\n    \e[32m✔ should filter files on \"p\" \e[90m(605.502625ms)\e[39m\e[39m\r\n"
+  - delay: 136
+    content: "    \e[32m✔ should filter tests and files togetheer \e[90m(826.882875ms)\e[39m\e[39m\r\n    \e[32m✔ should mention when no files found \e[90m(603.837791ms)\e[39m\e[39m\r\n"
+  - delay: 202
+    content: "    \e[32m✔ should clear filters on \"c\" \e[90m(1026.169ms)\e[39m\e[39m\r\n    \e[32m✔ prompt ESC should preserve previous state \e[90m(1003.537917ms)\e[39m\e[39m\r\n    \e[32m✔ backspace shoud remove last character \e[90m(720.0275ms)\e[39m\e[39m\r\n  \e[32m▶ \e[39mfilters \e[90m(1030.538708ms)\e[39m\r\n\r\n\e[32m▶ \e[39mtestwatch \e[90m(1035.127708ms)\e[39m\r\n\r\n\e[32m✔ j - sum \e[90m(0.452833ms)\e[39m\e[39m\r\n\e[32m✔ j - subtraction \e[90m(0.136416ms)\e[39m\e[39m\r\n\e[32m✔ index - sum \e[90m(0.457583ms)\e[39m\e[39m\r\n\e[32m✔ index - subtraction \e[90m(0.132541ms)\e[39m\e[39m\r\n\e[90m\e[39m\r\n\e[90m\e[37m\e[1mREPL Usage\e[22m\e[39m\e[90m: Press \e[37m\e[1mw\e[22m\e[39m\e[90m to show more.\e[39m"
+  - delay: 1000
+    content: "\r\n\e[1A\e[2K\e[1A\e[2K\r\n\e[1mREPL Usage\e[22m\r\n\e[90m › Press \e[37m\e[1ma\e[22m\e[39m\e[90m to run all tests.\e[39m\r\n\e[90m › Press \e[37m\e[1mp\e[22m\e[39m\e[90m to filter by a file name pattern.\e[39m\r\n\e[90m › Press \e[37m\e[1mt\e[22m\e[39m\e[90m to filter by a test name pattern.\e[39m\r\n\e[90m › Press \e[37m\e[1mq\e[22m\e[39m\e[90m to quit.\e[39m\r\n\e[90m › Press \e[37m\e[1mEnter\e[22m\e[39m\e[90m to trigger a test run.\e[39m\r\n"
+  - delay: 1000
+    content: "\r\n"
