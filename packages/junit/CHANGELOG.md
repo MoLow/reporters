@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/MoLow/reporters/compare/junit-v1.0.4...junit-v1.1.0) (2023-05-30)
+
+
+### Features
+
+* report node 20 features ([c99a76c](https://github.com/MoLow/reporters/commit/c99a76c0f6bef75abb2c053c82c88448b0c82690))
+
 ## [1.0.4](https://github.com/MoLow/reporters/compare/junit-v1.0.3...junit-v1.0.4) (2023-04-03)
 
 

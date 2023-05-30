@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/MoLow/reporters/compare/silent-v1.0.0...silent-v1.1.0) (2023-05-30)
+
+
+### Features
+
+* report node 20 features ([c99a76c](https://github.com/MoLow/reporters/commit/c99a76c0f6bef75abb2c053c82c88448b0c82690))
+
 ## 1.0.0 (2022-12-25)
 
 

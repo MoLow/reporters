@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/MoLow/reporters/compare/github-v1.1.3...github-v1.2.0) (2023-05-30)
+
+
+### Features
+
+* report node 20 features ([c99a76c](https://github.com/MoLow/reporters/commit/c99a76c0f6bef75abb2c053c82c88448b0c82690))
+
 ## [1.1.3](https://github.com/MoLow/reporters/compare/github-v1.1.2...github-v1.1.3) (2023-04-03)
 
 
