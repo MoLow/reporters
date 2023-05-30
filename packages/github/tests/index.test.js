@@ -5,7 +5,8 @@ const assert = require('assert');
 const path = require('path');
 const { readFileSync, writeFileSync } = require('fs');
 const { compareLines } = require('../../../tests/utils');
-const output = require('./output');
+// eslint-disable-next-line import/no-dynamic-require
+const output = require(`./output.${process.version.split('.')[0]}`);
 
 const GITHUB_STEP_SUMMARY = join(tmpdir(), 'github-actions-test-reporter');
 writeFileSync(GITHUB_STEP_SUMMARY, '');

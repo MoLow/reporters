@@ -13,10 +13,10 @@ module.exports = {
 ::debug::completed running is ok
 ::debug::completed running more tests
 ::group::Test results \\(4 passed, 2 failed\\)
-::notice::Total Tests: 2%0APassed ✅: 1%0AFailed ❌: 1%0ACanceled 🚫: 0%0ASkipped ⏭️: 0%0ATodo 📝: 0%0ADuration: .*ms
+::notice::Total Tests: 2%0APassed ✅: 1%0AFailed ❌: 1%0ACanceled 🚫: 0%0ASkipped ⏭️: 0%0ATodo 📝: 0%0ADuration 🕐: .*ms
 ::endgroup::
 `,
   summary: `<h1>Test Results</h1>
-<table><tr><td>Total Tests</td><td>2</td></tr><tr><td>Passed ✅</td><td>1</td></tr><tr><td>Failed ❌</td><td>1</td></tr><tr><td>Canceled 🚫</td><td>0</td></tr><tr><td>Skipped ⏭️</td><td>0</td></tr><tr><td>Todo 📝</td><td>0</td></tr><tr><td>Duration</td><td>.*ms</td></tr></table>
+<table><tr><td>Total Tests</td><td>2</td></tr><tr><td>Passed ✅</td><td>1</td></tr><tr><td>Failed ❌</td><td>1</td></tr><tr><td>Canceled 🚫</td><td>0</td></tr><tr><td>Skipped ⏭️</td><td>0</td></tr><tr><td>Todo 📝</td><td>0</td></tr><tr><td>Duration 🕐</td><td>.*ms</td></tr></table>
 `,
 };

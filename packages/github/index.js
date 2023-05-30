@@ -20,12 +20,13 @@ const parseStack = (error, file) => {
 
 const DIAGNOSTIC_KEYS = {
   tests: 'Total Tests',
+  suites: 'Suites 📂',
   pass: 'Passed ✅',
   fail: 'Failed ❌',
   cancelled: 'Canceled 🚫',
   skipped: 'Skipped ⏭️',
   todo: 'Todo 📝',
-  duration_ms: 'Duration',
+  duration_ms: 'Duration 🕐',
 };
 
 const DIAGNOSTIC_VALUES = {
