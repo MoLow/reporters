@@ -3,6 +3,7 @@
     "packages/github": {},
     "packages/junit": {},
     "packages/silent": {},
-    "packages/bail": {}
+    "packages/bail": {},
+    "packages/testwatch": {}
   }
 }

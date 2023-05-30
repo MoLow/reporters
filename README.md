@@ -19,3 +19,4 @@ Available reporters:
 - [jUnit](https://www.npmjs.com/package/@reporters/junit) - report to jUnit 
 - [silent](https://www.npmjs.com/package/@reporters/silent) - a silent reporter
 - [bail](https://www.npmjs.com/package/@reporters/bail) - bail on first failure
+- [testwatch](https://www.npmjs.com/package/@reporters/testwatch) - An interactive REPL for `node:test` watch mode.

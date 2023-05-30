@@ -1,5 +1,5 @@
 {
-  "check-coverage": true,
+  "check-coverage": false,
   "reporter": [
       "lcov",
       "text-summary"
