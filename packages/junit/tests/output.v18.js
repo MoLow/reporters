@@ -26,6 +26,12 @@ module.exports = {
 \t<testsuite name="more tests" time=".*" disabled="0" errors="0" tests="1" failures="0" skipped="0" hostname=".*">
 \t\t<testcase name="is ok" time=".*" classname="test"/>
 \t</testsuite>
+\t<testcase name="is skipped" time=".* classname="test">
+\t\t<skipped type="skipped" message="true"/>
+\t</testcase>
+\t<testcase name="is a todo" time=".*" classname="test">
+\t\t<skipped type="todo" message="true"/>
+\t</testcase>
 </testsuites>
 `,
 };
