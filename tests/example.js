@@ -11,3 +11,5 @@ describe('tests', () => {
 describe('more tests', () => {
   it('is ok', () => {});
 });
+it.skip('is skipped', () => {});
+it.todo('is a todo');
