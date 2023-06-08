@@ -53,7 +53,7 @@ async function spawnInteractive(commandSequence = 'q') {
       if (char === 'a' || char === 'c' || char === '\r' || char === esc) {
         // wait for tests to run before writing the next command
         // eslint-disable-next-line no-await-in-loop
-        await setTimeout(1200);
+        await setTimeout(1100);
       }
     }
   }
