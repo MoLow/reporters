@@ -3,7 +3,7 @@
 # Interactive Test Runner
 An interactive REPL for `node:test` watch mode.
 
-![cli](assets/cli.gif)
+![cli](https://raw.githubusercontent.com/MoLow/reporters/77f69c450ab0cb204fa8b81caf12516df03cdc13/packages/testwatch/assets/cli.gif)
 
 ## Installation
 
