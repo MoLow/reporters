@@ -155,21 +155,36 @@ describe('testwatch', { concurrency: true, skip: !isSupported ? 'unsupported nod
       ]);
     });
 
-    it('should filter files on "p"', async () => {
-      const { outputs, stderr } = await spawnInteractive(['p', 'index', '\r', 'w', 'q'].join(''));
-      const activeFilters = '\nActive Filters: file name **/index.*\n';
-      assert.strictEqual(stderr, '');
-      assert.deepStrictEqual(outputs, [
-        '',
-        `${tests}\n${mainMenu}`,
-        `${filterFilesPrompt}index`,
-        '',
-        `${testsRun[1]}\n${compactMenu}\n${clearLines}${activeFilters}${mainMenuWithFilters}\n`,
-      ]);
+    describe('files filter', () => {
+      it('should filter files on "p"', async () => {
+        const { outputs, stderr } = await spawnInteractive(['p', 'index', '\r', 'w', 'q'].join(''));
+        const activeFilters = '\nActive Filters: file name **/index*.*\n';
+        assert.strictEqual(stderr, '');
+        assert.deepStrictEqual(outputs, [
+          '',
+          `${tests}\n${mainMenu}`,
+          `${filterFilesPrompt}index`,
+          '',
+          `${testsRun[1]}\n${compactMenu}\n${clearLines}${activeFilters}${mainMenuWithFilters}\n`,
+        ]);
+      });
+
+      it('should filter partial file names on "p"', async () => {
+        const { outputs, stderr } = await spawnInteractive(['p', 'ind', '\r', 'w', 'q'].join(''));
+        const activeFilters = '\nActive Filters: file name **/ind*.*\n';
+        assert.strictEqual(stderr, '');
+        assert.deepStrictEqual(outputs, [
+          '',
+          `${tests}\n${mainMenu}`,
+          `${filterFilesPrompt}ind`,
+          '',
+          `${testsRun[1]}\n${compactMenu}\n${clearLines}${activeFilters}${mainMenuWithFilters}\n`,
+        ]);
+      });
     });
     it('should filter tests and files togetheer', async () => {
       const { outputs, stderr } = await spawnInteractive(['p', 'index', '\r', 't', 'sum', '\r', 'w', 'q'].join(''));
-      const activeFilters = '\nActive Filters: file name **/index.*, test name /sum/\n';
+      const activeFilters = '\nActive Filters: file name **/index*.*, test name /sum/\n';
       assert.strictEqual(stderr, '');
       assert.strictEqual(outputs.length, 8);
       assert.strictEqual(outputs[7], `${testsRun[1].replace('✔ index - subtraction (*ms)', '﹣ index - subtraction (*ms) # SKIP')}\n${compactMenu}\n${clearLines}${activeFilters}${mainMenuWithFilters}\n`);
@@ -177,8 +192,8 @@ describe('testwatch', { concurrency: true, skip: !isSupported ? 'unsupported nod
 
     it('should mention when no files found', async () => {
       const { outputs, stderr } = await spawnInteractive(['p', 'nothing', '\r', 'w', 'q'].join(''));
-      const activeFilters = '\nActive Filters: file name **/nothing.*\n';
-      const notFound = '\nNo files found for pattern **/nothing.*';
+      const activeFilters = '\nActive Filters: file name **/nothing*.*\n';
+      const notFound = '\nNo files found for pattern **/nothing*.*';
       assert.strictEqual(stderr, '');
       assert.deepStrictEqual(outputs, [
         '',
@@ -194,16 +209,16 @@ describe('testwatch', { concurrency: true, skip: !isSupported ? 'unsupported nod
       assert.strictEqual(stderr, '');
       assert.strictEqual(outputs.length, 9);
 
-      assert.match(outputs[4], /Active Filters: file name \*\*\/index\.\*/);
-      assert.match(outputs[5], /Active Filters: file name \*\*\/index\.\*/);
-      assert.match(outputs[7], /Active Filters: file name \*\*\/index\.\*, test name \/sum\//);
+      assert.match(outputs[4], /Active Filters: file name \*\*\/index\*\.\*/);
+      assert.match(outputs[5], /Active Filters: file name \*\*\/index\*\.\*/);
+      assert.match(outputs[7], /Active Filters: file name \*\*\/index\*\.\*, test name \/sum\//);
       assert.strictEqual(outputs[8], `${tests}\n${compactMenu}\n${clearLines}${mainMenu}\n`);
     });
 
     it('prompt ESC should preserve previous state', async () => {
       const { outputs } = await spawnInteractive(['p', esc, 'p', 'filter', '\r', 'p', esc, 'q'].join(''));
-      const notFound = '\nNo files found for pattern **/filter.*';
-      const activeFilters = '\nActive Filters: file name **/filter.*\n';
+      const notFound = '\nNo files found for pattern **/filter*.*';
+      const activeFilters = '\nActive Filters: file name **/filter*.*\n';
       assert.deepStrictEqual(outputs, [
         '',
         `${tests}\n${mainMenu}`,
@@ -224,7 +239,7 @@ describe('testwatch', { concurrency: true, skip: !isSupported ? 'unsupported nod
       const { outputs, stderr } = await spawnInteractive(['p', `noth123${backspace}${backspace}ing`, '\r', 'w', 'q'].join(''));
       assert.strictEqual(stderr, '');
       assert.strictEqual(outputs.length, 5);
-      assert.match(outputs[4], /No files found for pattern \*\*\/noth1ing\.\*/);
+      assert.match(outputs[4], /No files found for pattern \*\*\/noth1ing\*\.\*/);
     });
   });
 });
