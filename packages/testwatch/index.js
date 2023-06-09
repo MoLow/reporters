@@ -56,7 +56,7 @@ class REPL {
   async #runTests() {
     this.#controller.abort();
     this.#controller = new AbortController();
-    const filter = this.#filesFilter ? `**/${this.#filesFilter}.*` : '**/*.test.js';
+    const filter = this.#filesFilter ? `**/${this.#filesFilter}*.*` : '**/*.test.js';
     const files = await glob(filter, { ignore: 'node_modules/**' });
 
     if (!files.length) {
@@ -200,7 +200,7 @@ class REPL {
     if (this.#filesFilter || this.#testsFilter) {
       const message = `
 ${chalk.white.bold('Active Filters:')} \
-${this.#filesFilter ? `file name ${chalk.gray('**/')}${chalk.yellow(this.#filesFilter)}${chalk.gray('.*')}` : ''}\
+${this.#filesFilter ? `file name ${chalk.gray('**/')}${chalk.yellow(this.#filesFilter)}${chalk.gray('*.*')}` : ''}\
 ${(this.#testsFilter && this.#filesFilter) ? ', ' : ''}\
 ${this.#testsFilter ? `test name ${chalk.yellow(`/${this.#testsFilter}/`)}` : ''}
 `;
