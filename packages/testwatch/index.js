@@ -2,7 +2,9 @@
 
 const { run } = require('node:test');
 const { pipeline } = require('node:stream/promises');
-const { on, once, EventEmitter } = require('node:events');
+const {
+  on, once, EventEmitter, setMaxListeners,
+} = require('node:events');
 const { glob } = require('glob');
 const chalk = require('chalk');
 const { isSupported } = require('./nodeVersion');
@@ -28,6 +30,7 @@ const KEY_NAMES = {
 };
 const UnknownCommand = Symbol('UnknownKey');
 
+setMaxListeners(Infinity);
 process.stdout.setMaxListeners(Infinity);
 process.setMaxListeners(Infinity);
 process.stdin.setEncoding('utf8');
