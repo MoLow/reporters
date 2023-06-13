@@ -81,7 +81,7 @@ class REPL {
       async function* (source) {
         for await (const data of source) {
           yield data;
-          if (data.type === 'test:start' && drained) {
+          if (drained && (data.type === 'test:start' || data.type === 'test:enqueue')) {
             this.#clear();
             drained = false;
           }
