@@ -39,7 +39,7 @@ process.stdin.setRawMode?.(true);
 class REPL {
   #controller = new AbortController();
 
-  #filesFilter = '';
+  #filesFilter = process.argv[2] || '';
 
   #testsFilter = '';
 
@@ -59,7 +59,7 @@ class REPL {
   async #runTests() {
     this.#controller.abort();
     this.#controller = new AbortController();
-    const filter = this.#filesFilter ? `**/${this.#filesFilter}*.*` : '**/*.test.js';
+    const filter = this.#filesFilter ? `**/${this.#filesFilter}*.*` : '**/?(*.)+(spec|test).[jt]s';
     const files = await glob(filter, { ignore: 'node_modules/**' });
 
     if (!files.length) {
