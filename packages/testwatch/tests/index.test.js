@@ -35,11 +35,11 @@ Filter Test
  pattern › `;
 const filterFilesPrompt = filterTestsPrompt.replace('test', 'file').replace('Test', 'File');
 
-async function spawnInteractive(commandSequence = 'q') {
+async function spawnInteractive(commandSequence = 'q', args = []) {
   let stderr = '';
   let stdout = '';
-  const child = spawn(process.execPath, ['../../index.js'], {
-    env: { }, cwd: path.resolve(__dirname, 'fixtures'),
+  const child = spawn(process.execPath, ['../../index.js', ...args], {
+    env: {}, cwd: path.resolve(__dirname, 'fixtures'),
   });
   child.stdin.setEncoding('utf8');
   let writing = false;
@@ -62,7 +62,7 @@ async function spawnInteractive(commandSequence = 'q') {
   child.stdout.setEncoding('utf8');
   child.stdout.on('data', (data) => {
     stdout += data;
-    if (stdout.includes(mainMenu)) {
+    if (stdout.includes(mainMenu) || stdout.includes(mainMenuWithFilters)) {
       writeInput();
     }
   });
@@ -103,7 +103,7 @@ describe('testwatch', { concurrency: true, skip: !isSupported ? 'unsupported nod
   });
   it('should exit on sigkill', async () => {
     const child = spawn(process.execPath, ['../../index.js'], {
-      env: { }, cwd: path.resolve(__dirname, 'fixtures'),
+      env: {}, cwd: path.resolve(__dirname, 'fixtures'),
     });
     let stderr = '';
     let stdout = '';
@@ -156,6 +156,16 @@ describe('testwatch', { concurrency: true, skip: !isSupported ? 'unsupported nod
     });
 
     describe('files filter', () => {
+      it('should set first argument as file filter', async () => {
+        const { outputs, stderr } = await spawnInteractive('q', ['ind']);
+        const activeFilters = '\nActive Filters: file name **/ind*.*\n';
+        assert.strictEqual(stderr, '');
+        assert.deepStrictEqual(outputs, [
+          '',
+          `${testsRun[1]}\n${activeFilters}${mainMenuWithFilters}\n`,
+        ]);
+      });
+
       it('should filter files on "p"', async () => {
         const { outputs, stderr } = await spawnInteractive(['p', 'index', '\r', 'w', 'q'].join(''));
         const activeFilters = '\nActive Filters: file name **/index*.*\n';
