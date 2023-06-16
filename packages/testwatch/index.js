@@ -220,8 +220,7 @@ ${Object.entries(this.#currentCommands)
   }
 
   async run() {
-    await this.#runTests();
-    await once(this.#emitter, 'drained');
+    await Promise.all([once(this.#emitter, 'drained'), this.#runTests()]);
     this.#emitter.on('drained', () => this.#compactHelp());
     this.#help();
     for await (const data of on(process.stdin, 'data')) {

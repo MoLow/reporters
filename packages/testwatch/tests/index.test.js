@@ -156,6 +156,17 @@ describe('testwatch', { concurrency: true, skip: !isSupported ? 'unsupported nod
     });
 
     describe('files filter', () => {
+      it('should not exit if no test found on first run', async () => {
+        const { outputs, stderr } = await spawnInteractive('q', ['notexist']);
+        const activeFilters = '\nActive Filters: file name **/notexist*.*\n';
+        const notFound = '\nNo files found for pattern **/notexist*.*';
+        assert.strictEqual(stderr, '');
+        assert.deepStrictEqual(outputs, [
+          '',
+          `${notFound}\n${activeFilters}${mainMenuWithFilters}\n`,
+        ]);
+      });
+
       it('should set first argument as file filter', async () => {
         const { outputs, stderr } = await spawnInteractive('q', ['ind']);
         const activeFilters = '\nActive Filters: file name **/ind*.*\n';
