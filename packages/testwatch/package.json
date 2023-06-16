@@ -10,7 +10,8 @@
   ],
   "bin": "./index.js",
   "scripts": {
-    "test": "node --test-reporter=spec --test-reporter-destination=stdout --test-reporter=../github/index.js --test-reporter-destination=stdout --test tests/index.test.js"
+    "test": "node --test-reporter=spec --test-reporter-destination=stdout --test-reporter=../github/index.js --test-reporter-destination=stdout --test tests/index.test.js",
+    "test:watch": "testwatch tests/index"
   },
   "bugs": {
     "url": "https://github.com/MoLow/reporters/issues"
