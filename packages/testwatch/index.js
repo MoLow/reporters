@@ -57,13 +57,13 @@ class REPL {
   #emitter = new EventEmitter();
 
   async #runTests() {
+    this.#clear();
     this.#controller.abort();
     this.#controller = new AbortController();
     const filter = this.#filesFilter ? `**/${this.#filesFilter}*.*` : '**/?(*.)+(spec|test).[jt]s';
     const files = await glob(filter, { ignore: 'node_modules/**' });
 
     if (!files.length) {
-      this.#clear();
       process.stdout.write(chalk.red(`\nNo files found for pattern ${filter}\n`));
       this.#emitter.emit('drained');
       return;
