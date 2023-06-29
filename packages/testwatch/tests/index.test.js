@@ -89,17 +89,17 @@ describe('testwatch', { concurrency: true, skip: !isSupported ? 'unsupported nod
   it('should run all tests on initialization', async () => {
     const { outputs, stderr } = await spawnInteractive('q');
     assert.strictEqual(stderr, '');
-    assert.deepStrictEqual(outputs, ['', `${tests}\n${mainMenu}\n`]);
+    assert.deepStrictEqual(outputs, ['', '', `${tests}\n${mainMenu}\n`]);
   });
   it('should handle CTR + C', async () => {
     const { outputs, stderr } = await spawnInteractive('\x03');
     assert.strictEqual(stderr, '');
-    assert.deepStrictEqual(outputs, ['', `${tests}\n${mainMenu}\n`]);
+    assert.deepStrictEqual(outputs, ['', '', `${tests}\n${mainMenu}\n`]);
   });
   it('should handle CTR + D', async () => {
     const { outputs, stderr } = await spawnInteractive('\x04');
     assert.strictEqual(stderr, '');
-    assert.deepStrictEqual(outputs, ['', `${tests}\n${mainMenu}\n`]);
+    assert.deepStrictEqual(outputs, ['', '', `${tests}\n${mainMenu}\n`]);
   });
   it('should exit on sigkill', async () => {
     const child = spawn(process.execPath, ['../../index.js'], {
@@ -121,19 +121,21 @@ describe('testwatch', { concurrency: true, skip: !isSupported ? 'unsupported nod
   it('should run all tests on "a"', async () => {
     const { outputs, stderr } = await spawnInteractive('aq');
     assert.strictEqual(stderr, '');
-    assert.deepStrictEqual(outputs, ['', `${tests}\n${mainMenu}`, `${tests}\n${compactMenu}\n`]);
+    assert.deepStrictEqual(outputs, ['', '', `${tests}\n${mainMenu}`, '', `${tests}\n${compactMenu}\n`]);
   });
   it('should run all tests on Enter', async () => {
     const { outputs, stderr } = await spawnInteractive('\rq');
     assert.strictEqual(stderr, '');
-    assert.deepStrictEqual(outputs, ['', `${tests}\n${mainMenu}`, `${tests}\n${compactMenu}\n`]);
+    assert.deepStrictEqual(outputs, ['', '', `${tests}\n${mainMenu}`, '', `${tests}\n${compactMenu}\n`]);
   });
   it('should show full menu on "w" after running tests', async () => {
     const { outputs, stderr } = await spawnInteractive('awq');
     assert.strictEqual(stderr, '');
     assert.deepStrictEqual(outputs, [
       '',
+      '',
       `${tests}\n${mainMenu}`,
+      '',
       `${tests}\n${compactMenu}\n${clearLines}${mainMenu}\n`,
     ]);
   });
@@ -145,8 +147,10 @@ describe('testwatch', { concurrency: true, skip: !isSupported ? 'unsupported nod
       assert.strictEqual(stderr, '');
       assert.deepStrictEqual(outputs, [
         '',
+        '',
         `${tests}\n${mainMenu}`,
         `${filterTestsPrompt}sub`,
+        '',
         '',
         `${tests
           .replace('✔ j - sum (*ms)', '﹣ j - sum (*ms) # SKIP')
@@ -173,6 +177,7 @@ describe('testwatch', { concurrency: true, skip: !isSupported ? 'unsupported nod
         assert.strictEqual(stderr, '');
         assert.deepStrictEqual(outputs, [
           '',
+          '',
           `${testsRun[1]}\n${activeFilters}${mainMenuWithFilters}\n`,
         ]);
       });
@@ -183,8 +188,10 @@ describe('testwatch', { concurrency: true, skip: !isSupported ? 'unsupported nod
         assert.strictEqual(stderr, '');
         assert.deepStrictEqual(outputs, [
           '',
+          '',
           `${tests}\n${mainMenu}`,
           `${filterFilesPrompt}index`,
+          '',
           '',
           `${testsRun[1]}\n${compactMenu}\n${clearLines}${activeFilters}${mainMenuWithFilters}\n`,
         ]);
@@ -196,8 +203,10 @@ describe('testwatch', { concurrency: true, skip: !isSupported ? 'unsupported nod
         assert.strictEqual(stderr, '');
         assert.deepStrictEqual(outputs, [
           '',
+          '',
           `${tests}\n${mainMenu}`,
           `${filterFilesPrompt}ind`,
+          '',
           '',
           `${testsRun[1]}\n${compactMenu}\n${clearLines}${activeFilters}${mainMenuWithFilters}\n`,
         ]);
@@ -207,8 +216,8 @@ describe('testwatch', { concurrency: true, skip: !isSupported ? 'unsupported nod
       const { outputs, stderr } = await spawnInteractive(['p', 'index', '\r', 't', 'sum', '\r', 'w', 'q'].join(''));
       const activeFilters = '\nActive Filters: file name **/index*.*, test name /sum/\n';
       assert.strictEqual(stderr, '');
-      assert.strictEqual(outputs.length, 8);
-      assert.strictEqual(outputs[7], `${testsRun[1].replace('✔ index - subtraction (*ms)', '﹣ index - subtraction (*ms) # SKIP')}\n${compactMenu}\n${clearLines}${activeFilters}${mainMenuWithFilters}\n`);
+      assert.strictEqual(outputs.length, 11);
+      assert.strictEqual(outputs[10], `${testsRun[1].replace('✔ index - subtraction (*ms)', '﹣ index - subtraction (*ms) # SKIP')}\n${compactMenu}\n${clearLines}${activeFilters}${mainMenuWithFilters}\n`);
     });
 
     it('should mention when no files found', async () => {
@@ -217,6 +226,7 @@ describe('testwatch', { concurrency: true, skip: !isSupported ? 'unsupported nod
       const notFound = '\nNo files found for pattern **/nothing*.*';
       assert.strictEqual(stderr, '');
       assert.deepStrictEqual(outputs, [
+        '',
         '',
         `${tests}\n${mainMenu}`,
         `${filterFilesPrompt}nothing`,
@@ -228,12 +238,12 @@ describe('testwatch', { concurrency: true, skip: !isSupported ? 'unsupported nod
     it('should clear filters on "c"', async () => {
       const { outputs, stderr } = await spawnInteractive(['p', 'index', '\r', 'w', 't', 'sum', '\r', 'w', 'c', 'w', 'q'].join(''));
       assert.strictEqual(stderr, '');
-      assert.strictEqual(outputs.length, 9);
+      assert.strictEqual(outputs.length, 13);
 
-      assert.match(outputs[4], /Active Filters: file name \*\*\/index\*\.\*/);
-      assert.match(outputs[5], /Active Filters: file name \*\*\/index\*\.\*/);
-      assert.match(outputs[7], /Active Filters: file name \*\*\/index\*\.\*, test name \/sum\//);
-      assert.strictEqual(outputs[8], `${tests}\n${compactMenu}\n${clearLines}${mainMenu}\n`);
+      assert.match(outputs[6], /Active Filters: file name \*\*\/index\*\.\*/);
+      assert.match(outputs[7], /Active Filters: file name \*\*\/index\*\.\*/);
+      assert.match(outputs[10], /Active Filters: file name \*\*\/index\*\.\*, test name \/sum\//);
+      assert.strictEqual(outputs[12], `${tests}\n${compactMenu}\n${clearLines}${mainMenu}\n`);
     });
 
     it('prompt ESC should preserve previous state', async () => {
@@ -242,8 +252,10 @@ describe('testwatch', { concurrency: true, skip: !isSupported ? 'unsupported nod
       const activeFilters = '\nActive Filters: file name **/filter*.*\n';
       assert.deepStrictEqual(outputs, [
         '',
+        '',
         `${tests}\n${mainMenu}`,
         `${filterFilesPrompt}`,
+        '',
         '',
         `${tests}\n${compactMenu}`,
         `${filterFilesPrompt}filter`,
@@ -255,12 +267,12 @@ describe('testwatch', { concurrency: true, skip: !isSupported ? 'unsupported nod
       ]);
     });
 
-    it('backspace shoud remove last character', async () => {
+    it('backspace should remove last character', async () => {
       const backspace = '\x7f';
       const { outputs, stderr } = await spawnInteractive(['p', `noth123${backspace}${backspace}ing`, '\r', 'w', 'q'].join(''));
       assert.strictEqual(stderr, '');
-      assert.strictEqual(outputs.length, 5);
-      assert.match(outputs[4], /No files found for pattern \*\*\/noth1ing\*\.\*/);
+      assert.strictEqual(outputs.length, 6);
+      assert.match(outputs[5], /No files found for pattern \*\*\/noth1ing\*\.\*/);
     });
   });
 });
