@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/MoLow/reporters/compare/testwatch-v1.2.0...testwatch-v1.2.1) (2023-07-02)
+
+
+### Bug Fixes
+
+* clear screen before tests ([3d3f67c](https://github.com/MoLow/reporters/commit/3d3f67cddd7047c857e001066021933eb1381ec3))
+
 ## [1.2.0](https://github.com/MoLow/reporters/compare/testwatch-v1.1.1...testwatch-v1.2.0) (2023-06-19)
 
 
