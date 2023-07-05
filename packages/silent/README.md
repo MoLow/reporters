@@ -21,4 +21,3 @@ node --test --test-reporter=@reporters/silent
 
 the output will be empty, but the tests will still run,
 and the exit code will be 0 if all tests pass, and 1 if any test fails.
-

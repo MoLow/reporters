@@ -50,8 +50,8 @@ jobs:
           node-version: lts/*
           registry-url: 'https://registry.npmjs.org'
       - run: yarn install
-      - run: node -p "PACKAGE_NAME='${{ matrix.package }}'.split('/')[1]" >> "$GITHUB_OUTPUT"
-        id: package-name
+      - id: package-name
+        run: node -p "PACKAGE_NAME='${{ matrix.package }}'.split('/')[1]" >> $GITHUB_OUTPUT
       - run: npm publish --provenance --access public
         working-directory: packages/${{ steps.package-name.outputs.PACKAGE_NAME }}
         env:

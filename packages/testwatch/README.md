@@ -22,5 +22,3 @@ Run `testwatch` in the root of your project.
 ```bash
 testwatch
 ```
-
-
