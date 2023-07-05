@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/MoLow/reporters/compare/bail-v1.1.0...bail-v1.2.0) (2023-07-05)
+
+
+### Features
+
+* release all packages ([d91a13e](https://github.com/MoLow/reporters/commit/d91a13e185d6981f415cfbac71fb7fc36e870328))
+
 ## [1.1.0](https://github.com/MoLow/reporters/compare/bail-v1.0.0...bail-v1.1.0) (2023-07-05)
 
 
