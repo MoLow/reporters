@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.4.0](https://github.com/MoLow/reporters/compare/testwatch-v1.3.0...testwatch-v1.4.0) (2023-07-05)
+
+
+### Features
+
+* add @reporters/repl package ([b66b525](https://github.com/MoLow/reporters/commit/b66b525c78e93e96d04b19a2e846ab040078ace7))
+* add test:watch script ([4357fbd](https://github.com/MoLow/reporters/commit/4357fbde5f337cfd39226497f8ce0f6760f8a62c))
+* change default file filter ([5968235](https://github.com/MoLow/reporters/commit/596823529cd9a86e5eeada0523825fa215e49efe))
+* fix @reporters/bail docs ([32fd66b](https://github.com/MoLow/reporters/commit/32fd66bdf788a2d6067bac72cee9fbc50b2d76e3))
+* publish with provenance ([d3d6446](https://github.com/MoLow/reporters/commit/d3d6446368f5534938e935142985facdaa60625e))
+
+
+### Bug Fixes
+
+* clear screen before tests ([3d3f67c](https://github.com/MoLow/reporters/commit/3d3f67cddd7047c857e001066021933eb1381ec3))
+* don't exit when no tests on initial run ([66bcc2b](https://github.com/MoLow/reporters/commit/66bcc2bc6436b544900cfbceb4bbfb0d93973490))
+* increas maximum listeners of event emitters ([b16d2ab](https://github.com/MoLow/reporters/commit/b16d2ab3b55554e1aaa9b9ca2222254bac364803))
+* support partial file name filter ([2b3f0ab](https://github.com/MoLow/reporters/commit/2b3f0abe0be37450c7b9189667ad47d4d39a4252))
+
 ## [1.3.0](https://github.com/MoLow/reporters/compare/testwatch-v1.2.1...testwatch-v1.3.0) (2023-07-05)
 
 

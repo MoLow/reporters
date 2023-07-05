@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.3.0](https://github.com/MoLow/reporters/compare/silent-v1.2.0...silent-v1.3.0) (2023-07-05)
+
+
+### Features
+
+* add silent reporter ([#27](https://github.com/MoLow/reporters/issues/27)) ([d200b78](https://github.com/MoLow/reporters/commit/d200b7878384a2b8c930789418286d884eb49292))
+* publish with provenance ([d3d6446](https://github.com/MoLow/reporters/commit/d3d6446368f5534938e935142985facdaa60625e))
+* report node 20 features ([c99a76c](https://github.com/MoLow/reporters/commit/c99a76c0f6bef75abb2c053c82c88448b0c82690))
+
 ## [1.2.0](https://github.com/MoLow/reporters/compare/silent-v1.1.0...silent-v1.2.0) (2023-07-05)
 
 
