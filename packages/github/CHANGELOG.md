@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/MoLow/reporters/compare/github-v1.2.0...github-v1.3.0) (2023-07-05)
+
+
+### Features
+
+* publish with provenance ([6ee1e46](https://github.com/MoLow/reporters/commit/6ee1e46040329edeb0f40f753093b6952984f001))
+
 ## [1.2.0](https://github.com/MoLow/reporters/compare/github-v1.1.3...github-v1.2.0) (2023-05-30)
 
 
