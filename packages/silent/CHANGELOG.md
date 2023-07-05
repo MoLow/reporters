@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.2.0](https://github.com/MoLow/reporters/compare/silent-v1.1.0...silent-v1.2.0) (2023-07-05)
+
+
+### Features
+
+* publish all packages ([d04797d](https://github.com/MoLow/reporters/commit/d04797d3eae134550daf6701501f541f2c7b32a6))
+* publish all packages ([cb1f392](https://github.com/MoLow/reporters/commit/cb1f39276dbb835c70b459ee07ec851dcb6b935a))
+* publish with provenance ([d3d6446](https://github.com/MoLow/reporters/commit/d3d6446368f5534938e935142985facdaa60625e))
+* release all packages ([d91a13e](https://github.com/MoLow/reporters/commit/d91a13e185d6981f415cfbac71fb7fc36e870328))
+
 ## [1.4.0](https://github.com/MoLow/reporters/compare/silent-v1.3.0...silent-v1.4.0) (2023-07-05)
 
 
