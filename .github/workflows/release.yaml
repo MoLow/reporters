@@ -51,6 +51,6 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
       - run: yarn install
       - run: npm publish --provenance --access public
-        working-directory: ${{ matrix.package }}
+        working-directory: packages/${{ matrix.package }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -21,3 +21,4 @@ node --test \
   --test-reporter=@reporters/bail --test-reporter-destination=stderr \
   --test-reporter=spec --test-reporter-destination=stdout
 ```
+
