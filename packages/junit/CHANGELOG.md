@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/MoLow/reporters/compare/junit-v1.1.0...junit-v1.2.0) (2023-07-05)
+
+
+### Features
+
+* publish with provenance ([80224ea](https://github.com/MoLow/reporters/commit/80224ea5eda41d870bcc6ef208cdd6116604ab41))
+
 ## [1.1.0](https://github.com/MoLow/reporters/compare/junit-v1.0.4...junit-v1.1.0) (2023-05-30)
 
 
