@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/MoLow/reporters/compare/testwatch-v1.4.0...testwatch-v1.5.0) (2023-07-05)
+
+
+### Features
+
+* publish all packages ([cb1f392](https://github.com/MoLow/reporters/commit/cb1f39276dbb835c70b459ee07ec851dcb6b935a))
+
 ## [1.4.0](https://github.com/MoLow/reporters/compare/testwatch-v1.3.0...testwatch-v1.4.0) (2023-07-05)
 
 
