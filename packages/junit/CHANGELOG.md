@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/MoLow/reporters/compare/junit-v1.3.0...junit-v1.4.0) (2023-07-05)
+
+
+### Features
+
+* publish all packages ([cb1f392](https://github.com/MoLow/reporters/commit/cb1f39276dbb835c70b459ee07ec851dcb6b935a))
+
 ## [1.3.0](https://github.com/MoLow/reporters/compare/junit-v1.2.0...junit-v1.3.0) (2023-07-05)
 
 
