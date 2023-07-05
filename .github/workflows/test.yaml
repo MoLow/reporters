@@ -3,7 +3,7 @@ on:
   pull_request:
     types: [labeled, opened, synchronize, reopened]
   push:
-    branches: [main]
+    branches: [main, release-please--branches--main]
 
 jobs:
   tests:
