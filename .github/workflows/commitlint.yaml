@@ -2,8 +2,7 @@ name: Conventional Commit Linter
 
 on:
   push:
-    branches:
-      - main
+    branches: [main, release-please--branches--main]
   pull_request:
 
 jobs:
