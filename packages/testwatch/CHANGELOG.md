@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/MoLow/reporters/compare/testwatch-v1.2.1...testwatch-v1.3.0) (2023-07-05)
+
+
+### Features
+
+* publish with provenance ([585447f](https://github.com/MoLow/reporters/commit/585447f194702332f831aa9ab405be4861a61245))
+
 ## [1.2.1](https://github.com/MoLow/reporters/compare/testwatch-v1.2.0...testwatch-v1.2.1) (2023-07-02)
 
 
