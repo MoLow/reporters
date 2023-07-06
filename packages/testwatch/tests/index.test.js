@@ -59,11 +59,8 @@ async function spawnInteractive(commandSequence = 'q', args = []) {
     env: {}, cwd: path.resolve(__dirname, 'fixtures'),
   });
   child.stdin.setEncoding('utf8');
-  let writing = false;
   let pending = promiseDefer();
   async function writeInput() {
-    if (writing) return;
-    writing = true;
     for (const char of commandSequence) {
       child.stdin.cork();
       child.stdin.write(`${char}`);
@@ -76,6 +73,7 @@ async function spawnInteractive(commandSequence = 'q', args = []) {
       }
     }
   }
+  pending.promise.then(writeInput);
   child.stderr.setEncoding('utf8');
   child.stderr.on('data', (data) => { stderr += data; });
   child.stdout.setEncoding('utf8');
@@ -83,11 +81,9 @@ async function spawnInteractive(commandSequence = 'q', args = []) {
     debug(chalk.gray(data));
     stdout += data;
     pending.stdout += data;
-    if (pending.stdout.includes(mainMenu)
-        || pending.stdout.includes(mainMenuWithFilters)
-        || pending.stdout.includes(compactMenu)) {
+    const s = pending.stdout;
+    if (s.includes(mainMenu) || s.includes(mainMenuWithFilters) || s.includes(compactMenu)) {
       pending.resolve();
-      writeInput();
     }
   });
 
