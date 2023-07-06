@@ -1,9 +1,9 @@
 const { describe, it } = require('node:test');
 const { spawn } = require('node:child_process');
 const { once } = require('node:events');
-const { setTimeout } = require('node:timers/promises');
 const assert = require('node:assert');
 const path = require('node:path');
+const chalk = require('chalk');
 const { isSupported } = require('../nodeVersion');
 
 const clear = '\x1Bc';
@@ -34,6 +34,23 @@ Filter Test
 
  pattern › `;
 const filterFilesPrompt = filterTestsPrompt.replace('test', 'file').replace('Test', 'File');
+const debugOutput = process.env.DEBUG || process.argv.includes('--debug');
+
+function debug(str) {
+  if (debugOutput) {
+    const delimiter = chalk.bgWhite('--CLEAR--');
+    const CLEAR_LINES = chalk.bgWhite('--CLEAR_LINES--');
+    const postfix = str.endsWith('\n') ? '' : '\n';
+    // eslint-disable-next-line no-loop-func, no-plusplus
+    process.stdout.write(str.replaceAll(clear, () => chalk.bold.white(`${delimiter}\n`)).replaceAll(clearLines, CLEAR_LINES) + postfix);
+  }
+}
+
+function promiseDefer() {
+  let resolve;
+  const promise = new Promise((res) => { resolve = res; });
+  return { resolve, promise, stdout: '' };
+}
 
 async function spawnInteractive(commandSequence = 'q', args = []) {
   let stderr = '';
@@ -43,6 +60,7 @@ async function spawnInteractive(commandSequence = 'q', args = []) {
   });
   child.stdin.setEncoding('utf8');
   let writing = false;
+  let pending = promiseDefer();
   async function writeInput() {
     if (writing) return;
     writing = true;
@@ -50,10 +68,11 @@ async function spawnInteractive(commandSequence = 'q', args = []) {
       child.stdin.cork();
       child.stdin.write(`${char}`);
       child.stdin.uncork();
-      if (char === 'a' || char === 'c' || char === '\r' || char === esc) {
-        // wait for tests to run before writing the next command
+      debug(chalk.yellow(`writing ${char.replaceAll('\r', 'ENTER')} to stdin`));
+      if (char === 'a' || char === 'c' || char === 'w' || char === '\r' || char === esc) {
+        pending = promiseDefer();
         // eslint-disable-next-line no-await-in-loop
-        await setTimeout(1100);
+        await pending.promise;
       }
     }
   }
@@ -61,8 +80,13 @@ async function spawnInteractive(commandSequence = 'q', args = []) {
   child.stderr.on('data', (data) => { stderr += data; });
   child.stdout.setEncoding('utf8');
   child.stdout.on('data', (data) => {
+    debug(chalk.gray(data));
     stdout += data;
-    if (stdout.includes(mainMenu) || stdout.includes(mainMenuWithFilters)) {
+    pending.stdout += data;
+    if (pending.stdout.includes(mainMenu)
+        || pending.stdout.includes(mainMenuWithFilters)
+        || pending.stdout.includes(compactMenu)) {
+      pending.resolve();
       writeInput();
     }
   });
