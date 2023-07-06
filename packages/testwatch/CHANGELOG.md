@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/MoLow/reporters/compare/testwatch-v1.3.0...testwatch-v1.3.1) (2023-07-06)
+
+
+### Bug Fixes
+
+* listen to `test:enqueue` event ([7c4a5b5](https://github.com/MoLow/reporters/commit/7c4a5b5435ee7cdaa2cd932fbd3c850ca8b1dcc2))
+
 ## [1.3.0](https://github.com/MoLow/reporters/compare/testwatch-v1.2.1...testwatch-v1.3.0) (2023-07-05)
 
 
