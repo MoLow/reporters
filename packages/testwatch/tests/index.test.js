@@ -99,7 +99,6 @@ async function spawnInteractive(commandSequence = 'q', args = []) {
       });
     });
     child.on('error', (code, signal) => {
-      /* c8 ignore next 5 */
       const outputs = stdout.replace(/\(.*ms\)/g, '(*ms)').split(clear);
       // eslint-disable-next-line prefer-promise-reject-errors
       reject({
