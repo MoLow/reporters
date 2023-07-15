@@ -9,6 +9,7 @@
     "reporters"
   ],
   "bin": "./index.js",
+  "files": ["./index.js", "nodeVersion.js"],
   "scripts": {
     "test": "node --test-reporter=spec --test-reporter-destination=stdout --test-reporter=../github/index.js --test-reporter-destination=stdout --test tests/index.test.js",
     "test:watch": "testwatch tests/index"
