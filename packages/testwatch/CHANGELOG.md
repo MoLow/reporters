@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.2](https://github.com/MoLow/reporters/compare/testwatch-v1.3.1...testwatch-v1.3.2) (2023-07-16)
+
+
+### Bug Fixes
+
+* deflake tests ([43aeba4](https://github.com/MoLow/reporters/commit/43aeba4b57a0e1712f2812abcf427d5aaf9172be))
+* remove unnecessary files from the package ([1e01453](https://github.com/MoLow/reporters/commit/1e01453535b22911cd024a518794656799e90d3b))
+
 ## [1.3.1](https://github.com/MoLow/reporters/compare/testwatch-v1.3.0...testwatch-v1.3.1) (2023-07-06)
 
 
