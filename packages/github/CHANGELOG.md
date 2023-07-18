@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/MoLow/reporters/compare/github-v1.3.0...github-v1.4.0) (2023-07-18)
+
+
+### Features
+
+* support node 18 ([02c8957](https://github.com/MoLow/reporters/commit/02c8957ffca3cb8376f7ad5a94f4627c70b7f8e5))
+
 ## [1.3.0](https://github.com/MoLow/reporters/compare/github-v1.2.0...github-v1.3.0) (2023-07-05)
 
 
