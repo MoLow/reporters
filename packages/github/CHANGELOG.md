@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/MoLow/reporters/compare/github-v1.4.0...github-v1.4.1) (2023-07-19)
+
+
+### Bug Fixes
+
+* more accurate counting ([1949140](https://github.com/MoLow/reporters/commit/19491406b769f03555b3ae352ed9838e2154c855))
+
 ## [1.4.0](https://github.com/MoLow/reporters/compare/github-v1.3.0...github-v1.4.0) (2023-07-18)
 
 
