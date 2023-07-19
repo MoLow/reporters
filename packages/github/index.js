@@ -13,8 +13,11 @@ const isFile = (name) => name?.startsWith(WORKSPACE);
 const getFilePath = (name) => (isFile(name) ? path.relative(WORKSPACE, require.resolve(name) ?? '') : null);
 
 const parseStack = (error, file) => {
-  const stackLines = (error?.stack ?? '').split(/\r?\n/);
-  const line = stackLines.find((l) => l.includes(file)) ?? stackLines[0];
+  const err = error?.code === 'ERR_TEST_FAILURE' ? error?.cause : error;
+  const stackLines = (err?.stack ?? '').split(/\r?\n/);
+  let line = stackLines.find((l) => l.includes(file));
+
+  ([line] = stackLines);
   return line ? stack.parseLine(line) : null;
 };
 

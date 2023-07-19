@@ -12,11 +12,11 @@ const GITHUB_STEP_SUMMARY = join(tmpdir(), 'github-actions-test-reporter');
 writeFileSync(GITHUB_STEP_SUMMARY, '');
 
 describe('github reporter', () => {
-  const child = spawnSync(process.execPath, ['--test-reporter', './index.js', '../../tests/example'], {
-    env: { GITHUB_ACTIONS: true, GITHUB_STEP_SUMMARY, GITHUB_WORKSPACE: path.resolve(__dirname, '../../../') },
-  });
+  test('spawn with reporter', () => {
+    const child = spawnSync(process.execPath, ['--test-reporter', './index.js', '../../tests/example'], {
+      env: { GITHUB_ACTIONS: true, GITHUB_STEP_SUMMARY, GITHUB_WORKSPACE: path.resolve(__dirname, '../../../') },
+    });
 
-  test('spwan with reporter', () => {
     assert.strictEqual(child.stderr?.toString(), '');
     compareLines(child.stdout?.toString(), output.stdout);
     compareLines(readFileSync(GITHUB_STEP_SUMMARY).toString(), output.summary);
