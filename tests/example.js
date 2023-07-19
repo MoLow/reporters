@@ -1,4 +1,5 @@
 const { describe, it, test } = require('node:test');
+const assert = require('node:assert');
 
 describe('tests', () => {
   it('is ok', () => {});
@@ -6,6 +7,7 @@ describe('tests', () => {
     throw new Error('this is an error');
   });
   test('is a diagnostic', async (t) => { t.diagnostic('this is a diagnostic'); });
+  test('should fail', () => { assert(false); });
 });
 
 describe('more tests', () => {
