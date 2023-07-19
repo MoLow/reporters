@@ -14,7 +14,13 @@ const getFilePath = (name) => (isFile(name) ? path.relative(WORKSPACE, require.r
 
 const parseStack = (error, file) => {
   const stackLines = (error?.stack ?? '').split(/\r?\n/);
-  const line = stackLines.find((l) => l.includes(file)) ?? stackLines[0];
+  let line = stackLines.find((l) => l.includes(file));
+  // When an error is thrown inside of `test` or `it`, the stack trace is stripped away.
+  // It is available as `error.cause` though, so try again with that.
+  if (line === undefined && error.cause instanceof Error) {
+    return parseStack(error.cause, file);
+  }
+  ([line] = stackLines);
   return line ? stack.parseLine(line) : null;
 };
 
