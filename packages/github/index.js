@@ -75,7 +75,6 @@ module.exports = async function githubReporter(source) {
         break;
     }
   }
-  core.startGroup(`Test results (${counter.pass} passed, ${counter.fail} failed)`);
   const formatedDiagnostics = diagnostics.map((d) => {
     const [key, ...rest] = d.split(' ');
     const value = rest.join(' ');
@@ -84,6 +83,7 @@ module.exports = async function githubReporter(source) {
       DIAGNOSTIC_VALUES[key] ? DIAGNOSTIC_VALUES[key](value) : value,
     ];
   });
+  core.startGroup(`Test results (${formatedDiagnostics.find(([key]) => key === DIAGNOSTIC_KEYS.pass)?.[1] ?? counter.pass} passed, ${formatedDiagnostics.find(([key]) => key === DIAGNOSTIC_KEYS.fail)?.[1] ?? counter.fail} failed)`);
   core.notice(formatedDiagnostics.map((d) => d.join(': ')).join(EOL));
   core.endGroup();
 

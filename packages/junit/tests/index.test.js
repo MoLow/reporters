@@ -3,10 +3,9 @@ const { spawnSync } = require('child_process');
 const assert = require('assert');
 const { compareLines } = require('../../../tests/utils');
 const reporter = require('../index');
+const output = require('./output');
 
 test('spwan with reporter', () => {
-  // eslint-disable-next-line import/no-dynamic-require, global-require
-  const output = require(`./output.${process.version.split('.')[0]}`);
   const child = spawnSync(process.execPath, ['--test-reporter', './index.js', '../../tests/example'], { env: {} });
   assert.strictEqual(child.stderr?.toString(), '');
   compareLines(child.stdout?.toString(), output.stdout);

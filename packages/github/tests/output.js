@@ -16,7 +16,7 @@ module.exports = {
 ::debug::completed running is skipped
 ::debug::starting to run is a todo
 ::debug::completed running is a todo
-::group::Test results \\(6 passed, 2 failed\\)
+::group::Test results \\(3 passed, 1 failed\\)
 ::notice::Total Tests: 6%0ASuites 📂: 2%0APassed ✅: 3%0AFailed ❌: 1%0ACanceled 🚫: 0%0ASkipped ⏭️: 1%0ATodo 📝: 1%0ADuration 🕐: .*ms
 ::endgroup::
 `,
