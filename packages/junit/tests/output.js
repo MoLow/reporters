@@ -22,14 +22,8 @@ module.exports = {
 \t\t\t</failure>
 \t\t</testcase>
 \t\t<testcase name="is a diagnostic" time=".*" classname="test"/>
-\t\t<testcase name="should fail" time=".*" classname="test" failure="The expression evaluated to a falsy value:
-
-assert\\(false\\)
-">
-\t\t<failure type="testCodeFailure" message="The expression evaluated to a falsy value:
-
-assert\\(false\\)
-">
+\t\t<testcase name="should fail" time=".*" classname="test" failure="The expression evaluated to a falsy value:  assert\\(false\\)">
+\t\t<failure type="testCodeFailure" message="The expression evaluated to a falsy value:  assert\\(false\\)">
 \\[Error \\[ERR_TEST_FAILURE\\]: The expression evaluated to a falsy value:
 
 assert\\(false\\)
