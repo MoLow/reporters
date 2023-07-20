@@ -13,6 +13,9 @@
     "@actions/core": "^1.10.0",
     "stack-utils": "^2.0.6"
   },
+  "files": [
+    "./index.js"
+  ],
   "scripts": {
     "test": "node --test-reporter=spec --test-reporter-destination=stdout  --test-reporter=./index.js --test-reporter-destination=stdout --test"
   },

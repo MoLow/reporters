@@ -9,6 +9,9 @@
     "reporter",
     "reporters"
   ],
+  "files": [
+    "./index.js"
+  ],
   "scripts": {
     "test": "node --test-reporter=spec --test-reporter-destination=stdout --test-reporter=../github/index.js --test-reporter-destination=stdout --test"
   },
