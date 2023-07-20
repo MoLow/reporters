@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/MoLow/reporters/compare/silent-v1.2.0...silent-v1.2.1) (2023-07-20)
+
+
+### Build System
+
+* exclude redundant files ([032eb2f](https://github.com/MoLow/reporters/commit/032eb2fbb1520b3c259e2a80eb38280826e206ef))
+
 ## [1.2.0](https://github.com/MoLow/reporters/compare/silent-v1.1.0...silent-v1.2.0) (2023-07-05)
 
 

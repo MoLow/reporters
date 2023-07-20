@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.5.0](https://github.com/MoLow/reporters/compare/github-v1.4.1...github-v1.5.0) (2023-07-20)
+
+
+### Features
+
+* remove redundant subtests annotation ([6f22533](https://github.com/MoLow/reporters/commit/6f2253378c7ecdcbb5c38aac77dfd13b1662e0d6))
+
+
+### Bug Fixes
+
+* line reporting for ERR_TEST_FAILURE ([4fb29f3](https://github.com/MoLow/reporters/commit/4fb29f3fb8a470af8d1a9549adc7d91f465cad91))
+* stacktrace misslocated ([33068bf](https://github.com/MoLow/reporters/commit/33068bf98f53f7d6d28678b63d58b4c9b04d8ece))
+
+
+### Documentation
+
+* update screenshots ([0913bf3](https://github.com/MoLow/reporters/commit/0913bf37ce83a0a240c0f28b59a1647741212612))
+
+
+### Build System
+
+* exclude redundant files ([032eb2f](https://github.com/MoLow/reporters/commit/032eb2fbb1520b3c259e2a80eb38280826e206ef))
+
 ## [1.4.1](https://github.com/MoLow/reporters/compare/github-v1.4.0...github-v1.4.1) (2023-07-19)
 
 
