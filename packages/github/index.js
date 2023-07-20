@@ -53,12 +53,14 @@ module.exports = async function githubReporter(source) {
         core.debug(`completed running ${event.data.name}`);
         break;
       case 'test:fail': {
-        const error = util.inspect(
-          event.data.details?.error,
-          { colors: false, breakLength: Infinity },
-        );
-        const location = parseStack(event.data.details?.error, getFilePath(event.data.file));
-        core.error(error, {
+        const error = event.data.details?.error;
+        if (error?.code === 'ERR_TEST_FAILURE' && error?.failureType === 'subtestsFailed') {
+          // this means the failed subtests are already reported
+          // no need to re-annotate the file itself
+          break;
+        }
+        const location = parseStack(error, getFilePath(event.data.file));
+        core.error(util.inspect(error, { colors: false, breakLength: Infinity }), {
           file: location?.file ?? getFilePath(event.data.file),
           startLine: location?.line,
           startColumn: location?.column,
