@@ -9,7 +9,6 @@ module.exports = {
 ::notice file=tests/example.js::this is a diagnostic
 ::debug::starting to run should fail
 ::error title=should fail,file=tests/example.js,line=10,col=31::\\[Error \\[ERR_TEST_FAILURE\\]: The expression evaluated to a falsy value:%0A%0A  assert\\(false\\)%0A\\] {%0A  failureType: 'testCodeFailure',%0A  cause: AssertionError \\[ERR_ASSERTION\\]: The expression evaluated to a falsy value:%0A  %0A    assert\\(false\\)%0A  %0A      at TestContext.<anonymous> (.*/example.js:10:31).*
-::error title=tests,file=tests/example.js::\\[Error \\[ERR_TEST_FAILURE\\]: 2 subtests failed\\] { failureType: 'subtestsFailed', cause: '2 subtests failed', code: 'ERR_TEST_FAILURE' }
 ::debug::starting to run more tests
 ::debug::starting to run is ok
 ::debug::completed running is ok
