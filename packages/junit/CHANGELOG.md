@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.2.2](https://github.com/MoLow/reporters/compare/junit-v1.2.1...junit-v1.2.2) (2023-07-20)
+
+
+### Bug Fixes
+
+* line reporting for ERR_TEST_FAILURE ([4fb29f3](https://github.com/MoLow/reporters/commit/4fb29f3fb8a470af8d1a9549adc7d91f465cad91))
+* remove newline from XML properties ([999a1c3](https://github.com/MoLow/reporters/commit/999a1c30528059537c98a2a2801a6f5d34d29db7))
+
+
+### Build System
+
+* exclude redundant files ([032eb2f](https://github.com/MoLow/reporters/commit/032eb2fbb1520b3c259e2a80eb38280826e206ef))
+
 ## [1.2.1](https://github.com/MoLow/reporters/compare/junit-v1.2.0...junit-v1.2.1) (2023-07-19)
 
 

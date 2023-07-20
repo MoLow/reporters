@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.1.1](https://github.com/MoLow/reporters/compare/bail-v1.1.0...bail-v1.1.1) (2023-07-20)
+
+
+### Documentation
+
+* update screenshots ([0913bf3](https://github.com/MoLow/reporters/commit/0913bf37ce83a0a240c0f28b59a1647741212612))
+
+
+### Build System
+
+* exclude redundant files ([032eb2f](https://github.com/MoLow/reporters/commit/032eb2fbb1520b3c259e2a80eb38280826e206ef))
+
 ## [1.1.0](https://github.com/MoLow/reporters/compare/bail-v1.0.0...bail-v1.1.0) (2023-07-05)
 
 
