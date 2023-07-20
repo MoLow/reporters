@@ -1,0 +1,129 @@
+# The configurations that used for the recording, feel free to edit them
+config:
+
+  # Specify a command to be executed
+  # like `/bin/bash -l`, `ls`, or any other commands
+  # the default is bash for Linux
+  # or powershell.exe for Windows
+  command: bash -l
+  
+  # Specify the current working directory path
+  # the default is the current working directory path
+  cwd: /Users/moshe/repos/reporters/packages/bail
+  
+  # Export additional ENV variables
+  env:
+    recording: true
+  
+  # Explicitly set the number of columns
+  # or use `auto` to take the current
+  # number of columns of your shell
+  cols: 195
+  
+  # Explicitly set the number of rows
+  # or use `auto` to take the current
+  # number of rows of your shell
+  rows: 32
+  
+  # Amount of times to repeat GIF
+  # If value is -1, play once
+  # If value is 0, loop indefinitely
+  # If value is a positive number, loop n times
+  repeat: 0
+  
+  # Quality
+  # 1 - 100
+  quality: 100
+  
+  # Delay between frames in ms
+  # If the value is `auto` use the actual recording delays
+  frameDelay: auto
+  
+  # Maximum delay between frames in ms
+  # Ignored if the `frameDelay` isn't set to `auto`
+  # Set to `auto` to prevent limiting the max idle time
+  maxIdleTime: 30000
+  
+  # The surrounding frame box
+  # The `type` can be null, window, floating, or solid`
+  # To hide the title use the value null
+  # Don't forget to add a backgroundColor style with a null as type
+  frameBox:
+    type: floating
+    title: Terminalizer
+    style:
+      border: 0px black solid
+      # boxShadow: none
+      # margin: 0px
+  
+  # Add a watermark image to the rendered gif
+  # You need to specify an absolute path for
+  # the image on your machine or a URL, and you can also
+  # add your own CSS styles
+  watermark:
+    imagePath: null
+    style:
+      position: absolute
+      right: 15px
+      bottom: 15px
+      width: 100px
+      opacity: 0.9
+  
+  # Cursor style can be one of
+  # `block`, `underline`, or `bar`
+  cursorStyle: block
+  
+  # Font family
+  # You can use any font that is installed on your machine
+  # in CSS-like syntax
+  fontFamily: "Monaco, Lucida Console, Ubuntu Mono, Monospace"
+  
+  # The size of the font
+  fontSize: 12
+  
+  # The height of lines
+  lineHeight: 1
+  
+  # The spacing between letters
+  letterSpacing: 0
+  
+  # Theme
+  theme:
+    background: "transparent"
+    foreground: "#afafaf"
+    cursor: "#c7c7c7"
+    black: "#232628"
+    red: "#fc4384"
+    green: "#b3e33b"
+    yellow: "#ffa727"
+    blue: "#75dff2"
+    magenta: "#ae89fe"
+    cyan: "#708387"
+    white: "#d5d5d0"
+    brightBlack: "#626566"
+    brightRed: "#ff7fac"
+    brightGreen: "#c8ed71"
+    brightYellow: "#ebdf86"
+    brightBlue: "#75dff2"
+    brightMagenta: "#ae89fe"
+    brightCyan: "#b1c6ca"
+    brightWhite: "#f9f9f4"
+  
+# Records, feel free to edit them
+records:
+  - delay: 0
+    content: "$ cat tests/fixtures/fail.js"
+  - delay: 1000
+    content: "\r\n"
+  - delay: 107
+    content: "\e[32mconst\e[39;00m\e[38;2;187;187;187m \e[39m{\e[38;2;187;187;187m \e[39mdescribe,\e[38;2;187;187;187m \e[39mtest\e[38;2;187;187;187m \e[39m}\e[38;2;187;187;187m \e[39m\e[38;2;102;102;102m=\e[39m\e[38;2;187;187;187m \e[39mrequire(\e[31m'node:test'\e[39m);\r\n\e[32mconst\e[39;00m\e[38;2;187;187;187m \e[39massert\e[38;2;187;187;187m \e[39m\e[38;2;102;102;102m=\e[39m\e[38;2;187;187;187m \e[39mrequire(\e[31m'node:assert'\e[39m);\r\n\r\ndescribe(\e[31m'enforce no concurrent tests'\e[39m,\e[38;2;187;187;187m \e[39m{\e[38;2;187;187;187m \e[39mconcurrent\e[38;2;102;102;102m:\e[39m\e[38;2;187;187;187m \e[39m\e[32mfalse\e[39;00m\e[38;2;187;187;187m \e[39m},\e[38;2;187;187;187m \e[39m()\e[38;2;187;187;187m \e[39m=>\e[38;2;187;187;187m \e[39m{\r\n\e[38;2;187;187;187m  \e[39mtest(\e[31m'fail'\e[39m,\e[38;2;187;187;187m \e[39m\e[32masync\e[39;00m\e[38;2;187;187;187m \e[39m()\e[38;2;187;187;187m \e[39m=>\e[38;2;187;187;187m \e[39massert.fail());\r\n\e[38;2;187;187;187m  \e[39mtest(\e[31m'dont run'\e[39m,\e[38;2;187;187;187m \e[39m\e[32masync\e[39;00m\e[38;2;187;187;187m \e[39m()\e[38;2;187;187;187m \e[39m=>\e[38;2;187;187;187m \e[39m{});\r\n});\r\n"
+  - delay: 6
+    content: '$ '
+  - delay: 1500
+    content: node --test-reporter=spec --test-reporter-destination=stdout  --test-reporter=@reporters/bail --test-reporter-destination=stdout tests/fixtures/fail.js
+  - delay: 562
+    content: "\r\n"
+  - delay: 83
+    content: "▶ enforce no concurrent tests\r\n  \e[31m✖ fail \e[90m(0.607ms)\e[39m\e[39m\r\n    AssertionError [ERR_ASSERTION]: Failed\r\n        at TestContext.<anonymous> \e[90m(/home/repos/reporters/packages/bail/\e[39mtests/fixtures/fail.js:5:35\e[90m)\e[39m\r\n    \e[90m    at Test.runInAsyncScope (node:async_hooks:203:9)\e[39m\r\n    \e[90m    at Test.run (node:internal/test_runner/test:573:25)\e[39m\r\n    \e[90m    at Test.start (node:internal/test_runner/test:486:17)\e[39m\r\n    \e[90m    at node:internal/test_runner/test:808:71\e[39m\r\n    \e[90m    at node:internal/per_context/primordials:481:82\e[39m\r\n        at new Promise (<anonymous>)\r\n    \e[90m    at new SafePromise (node:internal/per_context/primordials:449:29)\e[39m\r\n    \e[90m    at node:internal/per_context/primordials:481:9\e[39m\r\n        at Array.map (<anonymous>) {\r\n      generatedMessage: \e[33mtrue\e[39m,\r\n      code: \e[32m'ERR_ASSERTION'\e[39m,\r\n      actual: \e[90mundefined\e[39m,\r\n      expected: \e[90mundefined\e[39m,\r\n      operator: \e[32m'fail'\e[39m\r\n    }\r\n\r\n\r\n\e[31m✖ Bailing on failed test: fail\e[0m\r\n$ "
+  - delay: 10000
+    content: "\r\n"

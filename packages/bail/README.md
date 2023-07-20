@@ -22,4 +22,6 @@ node --test \
   --test-reporter=spec --test-reporter-destination=stdout
 ```
 
+### Example
 
+![cli](https://raw.githubusercontent.com/MoLow/reporters/dbc82f3e738ac40cc75eafc15946f712ccad9c99/packages/bail/assets/cli.gif)
