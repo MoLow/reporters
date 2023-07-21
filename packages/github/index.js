@@ -10,7 +10,18 @@ const stack = new StackUtils({ cwd: WORKSPACE, internals: StackUtils.nodeInterna
 
 const isFile = (name) => name?.startsWith(WORKSPACE);
 
-const getFilePath = (name) => (isFile(name) ? path.relative(WORKSPACE, require.resolve(name) ?? '') : null);
+function getFilePath(name) {
+  try {
+    const fileURL = new URL(name);
+    if (fileURL.protocol === 'file:') {
+      return fileURL.pathname;
+    }
+  } catch (err) {
+    // swallow the `ERR_INVALID_URL` error; rethrow everything else
+    if (err.code !== 'ERR_INVALID_URL') throw err;
+  }
+  return isFile(name) ? path.relative(WORKSPACE, require.resolve(name) ?? '') : null;
+}
 
 const parseStack = (error, file) => {
   const err = error?.code === 'ERR_TEST_FAILURE' ? error?.cause : error;
