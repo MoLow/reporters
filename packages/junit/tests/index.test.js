@@ -4,11 +4,18 @@ const assert = require('assert');
 const { compareLines } = require('../../../tests/utils');
 const reporter = require('../index');
 const output = require('./output');
+const outputESM = require('./output-esm');
 
 test('spwan with reporter', () => {
   const child = spawnSync(process.execPath, ['--test-reporter', './index.js', '../../tests/example'], { env: {} });
   assert.strictEqual(child.stderr?.toString(), '');
   compareLines(child.stdout?.toString(), output.stdout);
+});
+
+test('spwan with reporter -esm', () => {
+  const child = spawnSync(process.execPath, ['--test-reporter', './index.js', '../../tests/example.mjs'], { env: {} });
+  assert.strictEqual(child.stderr?.toString(), '');
+  compareLines(child.stdout?.toString(), outputESM.stdout);
 });
 
 test('empty', async () => {

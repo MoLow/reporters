@@ -10,13 +10,19 @@ const stack = new StackUtils({ cwd: WORKSPACE, internals: StackUtils.nodeInterna
 
 const isFile = (name) => name?.startsWith(WORKSPACE);
 
-const getFilePath = (name) => (isFile(name) ? path.relative(WORKSPACE, require.resolve(name) ?? '') : null);
+const getRelativeFilePath = (name) => (isFile(name) ? path.relative(WORKSPACE, require.resolve(name) ?? '') : null);
+
+function getFilePath(fileName) {
+  if (fileName.startsWith('file://')) {
+    return getRelativeFilePath(new URL(fileName).pathname);
+  }
+  return getRelativeFilePath(fileName);
+}
 
 const parseStack = (error, file) => {
   const err = error?.code === 'ERR_TEST_FAILURE' ? error?.cause : error;
   const stackLines = (err?.stack ?? '').split(/\r?\n/);
   const line = stackLines.find((l) => l.includes(file)) ?? stackLines[0];
-
   return line ? stack.parseLine(line) : null;
 };
 
@@ -59,9 +65,11 @@ module.exports = async function githubReporter(source) {
           // no need to re-annotate the file itself
           break;
         }
-        const location = parseStack(error, getFilePath(event.data.file));
+        let filePath = getFilePath(event.data.file);
+        const location = parseStack(error, filePath);
+        filePath = getFilePath(location?.file ?? filePath) ?? filePath;
         core.error(util.inspect(error, { colors: false, breakLength: Infinity }), {
-          file: location?.file ?? getFilePath(event.data.file),
+          file: filePath,
           startLine: location?.line,
           startColumn: location?.column,
           title: event.data.name,
