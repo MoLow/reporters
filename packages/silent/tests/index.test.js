@@ -7,3 +7,9 @@ test('spwan with reporter', () => {
   assert.strictEqual(child.stderr?.toString(), '');
   assert.strictEqual(child.stdout?.toString(), '');
 });
+
+test('spwan with reporter - esm', () => {
+  const child = spawnSync(process.execPath, ['--test-reporter', './index.js', '../../tests/example.mjs'], { env: {} });
+  assert.strictEqual(child.stderr?.toString(), '');
+  assert.strictEqual(child.stdout?.toString(), '');
+});

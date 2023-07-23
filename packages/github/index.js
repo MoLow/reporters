@@ -10,24 +10,11 @@ const stack = new StackUtils({ cwd: WORKSPACE, internals: StackUtils.nodeInterna
 
 const isFile = (name) => name?.startsWith(WORKSPACE);
 
-const tryGetFileURL = (name) => {
-  try {
-    const fileURL = new URL(name);
-    return fileURL;
-  } catch (err) {
-    // swallow the `ERR_INVALID_URL` error; rethrow everything else
-    if (err.code !== 'ERR_INVALID_URL') throw err;
-  }
-  return null;
-};
-
 const getRelativeFilePath = (name) => (isFile(name) ? path.relative(WORKSPACE, require.resolve(name) ?? '') : null);
 
-function getFilePath(name) {
-  let fileName = name;
-  const maybeFileURL = tryGetFileURL(name);
-  if (maybeFileURL) {
-    fileName = maybeFileURL.pathname;
+function getFilePath(fileName) {
+  if (fileName.startsWith('file://')) {
+    return getRelativeFilePath(new URL(fileName).pathname);
   }
   return getRelativeFilePath(fileName);
 }
@@ -78,11 +65,11 @@ module.exports = async function githubReporter(source) {
           // no need to re-annotate the file itself
           break;
         }
-        const location = parseStack(error, getFilePath(event.data.file));
-        const maybeFileURL = tryGetFileURL(location.file);
-        const filePath = maybeFileURL ? getRelativeFilePath(maybeFileURL.pathname) : location.file;
+        let filePath = getFilePath(event.data.file);
+        const location = parseStack(error, filePath);
+        filePath = getFilePath(location?.file ?? filePath);
         core.error(util.inspect(error, { colors: false, breakLength: Infinity }), {
-          file: filePath ?? getFilePath(event.data.file),
+          file: filePath,
           startLine: location?.line,
           startColumn: location?.column,
           title: event.data.name,

@@ -10,7 +10,6 @@ const output = require('./output');
 const outputESM = require('./output-esm');
 
 const GITHUB_STEP_SUMMARY = join(tmpdir(), 'github-actions-test-reporter');
-writeFileSync(GITHUB_STEP_SUMMARY, '');
 
 describe('github reporter', () => {
   beforeEach(() => {
@@ -28,12 +27,9 @@ describe('github reporter', () => {
   });
 
   test('spawn with reporter - esm', () => {
-    const child = spawnSync(process.execPath, ['--test-reporter', './index.js', '../../tests/test.mjs'], {
+    const child = spawnSync(process.execPath, ['--test-reporter', './index.js', '../../tests/example.mjs'], {
       env: { GITHUB_ACTIONS: true, GITHUB_STEP_SUMMARY, GITHUB_WORKSPACE: path.resolve(__dirname, '../../../') },
     });
-
-    console.log(readFileSync(GITHUB_STEP_SUMMARY).toString());
-    // writeFileSync('./output-esm', child.stdout?.toString());
 
     assert.strictEqual(child.stderr?.toString(), '');
     compareLines(child.stdout?.toString(), outputESM.stdout);
