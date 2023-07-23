@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1](https://github.com/MoLow/reporters/compare/github-v1.5.0...github-v1.5.1) (2023-07-23)
+
+
+### Bug Fixes
+
+* add support for esm ([e31f5d5](https://github.com/MoLow/reporters/commit/e31f5d598e44c8e167a33cc3e97571d4402d09dd))
+
 ## [1.5.0](https://github.com/MoLow/reporters/compare/github-v1.4.1...github-v1.5.0) (2023-07-20)
 
 

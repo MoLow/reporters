@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.2](https://github.com/MoLow/reporters/compare/silent-v1.2.1...silent-v1.2.2) (2023-07-23)
+
+
+### Bug Fixes
+
+* add support for esm ([e31f5d5](https://github.com/MoLow/reporters/commit/e31f5d598e44c8e167a33cc3e97571d4402d09dd))
+
 ## [1.2.1](https://github.com/MoLow/reporters/compare/silent-v1.2.0...silent-v1.2.1) (2023-07-20)
 
 
