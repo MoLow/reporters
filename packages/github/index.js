@@ -67,7 +67,7 @@ module.exports = async function githubReporter(source) {
         }
         let filePath = getFilePath(event.data.file);
         const location = parseStack(error, filePath);
-        filePath = getFilePath(location?.file ?? filePath);
+        filePath = getFilePath(location?.file ?? filePath) ?? filePath;
         core.error(util.inspect(error, { colors: false, breakLength: Infinity }), {
           file: filePath,
           startLine: location?.line,
