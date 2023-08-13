@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.4](https://github.com/MoLow/reporters/compare/junit-v1.2.3...junit-v1.2.4) (2023-08-13)
+
+
+### Miscellaneous Chores
+
+* eslint fixes ([3100c40](https://github.com/MoLow/reporters/commit/3100c40ffe3a3e63afb05991f07bf8dbc23efbc9))
+
 ## [1.2.3](https://github.com/MoLow/reporters/compare/junit-v1.2.2...junit-v1.2.3) (2023-07-23)
 
 

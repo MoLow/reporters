@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/MoLow/reporters/compare/bail-v1.1.1...bail-v1.1.2) (2023-08-13)
+
+
+### Miscellaneous Chores
+
+* eslint fixes ([3100c40](https://github.com/MoLow/reporters/commit/3100c40ffe3a3e63afb05991f07bf8dbc23efbc9))
+
 ## [1.1.1](https://github.com/MoLow/reporters/compare/bail-v1.1.0...bail-v1.1.1) (2023-07-20)
 
 
