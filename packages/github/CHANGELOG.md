@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.2](https://github.com/MoLow/reporters/compare/github-v1.5.1...github-v1.5.2) (2023-08-13)
+
+
+### Miscellaneous Chores
+
+* eslint fixes ([3100c40](https://github.com/MoLow/reporters/commit/3100c40ffe3a3e63afb05991f07bf8dbc23efbc9))
+
 ## [1.5.1](https://github.com/MoLow/reporters/compare/github-v1.5.0...github-v1.5.1) (2023-07-23)
 
 

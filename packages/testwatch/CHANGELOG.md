@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/MoLow/reporters/compare/testwatch-v1.4.0...testwatch-v1.4.1) (2023-08-13)
+
+
+### Miscellaneous Chores
+
+* eslint fixes ([3100c40](https://github.com/MoLow/reporters/commit/3100c40ffe3a3e63afb05991f07bf8dbc23efbc9))
+
 ## [1.4.0](https://github.com/MoLow/reporters/compare/testwatch-v1.3.2...testwatch-v1.4.0) (2023-07-18)
 
 
