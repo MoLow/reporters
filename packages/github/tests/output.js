@@ -1,14 +1,16 @@
+'use strict';
+
 module.exports = {
   stdout: `::debug::starting to run tests
 ::debug::starting to run is ok
 ::debug::completed running is ok
 ::debug::starting to run fails
-::error title=fails,file=tests/example.js,line=7,col=11::\\[Error \\[ERR_TEST_FAILURE\\]: this is an error\\] {%0A  failureType: 'testCodeFailure',%0A  cause: Error: this is an error%0A      at TestContext.<anonymous> (.*/example.js:7:11).* code: 'ERR_TEST_FAILURE'%0A}
+::error title=fails,file=tests/example.js,line=9,col=11::\\[Error \\[ERR_TEST_FAILURE\\]: this is an error\\] {%0A  failureType: 'testCodeFailure',%0A  cause: Error: this is an error%0A      at TestContext.<anonymous> (.*/example.js:9:11).* code: 'ERR_TEST_FAILURE'%0A}
 ::debug::starting to run is a diagnostic
 ::debug::completed running is a diagnostic
 ::notice file=tests/example.js::this is a diagnostic
 ::debug::starting to run should fail
-::error title=should fail,file=tests/example.js,line=10,col=31::\\[Error \\[ERR_TEST_FAILURE\\]: The expression evaluated to a falsy value:%0A%0A  assert\\(false\\)%0A\\] {%0A  failureType: 'testCodeFailure',%0A  cause: AssertionError \\[ERR_ASSERTION\\]: The expression evaluated to a falsy value:%0A  %0A    assert\\(false\\)%0A  %0A      at TestContext.<anonymous> (.*/example.js:10:31).*
+::error title=should fail,file=tests/example.js,line=12,col=31::\\[Error \\[ERR_TEST_FAILURE\\]: The expression evaluated to a falsy value:%0A%0A  assert\\(false\\)%0A\\] {%0A  failureType: 'testCodeFailure',%0A  cause: AssertionError \\[ERR_ASSERTION\\]: The expression evaluated to a falsy value:%0A  %0A    assert\\(false\\)%0A  %0A      at TestContext.<anonymous> (.*/example.js:12:31).*
 ::debug::starting to run more tests
 ::debug::starting to run is ok
 ::debug::completed running is ok

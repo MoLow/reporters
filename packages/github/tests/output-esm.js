@@ -1,3 +1,5 @@
+'use strict';
+
 module.exports = {
   stdout: `::debug::starting to run should fail
 ::error title=should fail,file=tests/example.mjs,line=5,col=3::\\[Error \\[ERR_TEST_FAILURE\\]: false == true\\] {%0A  failureType: 'testCodeFailure',%0A  cause: AssertionError \\[ERR_ASSERTION\\]: false == true%0A      at TestContext.<anonymous> \\(.*/example.mjs:5:3\\).* code: 'ERR_TEST_FAILURE'%0A}

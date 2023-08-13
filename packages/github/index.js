@@ -1,3 +1,5 @@
+'use strict';
+
 const path = require('node:path');
 const util = require('node:util');
 const { EOL } = require('node:os');
@@ -61,7 +63,7 @@ module.exports = async function githubReporter(source) {
       case 'test:fail': {
         const error = event.data.details?.error;
         if (error?.code === 'ERR_TEST_FAILURE' && error?.failureType === 'subtestsFailed') {
-          // this means the failed subtests are already reported
+          // This means the failed subtests are already reported
           // no need to re-annotate the file itself
           break;
         }

@@ -1,3 +1,5 @@
+'use strict';
+
 module.exports = async function* bail(source) {
   for await (const event of source) {
     if (event.type === 'test:fail') {

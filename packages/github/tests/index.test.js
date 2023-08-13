@@ -1,3 +1,5 @@
+'use strict';
+
 const { test, describe, beforeEach } = require('node:test');
 const { spawnSync } = require('child_process');
 const { tmpdir } = require('os');

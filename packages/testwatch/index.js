@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+'use strict';
+
 const { run } = require('node:test');
 const { pipeline } = require('node:stream/promises');
 const {
@@ -132,7 +134,7 @@ class REPL {
       ...this.#currentCommands,
       [char]: {
         fn: () => {
-          // remove previous lines
+          // Remove previous lines
           process.stdout.write('\n\x1b[1A\x1b[2K\x1b[1A\x1b[2K');
           showMore({ clear: false });
         },

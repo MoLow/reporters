@@ -1,3 +1,5 @@
+'use strict';
+
 const { describe, it } = require('node:test');
 const { spawn } = require('node:child_process');
 const { once } = require('node:events');

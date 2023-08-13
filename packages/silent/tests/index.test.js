@@ -1,3 +1,5 @@
+'use strict';
+
 const { test } = require('node:test');
 const { spawnSync } = require('child_process');
 const assert = require('assert');

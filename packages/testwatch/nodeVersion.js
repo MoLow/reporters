@@ -1,3 +1,5 @@
+'use strict';
+
 const [major, minor] = process.versions.node.split('.').map(Number);
 
 module.exports = {

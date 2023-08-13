@@ -1,3 +1,5 @@
+'use strict';
+
 module.exports = {
   stdout: `<\\?xml version="1.0" encoding="utf-8"\\?>
 <testsuites>
@@ -33,7 +35,7 @@ cause: AssertionError \\[ERR_ASSERTION\\]: The expression evaluated to a falsy v
 
   assert\\(false\\)
 
-    at TestContext.* \\(.*/example.js:10:31\\)
+    at TestContext.* \\(.*/example.js:12:31\\)
     at .*
     at .*
     at .*
