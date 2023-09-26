@@ -2,6 +2,7 @@
   "name": "@reporters/bail",
   "version": "1.1.2",
   "description": "A Bail library for `node:test`",
+  "type": "commonjs",
   "keywords": [
     "node:test",
     "test",

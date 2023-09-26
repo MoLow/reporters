@@ -2,6 +2,7 @@
   "name": "reporters",
   "version": "1.0.2",
   "description": "A collection of reporters for `node:test`",
+  "type": "commonjs",
   "main": "index.js",
   "private": true,
   "scripts": {
