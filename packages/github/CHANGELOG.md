@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.3](https://github.com/MoLow/reporters/compare/github-v1.5.2...github-v1.5.3) (2023-09-26)
+
+
+### Miscellaneous Chores
+
+* add "type" to package.json ([d8567bd](https://github.com/MoLow/reporters/commit/d8567bdd2a415919dba6ba652d2e33dc233426ce))
+
 ## [1.5.2](https://github.com/MoLow/reporters/compare/github-v1.5.1...github-v1.5.2) (2023-08-13)
 
 

@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.4.2](https://github.com/MoLow/reporters/compare/testwatch-v1.4.1...testwatch-v1.4.2) (2023-09-26)
+
+
+### Bug Fixes
+
+* node 20 skip text changes ([fb993b8](https://github.com/MoLow/reporters/commit/fb993b8c5e960b6986b1fdca4b754a2fdb22ea40))
+
+
+### Miscellaneous Chores
+
+* add "type" to package.json ([d8567bd](https://github.com/MoLow/reporters/commit/d8567bdd2a415919dba6ba652d2e33dc233426ce))
+
 ## [1.4.1](https://github.com/MoLow/reporters/compare/testwatch-v1.4.0...testwatch-v1.4.1) (2023-08-13)
 
 
