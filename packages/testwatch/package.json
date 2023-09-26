@@ -2,6 +2,7 @@
   "name": "@reporters/testwatch",
   "version": "1.4.1",
   "description": "An interactive repl for `node:test`",
+  "type": "commonjs",
   "keywords": [
     "node:test",
     "test",
