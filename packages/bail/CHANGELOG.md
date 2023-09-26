@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.3](https://github.com/MoLow/reporters/compare/bail-v1.1.2...bail-v1.1.3) (2023-09-26)
+
+
+### Miscellaneous Chores
+
+* add "type" to package.json ([d8567bd](https://github.com/MoLow/reporters/commit/d8567bdd2a415919dba6ba652d2e33dc233426ce))
+
 ## [1.1.2](https://github.com/MoLow/reporters/compare/bail-v1.1.1...bail-v1.1.2) (2023-08-13)
 
 

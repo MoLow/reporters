@@ -1,6 +1,6 @@
 {
   "name": "@reporters/silent",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "A silent reporter for `node:test`",
   "type": "commonjs",
   "keywords": [
