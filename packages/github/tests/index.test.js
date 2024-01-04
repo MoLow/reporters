@@ -12,6 +12,7 @@ const output = require('./output');
 const outputESM = require('./output-esm');
 
 const GITHUB_STEP_SUMMARY = join(tmpdir(), 'github-actions-test-reporter');
+const nodeMajor = process.versions.node.split('.')[0];
 
 describe('github reporter', () => {
   beforeEach(() => {
@@ -24,7 +25,7 @@ describe('github reporter', () => {
     });
 
     assert.strictEqual(child.stderr?.toString(), '');
-    compareLines(child.stdout?.toString(), output.stdout);
+    compareLines(child.stdout?.toString(), output.overrides[nodeMajor]?.stdout ?? output.stdout);
     compareLines(readFileSync(GITHUB_STEP_SUMMARY).toString(), output.summary);
   });
 
@@ -34,7 +35,10 @@ describe('github reporter', () => {
     });
 
     assert.strictEqual(child.stderr?.toString(), '');
-    compareLines(child.stdout?.toString(), outputESM.stdout);
+    compareLines(
+      child.stdout?.toString(),
+      outputESM.overrides[nodeMajor]?.stdout ?? outputESM.stdout,
+    );
     compareLines(readFileSync(GITHUB_STEP_SUMMARY).toString(), outputESM.summary);
   });
 

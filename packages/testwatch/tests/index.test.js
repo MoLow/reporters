@@ -6,7 +6,7 @@ const { once } = require('node:events');
 const assert = require('node:assert');
 const path = require('node:path');
 const chalk = require('chalk');
-const { isSupported, major, minor } = require('../nodeVersion');
+const { isSupported } = require('../nodeVersion');
 
 const clear = '\x1Bc';
 const esc = '\x1b';
@@ -37,8 +37,6 @@ Filter Test
  pattern › `;
 const filterFilesPrompt = filterTestsPrompt.replace('test', 'file').replace('Test', 'File');
 const debugOutput = process.env.DEBUG || process.argv.includes('--debug');
-
-const skipText = major >= 20 && minor >= 7 ? '# test name does not match pattern' : '# SKIP';
 
 function debug(str) {
   if (debugOutput) {
@@ -176,8 +174,8 @@ describe('testwatch', { concurrency: true, skip: !isSupported ? 'unsupported nod
         '',
         '',
         `${tests
-          .replace('✔ j - sum (*ms)', `﹣ j - sum (*ms) ${skipText}`)
-          .replace('✔ index - sum (*ms)', `﹣ index - sum (*ms) ${skipText}`)
+          .replace('✔ j - sum (*ms)', '﹣ j - sum (*ms) # test name does not match pattern')
+          .replace('✔ index - sum (*ms)', '﹣ index - sum (*ms) # test name does not match pattern')
         }\n${compactMenu}\n${clearLines}${activeFilters}${mainMenuWithFilters}\n`,
       ]);
     });
@@ -240,7 +238,7 @@ describe('testwatch', { concurrency: true, skip: !isSupported ? 'unsupported nod
       const activeFilters = '\nActive Filters: file name **/index*.*, test name /sum/\n';
       assert.strictEqual(stderr, '');
       assert.strictEqual(outputs.length, 11);
-      assert.strictEqual(outputs[10], `${testsRun[1].replace('✔ index - subtraction (*ms)', `﹣ index - subtraction (*ms) ${skipText}`)}\n${compactMenu}\n${clearLines}${activeFilters}${mainMenuWithFilters}\n`);
+      assert.strictEqual(outputs[10], `${testsRun[1].replace('✔ index - subtraction (*ms)', '﹣ index - subtraction (*ms) # test name does not match pattern')}\n${compactMenu}\n${clearLines}${activeFilters}${mainMenuWithFilters}\n`);
     });
 
     it('should mention when no files found', async () => {
