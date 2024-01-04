@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.6](https://github.com/MoLow/reporters/compare/junit-v1.2.5...junit-v1.2.6) (2024-01-04)
+
+
+### Bug Fixes
+
+* **test:** update tests ([#106](https://github.com/MoLow/reporters/issues/106)) ([8c09454](https://github.com/MoLow/reporters/commit/8c09454aeefe41e10f9466fc593ff80408d06c8a))
+
 ## [1.2.5](https://github.com/MoLow/reporters/compare/junit-v1.2.4...junit-v1.2.5) (2023-09-26)
 
 

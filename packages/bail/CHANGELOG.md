@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.4](https://github.com/MoLow/reporters/compare/bail-v1.1.3...bail-v1.1.4) (2024-01-04)
+
+
+### Bug Fixes
+
+* **test:** update tests ([#106](https://github.com/MoLow/reporters/issues/106)) ([8c09454](https://github.com/MoLow/reporters/commit/8c09454aeefe41e10f9466fc593ff80408d06c8a))
+
 ## [1.1.3](https://github.com/MoLow/reporters/compare/bail-v1.1.2...bail-v1.1.3) (2023-09-26)
 
 
