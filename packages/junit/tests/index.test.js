@@ -8,16 +8,21 @@ const reporter = require('../index');
 const output = require('./output');
 const outputESM = require('./output-esm');
 
+const nodeMajor = process.versions.node.split('.')[0];
+
 test('spwan with reporter', () => {
   const child = spawnSync(process.execPath, ['--test-reporter', './index.js', '../../tests/example'], { env: {} });
   assert.strictEqual(child.stderr?.toString(), '');
-  compareLines(child.stdout?.toString(), output.stdout);
+  compareLines(child.stdout?.toString(), output.overrides[nodeMajor]?.stdout ?? output.stdout);
 });
 
 test('spwan with reporter -esm', () => {
   const child = spawnSync(process.execPath, ['--test-reporter', './index.js', '../../tests/example.mjs'], { env: {} });
   assert.strictEqual(child.stderr?.toString(), '');
-  compareLines(child.stdout?.toString(), outputESM.stdout);
+  compareLines(
+    child.stdout?.toString(),
+    outputESM.overrides[nodeMajor]?.stdout ?? outputESM.stdout,
+  );
 });
 
 test('empty', async () => {

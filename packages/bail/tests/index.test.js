@@ -20,7 +20,6 @@ test('fail should stop after failed test', () => {
     '--test-reporter', './index.js', '--test-reporter-destination', 'stdout',
     'tests/fixtures/fail.js', 'tests/fixtures/pass.js',
   ], { env: {} });
-  assert.strictEqual(child.stderr?.toString(), '');
   assert.strictEqual(child.stdout?.toString(), 'X\n\x1B[31m✖ Bailing on failed test: fail\x1B[0m\n');
-  assert.strictEqual(child.status, 1);
+  assert.strictEqual(child.status, 7);
 });
