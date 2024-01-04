@@ -18,6 +18,7 @@
     "packages/junit": {},
     "packages/silent": {},
     "packages/bail": {},
-    "packages/testwatch": {}
+    "packages/testwatch": {},
+    "packages/slow": {}
   }
 }
