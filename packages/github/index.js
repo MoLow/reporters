@@ -1,3 +1,5 @@
+'use strict';
+
 const path = require('node:path');
 const util = require('node:util');
 const { EOL } = require('node:os');
@@ -10,10 +12,18 @@ const stack = new StackUtils({ cwd: WORKSPACE, internals: StackUtils.nodeInterna
 
 const isFile = (name) => name?.startsWith(WORKSPACE);
 
-const getFilePath = (name) => (isFile(name) ? path.relative(WORKSPACE, require.resolve(name) ?? '') : null);
+const getRelativeFilePath = (name) => (isFile(name) ? path.relative(WORKSPACE, require.resolve(name) ?? '') : null);
+
+function getFilePath(fileName) {
+  if (fileName.startsWith('file://')) {
+    return getRelativeFilePath(new URL(fileName).pathname);
+  }
+  return getRelativeFilePath(fileName);
+}
 
 const parseStack = (error, file) => {
-  const stackLines = (error?.stack ?? '').split(/\r?\n/);
+  const err = error?.code === 'ERR_TEST_FAILURE' ? error?.cause : error;
+  const stackLines = (err?.stack ?? '').split(/\r?\n/);
   const line = stackLines.find((l) => l.includes(file)) ?? stackLines[0];
   return line ? stack.parseLine(line) : null;
 };
@@ -51,13 +61,17 @@ module.exports = async function githubReporter(source) {
         core.debug(`completed running ${event.data.name}`);
         break;
       case 'test:fail': {
-        const error = util.inspect(
-          event.data.details?.error,
-          { colors: false, breakLength: Infinity },
-        );
-        const location = parseStack(event.data.details?.error, getFilePath(event.data.file));
-        core.error(error, {
-          file: location?.file ?? getFilePath(event.data.file),
+        const error = event.data.details?.error;
+        if (error?.code === 'ERR_TEST_FAILURE' && error?.failureType === 'subtestsFailed') {
+          // This means the failed subtests are already reported
+          // no need to re-annotate the file itself
+          break;
+        }
+        let filePath = getFilePath(event.data.file);
+        const location = parseStack(error, filePath);
+        filePath = getFilePath(location?.file ?? filePath) ?? filePath;
+        core.error(util.inspect(error, { colors: false, breakLength: Infinity }), {
+          file: filePath,
           startLine: location?.line,
           startColumn: location?.column,
           title: event.data.name,
@@ -75,7 +89,6 @@ module.exports = async function githubReporter(source) {
         break;
     }
   }
-  core.startGroup(`Test results (${counter.pass} passed, ${counter.fail} failed)`);
   const formatedDiagnostics = diagnostics.map((d) => {
     const [key, ...rest] = d.split(' ');
     const value = rest.join(' ');
@@ -84,6 +97,7 @@ module.exports = async function githubReporter(source) {
       DIAGNOSTIC_VALUES[key] ? DIAGNOSTIC_VALUES[key](value) : value,
     ];
   });
+  core.startGroup(`Test results (${formatedDiagnostics.find(([key]) => key === DIAGNOSTIC_KEYS.pass)?.[1] ?? counter.pass} passed, ${formatedDiagnostics.find(([key]) => key === DIAGNOSTIC_KEYS.fail)?.[1] ?? counter.fail} failed)`);
   core.notice(formatedDiagnostics.map((d) => d.join(': ')).join(EOL));
   core.endGroup();
 

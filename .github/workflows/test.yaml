@@ -3,14 +3,14 @@ on:
   pull_request:
     types: [labeled, opened, synchronize, reopened]
   push:
-    branches: [main]
+    branches: [main, release-please--branches--main]
 
 jobs:
   tests:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: [v19, v18, v20.3.0]
+        node: [v18, v20, v21]
     steps:
       - uses: actions/checkout@v3
         with:

@@ -1,10 +1,12 @@
+'use strict';
+
 const util = require('node:util');
 const { hostname } = require('node:os');
 
 const HOSTNAME = hostname();
 
 function escapeProperty(s = '') {
-  return s.replace(/"/g, '\\"');
+  return s.replace(/"/g, '\\"').replace(/\n/g, '');
 }
 
 function escapeContent(s = '') {

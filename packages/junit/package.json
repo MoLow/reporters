@@ -1,13 +1,17 @@
 {
   "name": "@reporters/junit",
-  "version": "1.1.0",
+  "version": "1.2.6",
   "description": "A jUnit reporter for `node:test`",
+  "type": "commonjs",
   "keywords": [
     "junit",
     "node:test",
     "test",
     "reporter",
     "reporters"
+  ],
+  "files": [
+    "./index.js"
   ],
   "scripts": {
     "test": "node --test-reporter=spec --test-reporter-destination=stdout --test-reporter=../github/index.js --test-reporter-destination=stdout --test"

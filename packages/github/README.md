@@ -25,12 +25,19 @@ yarn add --dev @reporters/github
 
 ## Result
 
-when test failed, you can see the result as an annotation on the failed line.
+when test failed, annotations will be added inside the github UI, with corresponding errors and diagnostics.
+see [example run](https://github.com/MoLow/reporters/actions/runs/5607828636):
 
-<img width="810" alt="Screen Shot 2022-12-20 at 3 40 36" src="https://user-images.githubusercontent.com/8221854/208561892-28b821b1-1771-4063-baa2-6e14186ae3bf.png">
+#### Inline annotations
 
-additionally, this reporter will add a summary of the tests to the github action.
+<img width="810" alt="Inline Annotation" src="https://user-images.githubusercontent.com/8221854/254798653-0c06278e-696b-42eb-8275-364b7eb3133b.png">
 
-<img width="815" alt="Screen Shot 2022-12-20 at 3 43 47" src="https://user-images.githubusercontent.com/8221854/208561887-c3eccbd8-7506-4a8f-a18c-2892605f3243.png">
+additionally, Annotations and summary will be added to the summary of the test run.
 
+#### Annotations
+
+<img width="810" alt="Annotation" src="https://user-images.githubusercontent.com/8221854/254798495-38c2a8ea-c9e0-4e87-a13e-677826b72192.png">
+
+#### Summary
+<img width="815" alt="Summary" src="https://github.com/MoLow/reporters/assets/8221854/8934f5bb-3342-430c-9ae0-3c608a40c9f0">
 

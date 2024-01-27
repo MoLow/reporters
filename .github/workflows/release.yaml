@@ -39,6 +39,9 @@ jobs:
     needs: release-please
     if: ${{ needs.release-please.outputs.releases_created }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     strategy:
       fail-fast: false
       matrix:
@@ -50,6 +53,11 @@ jobs:
           node-version: lts/*
           registry-url: 'https://registry.npmjs.org'
       - run: yarn install
-      - run: yarn workspace ${{ matrix.package }} publish --access public
+      - id: package-name
+        run: |
+          PACKAGE_NAME=$(node -p "PACKAGE_NAME='${{ matrix.package }}'.split('/')[1]")
+          echo "PACKAGE_NAME=$PACKAGE_NAME" >> $GITHUB_OUTPUT
+      - run: npm publish --provenance --access public
+        working-directory: packages/${{ steps.package-name.outputs.PACKAGE_NAME }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

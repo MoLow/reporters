@@ -1,3 +1,5 @@
+'use strict';
+
 module.exports = {
   env: {
     commonjs: true,
@@ -9,8 +11,11 @@ module.exports = {
   ],
   parserOptions: {
     ecmaVersion: 'latest',
+    sourceType: 'script',
   },
   rules: {
     'no-restricted-syntax': ['error', 'ForInStatement', 'LabeledStatement', 'WithStatement'],
+    'capitalized-comments': ['error', 'always', { ignoreConsecutiveComments: true, ignorePattern: 'c8 ignore' }],
+    strict: ['error', 'safe'],
   },
 };

@@ -1,15 +1,28 @@
+'use strict';
+
 const { test } = require('node:test');
 const { spawnSync } = require('child_process');
 const assert = require('assert');
 const { compareLines } = require('../../../tests/utils');
 const reporter = require('../index');
+const output = require('./output');
+const outputESM = require('./output-esm');
+
+const nodeMajor = process.versions.node.split('.')[0];
 
 test('spwan with reporter', () => {
-  // eslint-disable-next-line import/no-dynamic-require, global-require
-  const output = require(`./output.${process.version.split('.')[0]}`);
   const child = spawnSync(process.execPath, ['--test-reporter', './index.js', '../../tests/example'], { env: {} });
   assert.strictEqual(child.stderr?.toString(), '');
-  compareLines(child.stdout?.toString(), output.stdout);
+  compareLines(child.stdout?.toString(), output.overrides[nodeMajor]?.stdout ?? output.stdout);
+});
+
+test('spwan with reporter -esm', () => {
+  const child = spawnSync(process.execPath, ['--test-reporter', './index.js', '../../tests/example.mjs'], { env: {} });
+  assert.strictEqual(child.stderr?.toString(), '');
+  compareLines(
+    child.stdout?.toString(),
+    outputESM.overrides[nodeMajor]?.stdout ?? outputESM.stdout,
+  );
 });
 
 test('empty', async () => {

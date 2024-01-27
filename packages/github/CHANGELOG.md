@@ -1,5 +1,77 @@
 # Changelog
 
+## [1.5.4](https://github.com/MoLow/reporters/compare/github-v1.5.3...github-v1.5.4) (2024-01-04)
+
+
+### Bug Fixes
+
+* **test:** update tests ([#106](https://github.com/MoLow/reporters/issues/106)) ([8c09454](https://github.com/MoLow/reporters/commit/8c09454aeefe41e10f9466fc593ff80408d06c8a))
+
+## [1.5.3](https://github.com/MoLow/reporters/compare/github-v1.5.2...github-v1.5.3) (2023-09-26)
+
+
+### Miscellaneous Chores
+
+* add "type" to package.json ([d8567bd](https://github.com/MoLow/reporters/commit/d8567bdd2a415919dba6ba652d2e33dc233426ce))
+
+## [1.5.2](https://github.com/MoLow/reporters/compare/github-v1.5.1...github-v1.5.2) (2023-08-13)
+
+
+### Miscellaneous Chores
+
+* eslint fixes ([3100c40](https://github.com/MoLow/reporters/commit/3100c40ffe3a3e63afb05991f07bf8dbc23efbc9))
+
+## [1.5.1](https://github.com/MoLow/reporters/compare/github-v1.5.0...github-v1.5.1) (2023-07-23)
+
+
+### Bug Fixes
+
+* add support for esm ([e31f5d5](https://github.com/MoLow/reporters/commit/e31f5d598e44c8e167a33cc3e97571d4402d09dd))
+
+## [1.5.0](https://github.com/MoLow/reporters/compare/github-v1.4.1...github-v1.5.0) (2023-07-20)
+
+
+### Features
+
+* remove redundant subtests annotation ([6f22533](https://github.com/MoLow/reporters/commit/6f2253378c7ecdcbb5c38aac77dfd13b1662e0d6))
+
+
+### Bug Fixes
+
+* line reporting for ERR_TEST_FAILURE ([4fb29f3](https://github.com/MoLow/reporters/commit/4fb29f3fb8a470af8d1a9549adc7d91f465cad91))
+* stacktrace misslocated ([33068bf](https://github.com/MoLow/reporters/commit/33068bf98f53f7d6d28678b63d58b4c9b04d8ece))
+
+
+### Documentation
+
+* update screenshots ([0913bf3](https://github.com/MoLow/reporters/commit/0913bf37ce83a0a240c0f28b59a1647741212612))
+
+
+### Build System
+
+* exclude redundant files ([032eb2f](https://github.com/MoLow/reporters/commit/032eb2fbb1520b3c259e2a80eb38280826e206ef))
+
+## [1.4.1](https://github.com/MoLow/reporters/compare/github-v1.4.0...github-v1.4.1) (2023-07-19)
+
+
+### Bug Fixes
+
+* more accurate counting ([1949140](https://github.com/MoLow/reporters/commit/19491406b769f03555b3ae352ed9838e2154c855))
+
+## [1.4.0](https://github.com/MoLow/reporters/compare/github-v1.3.0...github-v1.4.0) (2023-07-18)
+
+
+### Features
+
+* support node 18 ([02c8957](https://github.com/MoLow/reporters/commit/02c8957ffca3cb8376f7ad5a94f4627c70b7f8e5))
+
+## [1.3.0](https://github.com/MoLow/reporters/compare/github-v1.2.0...github-v1.3.0) (2023-07-05)
+
+
+### Features
+
+* publish with provenance ([6ee1e46](https://github.com/MoLow/reporters/commit/6ee1e46040329edeb0f40f753093b6952984f001))
+
 ## [1.2.0](https://github.com/MoLow/reporters/compare/github-v1.1.3...github-v1.2.0) (2023-05-30)
 
 

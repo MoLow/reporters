@@ -1,8 +1,12 @@
 #!/usr/bin/env node
 
+'use strict';
+
 const { run } = require('node:test');
 const { pipeline } = require('node:stream/promises');
-const { on, once, EventEmitter } = require('node:events');
+const {
+  on, once, EventEmitter, setMaxListeners,
+} = require('node:events');
 const { glob } = require('glob');
 const chalk = require('chalk');
 const { isSupported } = require('./nodeVersion');
@@ -29,6 +33,7 @@ const KEY_NAMES = {
 };
 const UnknownCommand = Symbol('UnknownKey');
 
+setMaxListeners(Infinity);
 process.stdout.setMaxListeners(Infinity);
 process.setMaxListeners(Infinity);
 process.stdin.setEncoding('utf8');
@@ -41,7 +46,7 @@ class REPL {
     onTestRunComplete: [],
   }
 
-  #filesFilter = '';
+  #filesFilter = process.argv[2] || '';
 
   #testsFilter = '';
 
@@ -59,6 +64,7 @@ class REPL {
   #emitter = new EventEmitter();
 
   async #runTests() {
+    this.#clear();
     this.#controller.abort();
     this.#controller = new AbortController();
     if (this.#hooks.shouldRunTestSuite.some(fn => !fn())) {
@@ -68,11 +74,10 @@ class REPL {
       return;
     }
 
-    const filter = this.#filesFilter ? `**/${this.#filesFilter}.*` : '**/*.test.js';
+    const filter = this.#filesFilter ? `**/${this.#filesFilter}*.*` : '**/?(*.)+(spec|test).[jt]s';
     const files = await glob(filter, { ignore: 'node_modules/**' });
 
     if (!files.length) {
-      this.#clear();
       process.stdout.write(chalk.red(`\nNo files found for pattern ${filter}\n`));
       this.#emitter.emit('drained');
       this.#hooks.onTestRunComplete.forEach(fn => fn())
@@ -91,7 +96,7 @@ class REPL {
       async function* (source) {
         for await (const data of source) {
           yield data;
-          if (data.type === 'test:start' && drained) {
+          if (drained && (data.type === 'test:start' || data.type === 'test:enqueue')) {
             this.#clear();
             drained = false;
           }
@@ -143,7 +148,7 @@ class REPL {
       ...this.#currentCommands,
       [char]: {
         fn: () => {
-          // remove previous lines
+          // Remove previous lines
           process.stdout.write('\n\x1b[1A\x1b[2K\x1b[1A\x1b[2K');
           showMore({ clear: false });
         },
@@ -214,7 +219,7 @@ class REPL {
     if (this.#filesFilter || this.#testsFilter) {
       const message = `
 ${chalk.white.bold('Active Filters:')} \
-${this.#filesFilter ? `file name ${chalk.gray('**/')}${chalk.yellow(this.#filesFilter)}${chalk.gray('.*')}` : ''}\
+${this.#filesFilter ? `file name ${chalk.gray('**/')}${chalk.yellow(this.#filesFilter)}${chalk.gray('*.*')}` : ''}\
 ${(this.#testsFilter && this.#filesFilter) ? ', ' : ''}\
 ${this.#testsFilter ? `test name ${chalk.yellow(`/${this.#testsFilter}/`)}` : ''}
 `;
@@ -231,8 +236,7 @@ ${Object.entries(this.#currentCommands)
   }
 
   async run() {
-    await this.#runTests();
-    await once(this.#emitter, 'drained');
+    await Promise.all([once(this.#emitter, 'drained'), this.#runTests()]);
     this.#emitter.on('drained', () => this.#compactHelp());
     this.#help();
     for await (const data of on(process.stdin, 'data')) {
