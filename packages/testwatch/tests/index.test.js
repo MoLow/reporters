@@ -39,7 +39,7 @@ async function spawnInteractive(commandSequence = 'q') {
   let stderr = '';
   let stdout = '';
   const child = spawn(process.execPath, ['../../index.js'], {
-    env: { }, cwd: path.resolve(__dirname, 'fixtures'),
+    env: {}, cwd: path.resolve(__dirname, 'fixtures'),
   });
   child.stdin.setEncoding('utf8');
   let writing = false;
@@ -62,7 +62,7 @@ async function spawnInteractive(commandSequence = 'q') {
   child.stdout.setEncoding('utf8');
   child.stdout.on('data', (data) => {
     stdout += data;
-    if (stdout.includes(mainMenu)) {
+    if (stdout.includes('Press Enter to trigger a test run')) {
       writeInput();
     }
   });
@@ -103,7 +103,7 @@ describe('testwatch', { concurrency: true, skip: !isSupported ? 'unsupported nod
   });
   it('should exit on sigkill', async () => {
     const child = spawn(process.execPath, ['../../index.js'], {
-      env: { }, cwd: path.resolve(__dirname, 'fixtures'),
+      env: {}, cwd: path.resolve(__dirname, 'fixtures'),
     });
     let stderr = '';
     let stdout = '';
@@ -149,8 +149,8 @@ describe('testwatch', { concurrency: true, skip: !isSupported ? 'unsupported nod
         `${filterTestsPrompt}sub`,
         '',
         `${tests
-          .replace('✔ j - sum (*ms)', '﹣ j - sum (*ms) # SKIP')
-          .replace('✔ index - sum (*ms)', '﹣ index - sum (*ms) # SKIP')
+          .replace('✔ j - sum (*ms)', '﹣ j - sum (*ms) # test name does not match pattern')
+          .replace('✔ index - sum (*ms)', '﹣ index - sum (*ms) # test name does not match pattern')
         }\n${compactMenu}\n${clearLines}${activeFilters}${mainMenuWithFilters}\n`,
       ]);
     });
@@ -172,7 +172,7 @@ describe('testwatch', { concurrency: true, skip: !isSupported ? 'unsupported nod
       const activeFilters = '\nActive Filters: file name **/index.*, test name /sum/\n';
       assert.strictEqual(stderr, '');
       assert.strictEqual(outputs.length, 8);
-      assert.strictEqual(outputs[7], `${testsRun[1].replace('✔ index - subtraction (*ms)', '﹣ index - subtraction (*ms) # SKIP')}\n${compactMenu}\n${clearLines}${activeFilters}${mainMenuWithFilters}\n`);
+      assert.strictEqual(outputs[7], `${testsRun[1].replace('✔ index - subtraction (*ms)', '﹣ index - subtraction (*ms) # test name does not match pattern')}\n${compactMenu}\n${clearLines}${activeFilters}${mainMenuWithFilters}\n`);
     });
 
     it('should mention when no files found', async () => {
@@ -225,6 +225,21 @@ describe('testwatch', { concurrency: true, skip: !isSupported ? 'unsupported nod
       assert.strictEqual(stderr, '');
       assert.strictEqual(outputs.length, 5);
       assert.match(outputs[4], /No files found for pattern \*\*\/noth1ing\.\*/);
+    });
+  });
+
+  describe('Plugins', () => {
+    const mainMenuWithPlugin = mainMenu.replace('REPL Usage', 'REPL Usage\n'
+       + ' › Press s to suspend watch mode')
+
+    it('should suspend the watch mode', async () => {
+      const { outputs, stderr } = await spawnInteractive(['s', '\r', 'q']);
+      assert.strictEqual(stderr, '');
+      assert.deepStrictEqual(outputs, [
+        '',
+        `${tests}\n${mainMenuWithPlugin}\nTest is suspended.\n`,
+        `${compactMenu}\nTest is suspended.\n\n`,
+      ]);
     });
   });
 });
