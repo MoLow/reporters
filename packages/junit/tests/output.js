@@ -62,6 +62,7 @@ cause: AssertionError \\[ERR_ASSERTION\\]: The expression evaluated to a falsy v
 \t<testcase name="is a todo" time=".*" classname="test">
 \t\t<skipped type="todo" message="true"/>
 \t</testcase>
+\t<testcase name="top level diagnostic" time=".*" classname="test"/>
 </testsuites>
 `,
   overrides: {
@@ -127,6 +128,7 @@ code: 'ERR_TEST_FAILURE'
 \t<testcase name="is a todo" time=".*" classname="test">
 \t\t<skipped type="todo" message="true"/>
 \t</testcase>
+\t<testcase name="top level diagnostic" time=".*" classname="test"/>
 </testsuites>
 `,
     },
