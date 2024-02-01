@@ -89,7 +89,9 @@ module.exports = async function githubReporter(source) {
         counter.fail += 1;
         break;
       } case 'test:diagnostic':
-        if (event.data.nesting === 0) {
+        if (event.data.file === undefined
+          || event.data.line === undefined
+          || event.data.column === undefined) {
           diagnostics.push(event.data.message);
         } else {
           core.notice(event.data.message, extractLocation(event.data));

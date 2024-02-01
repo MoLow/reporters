@@ -17,3 +17,5 @@ describe('more tests', () => {
 });
 it.skip('is skipped', () => {});
 it.todo('is a todo');
+
+test('top level diagnostic', async (t) => { t.diagnostic('top level diagnostic'); });

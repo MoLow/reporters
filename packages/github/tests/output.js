@@ -19,12 +19,15 @@ module.exports = {
 ::debug::completed running is skipped
 ::debug::starting to run is a todo
 ::debug::completed running is a todo
-::group::Test results \\(3 passed, 2 failed\\)
-::notice::Total Tests: 7%0ASuites 📂: 2%0APassed ✅: 3%0AFailed ❌: 2%0ACanceled 🚫: 0%0ASkipped ⏭️: 1%0ATodo 📝: 1%0ADuration 🕐: .*ms
+::debug::starting to run top level diagnostic
+::debug::completed running top level diagnostic
+::notice file=tests/example.js,line=21,col=1::top level diagnostic
+::group::Test results \\(4 passed, 2 failed\\)
+::notice::Total Tests: 8%0ASuites 📂: 2%0APassed ✅: 4%0AFailed ❌: 2%0ACanceled 🚫: 0%0ASkipped ⏭️: 1%0ATodo 📝: 1%0ADuration 🕐: .*ms
 ::endgroup::
 `,
   summary: `<h1>Test Results</h1>
-<table><tr><td>Total Tests</td><td>7</td></tr><tr><td>Suites 📂</td><td>2</td></tr><tr><td>Passed ✅</td><td>3</td></tr><tr><td>Failed ❌</td><td>2</td></tr><tr><td>Canceled 🚫</td><td>0</td></tr><tr><td>Skipped ⏭️</td><td>1</td></tr><tr><td>Todo 📝</td><td>1</td></tr><tr><td>Duration 🕐</td><td>.*ms</td></tr></table>
+<table><tr><td>Total Tests</td><td>8</td></tr><tr><td>Suites 📂</td><td>2</td></tr><tr><td>Passed ✅</td><td>4</td></tr><tr><td>Failed ❌</td><td>2</td></tr><tr><td>Canceled 🚫</td><td>0</td></tr><tr><td>Skipped ⏭️</td><td>1</td></tr><tr><td>Todo 📝</td><td>1</td></tr><tr><td>Duration 🕐</td><td>.*ms</td></tr></table>
 `,
   overrides: {
     18: {
@@ -46,8 +49,11 @@ module.exports = {
 ::debug::completed running is skipped
 ::debug::starting to run is a todo
 ::debug::completed running is a todo
-::group::Test results \\(3 passed, 2 failed\\)
-::notice::Total Tests: 7%0ASuites 📂: 2%0APassed ✅: 3%0AFailed ❌: 2%0ACanceled 🚫: 0%0ASkipped ⏭️: 1%0ATodo 📝: 1%0ADuration 🕐: .*ms
+::debug::starting to run top level diagnostic
+::debug::completed running top level diagnostic
+::notice file=tests/example.js,line=21,col=1::top level diagnostic
+::group::Test results \\(4 passed, 2 failed\\)
+::notice::Total Tests: 8%0ASuites 📂: 2%0APassed ✅: 4%0AFailed ❌: 2%0ACanceled 🚫: 0%0ASkipped ⏭️: 1%0ATodo 📝: 1%0ADuration 🕐: .*ms
 ::endgroup::
 `,
     },
