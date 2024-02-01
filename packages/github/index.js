@@ -43,6 +43,21 @@ const DIAGNOSTIC_VALUES = {
   duration_ms: (value) => `${Number(value).toFixed(3)}ms`,
 };
 
+function extractLocation(data) {
+  let { line, column, file } = data;
+  const error = data.details?.error;
+  file = getFilePath(file);
+
+  if (error) {
+    const errorLocation = parseStack(error, file);
+    file = getFilePath(errorLocation?.file ?? file) ?? file;
+    line = errorLocation?.line ?? line;
+    column = errorLocation?.column ?? column;
+  }
+
+  return { file, startLine: line, startColumn: column };
+}
+
 module.exports = async function githubReporter(source) {
   if (!process.env.GITHUB_ACTIONS) {
     // eslint-disable-next-line no-unused-vars
@@ -67,13 +82,8 @@ module.exports = async function githubReporter(source) {
           // no need to re-annotate the file itself
           break;
         }
-        let filePath = getFilePath(event.data.file);
-        const location = parseStack(error, filePath);
-        filePath = getFilePath(location?.file ?? filePath) ?? filePath;
         core.error(util.inspect(error, { colors: false, breakLength: Infinity }), {
-          file: filePath,
-          startLine: location?.line,
-          startColumn: location?.column,
+          ...extractLocation(event.data),
           title: event.data.name,
         });
         counter.fail += 1;
@@ -82,7 +92,7 @@ module.exports = async function githubReporter(source) {
         if (event.data.nesting === 0) {
           diagnostics.push(event.data.message);
         } else {
-          core.notice(event.data.message, { file: getFilePath(event.data.file) });
+          core.notice(event.data.message, extractLocation(event.data));
         }
         break;
       default:
