@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.3.0](https://github.com/MoLow/reporters/compare/junit-v1.2.6...junit-v1.3.0) (2024-02-01)
+
+
+### Features
+
+* add location to notify ([#111](https://github.com/MoLow/reporters/issues/111)) ([e63d34a](https://github.com/MoLow/reporters/commit/e63d34a5b4fb040a4cb63d4db15c87d4128e7c4c))
+
+
+### Bug Fixes
+
+* remove diagnostics from summary ([#113](https://github.com/MoLow/reporters/issues/113)) ([1e95cf0](https://github.com/MoLow/reporters/commit/1e95cf0bab16785073715238b42b9fb8baebbc43))
+
 ## [1.2.6](https://github.com/MoLow/reporters/compare/junit-v1.2.5...junit-v1.2.6) (2024-01-04)
 
 
