@@ -2,16 +2,16 @@
 
 const { test } = require('node:test');
 const { spawnSync } = require('child_process');
-const assert = require('assert');
+const { Snap } = require('../../../tests/utils');
 
-test('spwan with reporter', () => {
+const snapshot = Snap(__filename);
+
+test('spwan with reporter', async () => {
   const child = spawnSync(process.execPath, ['--test-reporter', './index.js', '../../tests/example'], { env: {} });
-  assert.strictEqual(child.stderr?.toString(), '');
-  assert.strictEqual(child.stdout?.toString(), '');
+  await snapshot(child);
 });
 
-test('spwan with reporter - esm', () => {
+test('spwan with reporter - esm', async () => {
   const child = spawnSync(process.execPath, ['--test-reporter', './index.js', '../../tests/example.mjs'], { env: {} });
-  assert.strictEqual(child.stderr?.toString(), '');
-  assert.strictEqual(child.stdout?.toString(), '');
+  await snapshot(child);
 });
