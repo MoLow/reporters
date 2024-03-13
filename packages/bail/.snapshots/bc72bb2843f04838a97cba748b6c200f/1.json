@@ -1,0 +1,5 @@
+{
+  "stderr": "node:internal/test_runner/harness:*\n      throw err;\n      ^\n\nError: Bail\n    *\n    at bail.next (<anonymous>)\n    *\n    *\n    *\n    *\n    *\n    *\n    *\n    *\nEmitted 'error' event on Duplex instance at:\n    *\n    *\n    *\n\nNode.js *\n",
+  "stdout": "X\n\u001b[31m✖ Bailing on failed test: fail\u001b[0m\n",
+  "exitCode": 7
+}
