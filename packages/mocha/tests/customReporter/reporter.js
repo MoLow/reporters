@@ -2,8 +2,11 @@
 
 'use strict';
 
+const assert = require('assert');
+
 class Reporter {
   constructor(runner) {
+    assert(runner.suite, 'missing root suite');
     runner.on('test end', (test) => {
       console.log({
         state: test.state,
