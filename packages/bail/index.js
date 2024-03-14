@@ -6,7 +6,7 @@ module.exports = async function* bail(source) {
       /* c8 ignore start */
       yield `\n\u001b[31m✖ Bailing on failed test: ${event.data.name}\u001b[0m\n`;
       throw new Error('Bail');
-      /* c8 ignore stop */
     }
+    /* c8 ignore stop */
   }
 };
