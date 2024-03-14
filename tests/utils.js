@@ -24,7 +24,7 @@ function snapshot(filename) {
   async function test(child, ...args) {
     const actual = {
       stderr: sanitize(child.stderr?.toString() ?? ''),
-      stdout: sanitize(child.stdout?.toString()),
+      stdout: sanitize(child.stdout?.toString() ?? ''),
       exitCode: child.status,
     };
     assert.deepStrictEqual(actual, await snap(actual));
