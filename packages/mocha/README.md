@@ -19,7 +19,7 @@ yarn add --dev @reporters/mocha
 Specify the desired mocha reporter inside the [mocha configuration file](https://mochajs.org/#configuring-mocha-nodejs), e.g. `.mocharc.js`:
 ```js
 module.exports = {
-  reporter: '@reporters/mocha'
+  reporter: 'nyan'
 }
 ```
 
