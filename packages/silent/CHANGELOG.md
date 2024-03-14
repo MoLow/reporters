@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.5](https://github.com/MoLow/reporters/compare/silent-v1.2.4...silent-v1.2.5) (2024-03-14)
+
+
+### Tests
+
+* migrate snapshots to snap ([#114](https://github.com/MoLow/reporters/issues/114)) ([1d3ca6a](https://github.com/MoLow/reporters/commit/1d3ca6ad12b4abb5c47adc775b47c205a4214e0a))
+
 ## [1.2.4](https://github.com/MoLow/reporters/compare/silent-v1.2.3...silent-v1.2.4) (2023-09-26)
 
 
