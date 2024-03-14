@@ -145,6 +145,10 @@ class Runner extends EventEmitter {
     this.emit(EVENT_RUN_BEGIN);
   }
 
+  get suite() {
+    return this.#current;
+  }
+
   end() {
     if (!this.#reporter) {
       return;
