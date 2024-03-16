@@ -1,0 +1,5 @@
+{
+  "stderr": "Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'invalid' imported from CWD/packages/mocha/index.js\n    *\n    *\n    *\n    *\n    *\n    *\n    *\n    *\n    *\n    * {\n  code: 'ERR_MODULE_NOT_FOUND'\n}\nError: invalid reporter \"invalid\"\n    *\n    *\n",
+  "stdout": "",
+  "exitCode": 1
+}

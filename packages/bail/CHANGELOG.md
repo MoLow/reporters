@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.0](https://github.com/MoLow/reporters/compare/bail-v1.1.4...bail-v1.2.0) (2024-03-14)
+
+
+### Features
+
+* add mocha reporter ([#116](https://github.com/MoLow/reporters/issues/116)) ([90ef449](https://github.com/MoLow/reporters/commit/90ef4490665e19cab1ceebf8a77e78b54e38f668))
+
+
+### Tests
+
+* migrate snapshots to snap ([#114](https://github.com/MoLow/reporters/issues/114)) ([1d3ca6a](https://github.com/MoLow/reporters/commit/1d3ca6ad12b4abb5c47adc775b47c205a4214e0a))
+
 ## [1.1.4](https://github.com/MoLow/reporters/compare/bail-v1.1.3...bail-v1.1.4) (2024-01-04)
 
 

@@ -3,26 +3,19 @@
 const { test } = require('node:test');
 const { spawnSync } = require('child_process');
 const assert = require('assert');
-const { compareLines } = require('../../../tests/utils');
 const reporter = require('../index');
-const output = require('./output');
-const outputESM = require('./output-esm');
+const { Snap, nodeMajor } = require('../../../tests/utils');
 
-const nodeMajor = process.versions.node.split('.')[0];
+const snapshot = Snap(`${__filename}.${nodeMajor}`);
 
-test('spwan with reporter', () => {
+test('spwan with reporter', async () => {
   const child = spawnSync(process.execPath, ['--test-reporter', './index.js', '../../tests/example'], { env: {} });
-  assert.strictEqual(child.stderr?.toString(), '');
-  compareLines(child.stdout?.toString(), output.overrides[nodeMajor]?.stdout ?? output.stdout);
+  await snapshot(child);
 });
 
-test('spwan with reporter -esm', () => {
+test('spwan with reporter - esm', async () => {
   const child = spawnSync(process.execPath, ['--test-reporter', './index.js', '../../tests/example.mjs'], { env: {} });
-  assert.strictEqual(child.stderr?.toString(), '');
-  compareLines(
-    child.stdout?.toString(),
-    outputESM.overrides[nodeMajor]?.stdout ?? outputESM.stdout,
-  );
+  await snapshot(child);
 });
 
 test('empty', async () => {
@@ -30,11 +23,8 @@ test('empty', async () => {
   for await (const line of reporter([])) {
     lines.push(line);
   }
-  assert.deepStrictEqual(lines, [
-    '<?xml version="1.0" encoding="utf-8"?>\n',
-    '<testsuites>\n',
-    '</testsuites>\n',
-  ]);
+
+  assert.deepStrictEqual(lines, await snapshot.snap(lines));
 });
 
 test('single test', async () => {
@@ -42,10 +32,5 @@ test('single test', async () => {
   for await (const line of reporter([{ type: 'test:pass', data: { name: 'test', nesting: 0, details: { duration_ms: 100 } } }])) {
     lines.push(line);
   }
-  assert.deepStrictEqual(lines, [
-    '<?xml version="1.0" encoding="utf-8"?>\n',
-    '<testsuites>\n',
-    '\t<undefined name="root">\n\t<testcase name="test" time="0.100000" classname="test"/>\n\t</undefined>\n',
-    '</testsuites>\n',
-  ]);
+  assert.deepStrictEqual(lines, await snapshot.snap(lines));
 });

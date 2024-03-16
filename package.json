@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/MoLow/reporters#readme",
   "devDependencies": {
+    "@matteo.collina/snap": "^0.2.1",
     "c8": "^7.13.0",
     "eslint": "^7.32.0 || ^8.2.0",
     "eslint-config-airbnb-base": "^15.0.0",

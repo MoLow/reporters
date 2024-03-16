@@ -15,9 +15,10 @@ node --test \
 
 Available reporters:
 
+- [bail](https://www.npmjs.com/package/@reporters/bail) - bail on first failure
 - [github](https://www.npmjs.com/package/@reporters/github) - report to github actions
 - [jUnit](https://www.npmjs.com/package/@reporters/junit) - report to jUnit 
+- [mocha](https://www.npmjs.com/package/@reporters/mocha) - use any mocha reporter with `node:test`
 - [silent](https://www.npmjs.com/package/@reporters/silent) - a silent reporter
-- [bail](https://www.npmjs.com/package/@reporters/bail) - bail on first failure
-- [testwatch](https://www.npmjs.com/package/@reporters/testwatch) - An interactive REPL for `node:test` watch mode.
 - [slow](https://www.npmjs.com/package/@reporters/slow) - report slow tests
+- [testwatch](https://www.npmjs.com/package/@reporters/testwatch) - An interactive REPL for `node:test` watch mode.
