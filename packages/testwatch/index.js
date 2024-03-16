@@ -41,10 +41,11 @@ process.stdin.setRawMode?.(true);
 
 class REPL {
   #controller = new AbortController();
+
   #hooks = {
     shouldRunTestSuite: [],
     onTestRunComplete: [],
-  }
+  };
 
   #filesFilter = process.argv[2] || '';
 
@@ -67,10 +68,10 @@ class REPL {
     this.#clear();
     this.#controller.abort();
     this.#controller = new AbortController();
-    if (this.#hooks.shouldRunTestSuite.some(fn => !fn())) {
+    if (this.#hooks.shouldRunTestSuite.some((fn) => !fn())) {
       this.#clear();
       this.#emitter.emit('drained');
-      this.#hooks.onTestRunComplete.forEach(fn => fn())
+      this.#hooks.onTestRunComplete.forEach((fn) => fn());
       return;
     }
 
@@ -80,7 +81,7 @@ class REPL {
     if (!files.length) {
       process.stdout.write(chalk.red(`\nNo files found for pattern ${filter}\n`));
       this.#emitter.emit('drained');
-      this.#hooks.onTestRunComplete.forEach(fn => fn())
+      this.#hooks.onTestRunComplete.forEach((fn) => fn());
       return;
     }
 
@@ -105,7 +106,7 @@ class REPL {
             setImmediate(() => {
               this.#emitter.emit('drained');
               drained = true;
-              this.#hooks.onTestRunComplete.forEach(fn => fn())
+              this.#hooks.onTestRunComplete.forEach((fn) => fn());
             });
           }
         }
@@ -256,7 +257,7 @@ ${Object.entries(this.#currentCommands)
 
   registerPlugin(plugin) {
     // TODO: should we be compatible (as much as possible) to Jest API for easy migration?
-    const usageInfo = plugin.getUsageInfo()
+    const usageInfo = plugin.getUsageInfo();
 
     // TODO: enable override t,p overridable
     this.#currentCommands = Object.freeze({
@@ -264,19 +265,19 @@ ${Object.entries(this.#currentCommands)
         fn: plugin.run.bind(plugin),
         description: usageInfo.description,
       },
-      ...this.#currentCommands
-    })
+      ...this.#currentCommands,
+    });
 
     plugin.apply({
       shouldRunTestSuite: (fn) => this.#hooks.shouldRunTestSuite.push(fn),
       onTestRunComplete: (fn) => this.#hooks.onTestRunComplete.push(fn),
-    })
+    });
   }
 }
 
-const repl = new REPL()
+const repl = new REPL();
 // TODO: only for testing/development. remove this after we have config.
-repl.registerPlugin(new WatchSuspendPlugin())
+repl.registerPlugin(new WatchSuspendPlugin());
 
 repl.run()
   .then(() => process.exit(0))

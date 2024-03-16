@@ -29,7 +29,7 @@ REPL Usage
 const mainMenuWithFilters = mainMenu.replace('REPL Usage', `REPL Usage
  › Press c to clear the filters.`);
 const mainMenuWithPlugin = mainMenu.replace('REPL Usage', 'REPL Usage\n'
-       + ' › Press s to suspend watch mode')
+       + ' › Press s to suspend watch mode');
 const compactMenu = '\nREPL Usage: Press w to show more.';
 const filterTestsPrompt = `
 Filter Test
@@ -87,7 +87,8 @@ async function spawnInteractive(commandSequence = 'q', args = []) {
     pending.stdout += data;
     const s = pending.stdout;
     // TODO: can we check only the last line of each possible option?
-    if (s.includes(mainMenu) || s.includes(mainMenuWithFilters) || s.includes(compactMenu) || s.includes(mainMenuWithPlugin)) {
+    if (s.includes(mainMenu) || s.includes(mainMenuWithFilters)
+        || s.includes(compactMenu) || s.includes(mainMenuWithPlugin)) {
       pending.resolve();
     }
   });
@@ -299,13 +300,15 @@ describe('testwatch', { concurrency: true, skip: !isSupported ? 'unsupported nod
     });
   });
 
-  describe('Plugins', () => { 
+  describe('Plugins', () => {
     it('should suspend the watch mode', async () => {
       const { outputs, stderr } = await spawnInteractive(['s', '\r', 'q']);
       assert.strictEqual(stderr, '');
       assert.deepStrictEqual(outputs, [
         '',
+        '',
         `${tests}\n${mainMenuWithPlugin}\nTest is suspended.\n`,
+        '',
         `${compactMenu}\nTest is suspended.\n\n`,
       ]);
     });
