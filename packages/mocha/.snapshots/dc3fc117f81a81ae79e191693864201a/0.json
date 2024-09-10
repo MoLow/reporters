@@ -1,5 +1,5 @@
 {
   "stderr": "",
-  "stdout": "\n\n  tests\n    ✔ is ok\n    1) fails\n    ✔ is a diagnostic\n    2) should fail\n\n  more tests\n    ✔ is ok\n\n  - is skipped\n  - is a todo\n  ✔ top level diagnostic\n\n  4 passing (*ms)\n  2 pending\n  2 failing\n\n  1) \n       tests\n         fails:\n     Error [ERR_TEST_FAILURE]: this is an error\n  \n\n  2) \n       tests\n         should fail:\n     Error [ERR_TEST_FAILURE]: The expression evaluated to a falsy value:\n\n  assert(false)\n\n  \n\n\n\n",
+  "stdout": "\n\n  tests\n    ✔ is ok\n    1) fails\n    ✔ is a diagnostic\n    2) should fail\n\n  more tests\n    ✔ is ok\n\n  - is skipped\n  - is a todo\n  ✔ top level diagnostic\n\n  4 passing (*ms)\n  2 pending\n  2 failing\n\n  1) \n       tests\n         fails:\n     Error [ERR_TEST_FAILURE]: this is an error\n      at async Promise.all (index 0)\n\n  2) \n       tests\n         should fail:\n     Error [ERR_TEST_FAILURE]: The expression evaluated to a falsy value:\n\n  assert(false)\n\n  \n\n\n\n",
   "exitCode": 1
 }

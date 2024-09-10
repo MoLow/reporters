@@ -8,6 +8,8 @@
   "scripts": {
     "mono": "c8 node scripts/mono-run.js",
     "test": "yarn mono test",
+    "test:clean-snapshots": "rm -rf packages/**/.snapshots",
+    "test:update-snapshots": "SNAP_UPDATE=1 yarn test",
     "lint": "eslint ."
   },
   "workspaces": [
@@ -21,10 +23,11 @@
   },
   "homepage": "https://github.com/MoLow/reporters#readme",
   "devDependencies": {
-    "@matteo.collina/snap": "^0.2.1",
+    "@matteo.collina/snap": "^0.3.0",
     "c8": "^7.13.0",
     "eslint": "^7.32.0 || ^8.2.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-plugin-import": "^2.25.2"
-  }
+  },
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }
