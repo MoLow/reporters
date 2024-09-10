@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/MoLow/reporters/compare/bail-v1.2.0...bail-v1.2.1) (2024-09-10)
+
+
+### Tests
+
+* use human readable snapshots ([#127](https://github.com/MoLow/reporters/issues/127)) ([cc7d3ba](https://github.com/MoLow/reporters/commit/cc7d3baa7b054f82a5580dfe4151d4eb3c9e8dd5))
+
 ## [1.2.0](https://github.com/MoLow/reporters/compare/bail-v1.1.4...bail-v1.2.0) (2024-03-14)
 
 

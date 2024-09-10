@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.6](https://github.com/MoLow/reporters/compare/silent-v1.2.5...silent-v1.2.6) (2024-09-10)
+
+
+### Tests
+
+* use human readable snapshots ([#127](https://github.com/MoLow/reporters/issues/127)) ([cc7d3ba](https://github.com/MoLow/reporters/commit/cc7d3baa7b054f82a5580dfe4151d4eb3c9e8dd5))
+
 ## [1.2.5](https://github.com/MoLow/reporters/compare/silent-v1.2.4...silent-v1.2.5) (2024-03-14)
 
 

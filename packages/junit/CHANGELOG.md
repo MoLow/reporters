@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.2](https://github.com/MoLow/reporters/compare/junit-v1.3.1...junit-v1.3.2) (2024-09-10)
+
+
+### Tests
+
+* update tests to reflect latest node updates ([#125](https://github.com/MoLow/reporters/issues/125)) ([2849c0f](https://github.com/MoLow/reporters/commit/2849c0f9b57375eb4dc704539fdb331b0b4cd572))
+* use human readable snapshots ([#127](https://github.com/MoLow/reporters/issues/127)) ([cc7d3ba](https://github.com/MoLow/reporters/commit/cc7d3baa7b054f82a5580dfe4151d4eb3c9e8dd5))
+
 ## [1.3.1](https://github.com/MoLow/reporters/compare/junit-v1.3.0...junit-v1.3.1) (2024-03-14)
 
 

@@ -1,6 +1,6 @@
 {
   "name": "@reporters/bail",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "A Bail library for `node:test`",
   "type": "commonjs",
   "keywords": [

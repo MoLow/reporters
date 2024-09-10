@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.4](https://github.com/MoLow/reporters/compare/testwatch-v1.4.3...testwatch-v1.4.4) (2024-09-10)
+
+
+### Tests
+
+* update tests to reflect latest node updates ([#125](https://github.com/MoLow/reporters/issues/125)) ([2849c0f](https://github.com/MoLow/reporters/commit/2849c0f9b57375eb4dc704539fdb331b0b4cd572))
+
 ## [1.4.3](https://github.com/MoLow/reporters/compare/testwatch-v1.4.2...testwatch-v1.4.3) (2024-01-04)
 
 
