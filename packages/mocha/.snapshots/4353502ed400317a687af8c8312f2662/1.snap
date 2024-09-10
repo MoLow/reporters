@@ -1,0 +1,20 @@
+Object {
+  "exitCode": 1,
+  "stderr": "",
+  "stdout": "
+
+  1) should fail
+  ✔ should pass
+
+  1 passing (*ms)
+  1 failing
+
+  1) 
+       should fail:
+     Error [ERR_TEST_FAILURE]: false == true
+  
+
+
+
+",
+}

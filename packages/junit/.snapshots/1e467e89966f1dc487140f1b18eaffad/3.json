@@ -1,6 +1,0 @@
-[
-  "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n",
-  "<testsuites>\n",
-  "\t<undefined name=\"root\">\n\t<testcase name=\"test\" time=\"0.100000\" classname=\"test\"/>\n\t</undefined>\n",
-  "</testsuites>\n"
-]

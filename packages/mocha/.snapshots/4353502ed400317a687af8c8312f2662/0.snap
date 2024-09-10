@@ -1,0 +1,41 @@
+Object {
+  "exitCode": 1,
+  "stderr": "",
+  "stdout": "
+
+  tests
+    ✔ is ok
+    1) fails
+    ✔ is a diagnostic
+    2) should fail
+
+  more tests
+    ✔ is ok
+
+  - is skipped
+  - is a todo
+  ✔ top level diagnostic
+
+  4 passing (*ms)
+  2 pending
+  2 failing
+
+  1) 
+       tests
+         fails:
+     Error [ERR_TEST_FAILURE]: this is an error
+  
+
+  2) 
+       tests
+         should fail:
+     Error [ERR_TEST_FAILURE]: The expression evaluated to a falsy value:
+
+  assert(false)
+
+  
+
+
+
+",
+}

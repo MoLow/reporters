@@ -1,0 +1,9 @@
+Object {
+  "exitCode": 1,
+  "stderr": "",
+  "stdout": "file: CWD/tests/slow_tests.js has slow tests:
+  *
+  *
+  *
+",
+}

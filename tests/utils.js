@@ -4,7 +4,7 @@ const assert = require('node:assert');
 const { hostname } = require('node:os');
 const { resolve } = require('node:path');
 // eslint-disable-next-line import/no-unresolved
-const Snap = require('@matteo.collina/snap');
+const { format: prettyFormat } = require('pretty-format');
 
 const nodeMajor = process.versions.node.split('.')[0];
 
@@ -20,14 +20,21 @@ function sanitize(str) {
 }
 
 function snapshot(filename) {
-  const snap = Snap(filename);
+  // eslint-disable-next-line no-underscore-dangle
+  let snap_;
+  async function snap(actual) {
+    // eslint-disable-next-line import/extensions
+    snap_ ??= (await import('./snap.mjs')).default(filename);
+    return snap_(actual);
+  }
   async function test(child, ...args) {
-    const actual = {
+    const actual = prettyFormat({
       stderr: sanitize(child.stderr?.toString() ?? ''),
       stdout: sanitize(child.stdout?.toString() ?? ''),
       exitCode: child.status,
-    };
-    assert.deepStrictEqual(actual, await snap(actual));
+    });
+    const expected = await snap(actual);
+    assert.deepStrictEqual(actual, expected);
     for (const arg of args) {
       const a = typeof arg === 'string' ? sanitize(arg) : arg;
       // eslint-disable-next-line no-await-in-loop
@@ -35,6 +42,7 @@ function snapshot(filename) {
     }
   }
   test.snap = snap;
+  test.snap.serialize = prettyFormat;
   return test;
 }
 

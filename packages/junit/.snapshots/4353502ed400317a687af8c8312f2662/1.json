@@ -1,5 +1,0 @@
-{
-  "stderr": "",
-  "stdout": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<testsuites>\n\t<testcase name=\"should fail\" time=\"*\" classname=\"test\" failure=\"false == true\">\n\t\t<failure type=\"testCodeFailure\" message=\"false == true\">\n[Error [ERR_TEST_FAILURE]: false == true] {\n  failureType: 'testCodeFailure',\n  cause: AssertionError [ERR_ASSERTION]: false == true\n      *\n      *\n      *\n      *\n      * {\n    generatedMessage: true,\n    code: 'ERR_ASSERTION',\n    actual: false,\n    expected: true,\n    operator: '=='\n  },\n  code: 'ERR_TEST_FAILURE'\n}\n\t\t</failure>\n\t</testcase>\n\t<testcase name=\"should pass\" time=\"*\" classname=\"test\"/>\n</testsuites>\n",
-  "exitCode": 1
-}

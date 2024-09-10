@@ -1,0 +1,28 @@
+Object {
+  "exitCode": 7,
+  "stderr": "node:internal/test_runner/harness:*
+      throw err;
+      ^
+
+Error: Bail
+    *
+    at bail.next (<anonymous>)
+    *
+    *
+    *
+    *
+    *
+    *
+    *
+    *
+Emitted 'error' event on Duplex instance at:
+    *
+    *
+    *
+
+Node.js *
+",
+  "stdout": "X
+[31m✖ Bailing on failed test: fail[0m
+",
+}

@@ -1,0 +1,53 @@
+Object {
+  "exitCode": 1,
+  "stderr": "",
+  "stdout": "{
+  state: 'passed',
+  isPending: false,
+  currentRetry: 0,
+  fullTitle: ' tests is ok'
+}
+{
+  state: 'failed',
+  isPending: false,
+  currentRetry: 0,
+  fullTitle: ' tests fails'
+}
+{
+  state: 'passed',
+  isPending: false,
+  currentRetry: 0,
+  fullTitle: ' tests is a diagnostic'
+}
+{
+  state: 'failed',
+  isPending: false,
+  currentRetry: 0,
+  fullTitle: ' tests should fail'
+}
+{
+  state: 'passed',
+  isPending: false,
+  currentRetry: 0,
+  fullTitle: ' more tests is ok'
+}
+{
+  state: 'pending',
+  isPending: true,
+  currentRetry: 0,
+  fullTitle: ' is skipped'
+}
+{
+  state: 'pending',
+  isPending: true,
+  currentRetry: 0,
+  fullTitle: ' is a todo'
+}
+{
+  state: 'passed',
+  isPending: false,
+  currentRetry: 0,
+  fullTitle: ' top level diagnostic'
+}
+",
+}

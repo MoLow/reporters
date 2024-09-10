@@ -1,5 +1,0 @@
-{
-  "stderr": "",
-  "stdout": "{\n  state: 'passed',\n  isPending: false,\n  currentRetry: 0,\n  fullTitle: ' tests is ok'\n}\n{\n  state: 'failed',\n  isPending: false,\n  currentRetry: 0,\n  fullTitle: ' tests fails'\n}\n{\n  state: 'passed',\n  isPending: false,\n  currentRetry: 0,\n  fullTitle: ' tests is a diagnostic'\n}\n{\n  state: 'failed',\n  isPending: false,\n  currentRetry: 0,\n  fullTitle: ' tests should fail'\n}\n{\n  state: 'passed',\n  isPending: false,\n  currentRetry: 0,\n  fullTitle: ' more tests is ok'\n}\n{\n  state: 'pending',\n  isPending: true,\n  currentRetry: 0,\n  fullTitle: ' is skipped'\n}\n{\n  state: 'pending',\n  isPending: true,\n  currentRetry: 0,\n  fullTitle: ' is a todo'\n}\n{\n  state: 'passed',\n  isPending: false,\n  currentRetry: 0,\n  fullTitle: ' top level diagnostic'\n}\n",
-  "exitCode": 1
-}
