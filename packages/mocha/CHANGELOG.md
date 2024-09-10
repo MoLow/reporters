@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.0.2](https://github.com/MoLow/reporters/compare/mocha-v1.0.1...mocha-v1.0.2) (2024-09-10)
+
+
+### Bug Fixes
+
+* **mocha:** unwrap errors ([#128](https://github.com/MoLow/reporters/issues/128)) ([214c6b6](https://github.com/MoLow/reporters/commit/214c6b6a2d7bb811f65f1b0d7b7352ab3226193f))
+
+
+### Tests
+
+* update tests to reflect latest node updates ([#125](https://github.com/MoLow/reporters/issues/125)) ([2849c0f](https://github.com/MoLow/reporters/commit/2849c0f9b57375eb4dc704539fdb331b0b4cd572))
+* use human readable snapshots ([#127](https://github.com/MoLow/reporters/issues/127)) ([cc7d3ba](https://github.com/MoLow/reporters/commit/cc7d3baa7b054f82a5580dfe4151d4eb3c9e8dd5))
+
 ## [1.0.1](https://github.com/MoLow/reporters/compare/mocha-v1.0.0...mocha-v1.0.1) (2024-03-14)
 
 
