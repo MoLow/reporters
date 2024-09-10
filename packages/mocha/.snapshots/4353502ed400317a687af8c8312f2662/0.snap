@@ -23,17 +23,37 @@ Object {
   1) 
        tests
          fails:
-     Error [ERR_TEST_FAILURE]: this is an error
-  
+     Error: this is an error
+      *
+      *
+      *
+      *
+      *
+      *
+      at async Promise.all (index 0)
+      *
+      *
 
   2) 
        tests
          should fail:
-     Error [ERR_TEST_FAILURE]: The expression evaluated to a falsy value:
+
+      AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
 
   assert(false)
 
-  
+      + expected - actual
+
+      -false
+      +true
+      
+      *
+      *
+      *
+      *
+      *
+      *
+      *
 
 
 

@@ -11,8 +11,18 @@ Object {
 
   1) 
        should fail:
-     Error [ERR_TEST_FAILURE]: false == true
-  
+
+      AssertionError [ERR_ASSERTION]: false == true
+      + expected - actual
+
+      -false
+      +true
+      
+      *
+      *
+      *
+      *
+      *
 
 
 

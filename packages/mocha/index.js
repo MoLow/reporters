@@ -53,7 +53,8 @@ class Test {
     this.file = event.data.file;
     this.pending = Boolean(event.data.skip || event.data.todo);
     this.duration = event.data.details?.duration_ms;
-    this.err = event.data.details?.error;
+    const error = event.data.details?.error;
+    this.err = error?.cause instanceof Error ? error.cause : error;
     this.passed = passed;
     this.nesting = event.data.nesting;
   }
