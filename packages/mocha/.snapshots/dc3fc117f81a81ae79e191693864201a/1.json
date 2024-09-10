@@ -1,5 +1,0 @@
-{
-  "stderr": "",
-  "stdout": "\n\n  1) should fail\n  ✔ should pass\n\n  1 passing (*ms)\n  1 failing\n\n  1) \n       should fail:\n     Error [ERR_TEST_FAILURE]: The expression evaluated to a falsy value:\n\n  assert(false)\n\n      *\n\n\n\n",
-  "exitCode": 1
-}

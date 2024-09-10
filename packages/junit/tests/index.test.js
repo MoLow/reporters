@@ -24,7 +24,10 @@ test('empty', async () => {
     lines.push(line);
   }
 
-  assert.deepStrictEqual(lines, await snapshot.snap(lines));
+  assert.deepStrictEqual(
+    snapshot.snap.serialize(lines),
+    await snapshot.snap(snapshot.snap.serialize(lines)),
+  );
 });
 
 test('single test', async () => {
@@ -32,5 +35,8 @@ test('single test', async () => {
   for await (const line of reporter([{ type: 'test:pass', data: { name: 'test', nesting: 0, details: { duration_ms: 100 } } }])) {
     lines.push(line);
   }
-  assert.deepStrictEqual(lines, await snapshot.snap(lines));
+  assert.deepStrictEqual(
+    snapshot.snap.serialize(lines),
+    await snapshot.snap(snapshot.snap.serialize(lines)),
+  );
 });
