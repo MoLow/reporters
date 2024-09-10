@@ -11,11 +11,21 @@ Object {
 
   1) 
        should fail:
-     Error [ERR_TEST_FAILURE]: The expression evaluated to a falsy value:
+
+      AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
 
   assert(false)
 
-  
+      + expected - actual
+
+      -false
+      +true
+      
+      *
+      *
+      *
+      *
+      *
 
 
 
