@@ -9,12 +9,12 @@ const reporter = require('../index');
 
 const snapshot = Snap(`${__filename}.${nodeMajor}`);
 
-test('spwan with reporter', async () => {
+test('spawn with reporter', async () => {
   const child = spawnSync(process.execPath, ['--test-reporter', './index.js', '../../tests/example'], { env: {} });
   await snapshot(child);
 });
 
-test('spwan with reporter - esm', async () => {
+test('spawn with reporter - esm', async () => {
   const child = spawnSync(process.execPath, ['--test-reporter', './index.js', '../../tests/example.mjs'], { env: {} });
   await snapshot(child);
 });

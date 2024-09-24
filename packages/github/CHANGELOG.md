@@ -71,7 +71,7 @@
 ### Bug Fixes
 
 * line reporting for ERR_TEST_FAILURE ([4fb29f3](https://github.com/MoLow/reporters/commit/4fb29f3fb8a470af8d1a9549adc7d91f465cad91))
-* stacktrace misslocated ([33068bf](https://github.com/MoLow/reporters/commit/33068bf98f53f7d6d28678b63d58b4c9b04d8ece))
+* stacktrace mislocated ([33068bf](https://github.com/MoLow/reporters/commit/33068bf98f53f7d6d28678b63d58b4c9b04d8ece))
 
 
 ### Documentation

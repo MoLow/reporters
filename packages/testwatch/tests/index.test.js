@@ -247,7 +247,7 @@ describe('testwatch', { concurrency: true, skip: !isSupported ? 'unsupported nod
         ]);
       });
     });
-    it('should filter tests and files togetheer', async () => {
+    it('should filter tests and files together', async () => {
       const { outputs, stderr } = await spawnInteractive(['p', 'index', '\r', 't', 'sum', '\r', 'w', 'q'].join(''));
       const activeFilters = '\nActive Filters: file name **/index*.*, test name /sum/\n';
       assert.strictEqual(stderr, '');
