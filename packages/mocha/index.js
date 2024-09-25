@@ -165,7 +165,7 @@ class Runner extends EventEmitter {
 
   #report(suite = this.#root) {
     /* Not like mocha,  node:test runs tests as soon as they are encountered
-    so the exact structure is unkown until all suites end */
+    so the exact structure is unknown until all suites end */
     this.emit(EVENT_SUITE_BEGIN, suite);
     suite.finalize();
     for (const s of suite.suites) {

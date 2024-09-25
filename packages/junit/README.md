@@ -2,7 +2,7 @@
 
 # Junit Reporter
 A Junit reporter for `node:test`.
-intendend for use with major CI tools like Jenkins, CircleCI, etc that consume Junit reports.
+intended for use with major CI tools like Jenkins, CircleCI, etc that consume Junit reports.
 
 ## Installation
 
@@ -24,7 +24,7 @@ node --test \
 
 ## Example 
 
-Ouput of the following test file:
+Output of the following test file:
 
 ```js
 const { describe, it } = require('node:test');
