@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.7](https://github.com/MoLow/reporters/compare/silent-v1.2.6...silent-v1.2.7) (2024-09-25)
+
+
+### Miscellaneous Chores
+
+* fix typos ([a421b9a](https://github.com/MoLow/reporters/commit/a421b9a8b2c78d9df6816994160e5b8d25914b77))
+
 ## [1.2.6](https://github.com/MoLow/reporters/compare/silent-v1.2.5...silent-v1.2.6) (2024-09-10)
 
 

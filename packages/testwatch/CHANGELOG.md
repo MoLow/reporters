@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.5](https://github.com/MoLow/reporters/compare/testwatch-v1.4.4...testwatch-v1.4.5) (2024-09-25)
+
+
+### Miscellaneous Chores
+
+* fix typos ([a421b9a](https://github.com/MoLow/reporters/commit/a421b9a8b2c78d9df6816994160e5b8d25914b77))
+
 ## [1.4.4](https://github.com/MoLow/reporters/compare/testwatch-v1.4.3...testwatch-v1.4.4) (2024-09-10)
 
 
