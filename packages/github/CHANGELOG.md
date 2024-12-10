@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.7.2](https://github.com/MoLow/reporters/compare/github-v1.7.1...github-v1.7.2) (2024-12-10)
+
+
+### Bug Fixes
+
+* **github:** correctly convert `file:` URL to path ([#131](https://github.com/MoLow/reporters/issues/131)) ([31843fc](https://github.com/MoLow/reporters/commit/31843fce34c9e4811f600113bcc6c70775b637c3))
+
+
+### Miscellaneous Chores
+
+* fix typos ([a421b9a](https://github.com/MoLow/reporters/commit/a421b9a8b2c78d9df6816994160e5b8d25914b77))
+
 ## [1.7.1](https://github.com/MoLow/reporters/compare/github-v1.7.0...github-v1.7.1) (2024-09-10)
 
 
