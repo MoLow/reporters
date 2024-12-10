@@ -1,6 +1,7 @@
 'use strict';
 
 const path = require('node:path');
+const { fileURLToPath } = require('node:url');
 const util = require('node:util');
 const { EOL } = require('node:os');
 const core = require('@actions/core');
@@ -12,11 +13,14 @@ const stack = new StackUtils({ cwd: WORKSPACE, internals: StackUtils.nodeInterna
 
 const isFile = (name) => name?.startsWith(WORKSPACE);
 
-const getRelativeFilePath = (name) => (isFile(name) ? path.relative(WORKSPACE, require.resolve(name) ?? '') : null);
+const getRelativeFilePath = (name) => (isFile(name) ? path.relative(WORKSPACE, name) : null);
 
 function getFilePath(fileName) {
   if (fileName.startsWith('file://')) {
-    return getRelativeFilePath(new URL(fileName).pathname);
+    return getRelativeFilePath(fileURLToPath(fileName));
+  }
+  if (!path.isAbsolute(fileName)) {
+    return getRelativeFilePath(path.resolve(fileName) ?? '');
   }
   return getRelativeFilePath(fileName);
 }
