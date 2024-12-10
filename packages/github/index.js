@@ -1,7 +1,7 @@
 'use strict';
 
 const path = require('node:path');
-const { fileURLToPath } = require("node:url");
+const { fileURLToPath } = require('node:url');
 const util = require('node:util');
 const { EOL } = require('node:os');
 const core = require('@actions/core');
@@ -20,7 +20,7 @@ function getFilePath(fileName) {
     return getRelativeFilePath(fileURLToPath(fileName));
   }
   if (!path.isAbsolute(fileName)) {
-    return getRelativeFilePath(path.resolve(fileName) ?? "");
+    return getRelativeFilePath(path.resolve(fileName) ?? '');
   }
   return getRelativeFilePath(fileName);
 }
