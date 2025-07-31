@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.4](https://github.com/MoLow/reporters/compare/junit-v1.3.3...junit-v1.3.4) (2025-07-31)
+
+
+### Miscellaneous Chores
+
+* update snapshots ([#133](https://github.com/MoLow/reporters/issues/133)) ([8a689d2](https://github.com/MoLow/reporters/commit/8a689d2fd4f1d389aceb1825c9ce82c1069f1dc1))
+
 ## [1.3.3](https://github.com/MoLow/reporters/compare/junit-v1.3.2...junit-v1.3.3) (2024-12-10)
 
 
