@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.8.0](https://github.com/MoLow/reporters/compare/github-v1.7.2...github-v1.8.0) (2025-07-31)
+
+
+### Features
+
+* silence diagnostics ([#135](https://github.com/MoLow/reporters/issues/135)) ([6f43c3d](https://github.com/MoLow/reporters/commit/6f43c3d666a59abbac1f54dbf7c61c6bcc71c854))
+
+
+### Miscellaneous Chores
+
+* update snapshots ([#133](https://github.com/MoLow/reporters/issues/133)) ([8a689d2](https://github.com/MoLow/reporters/commit/8a689d2fd4f1d389aceb1825c9ce82c1069f1dc1))
+
 ## [1.7.2](https://github.com/MoLow/reporters/compare/github-v1.7.1...github-v1.7.2) (2024-12-10)
 
 
