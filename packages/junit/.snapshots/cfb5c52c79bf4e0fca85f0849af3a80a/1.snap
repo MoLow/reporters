@@ -1,0 +1,35 @@
+Object {
+  "exitCode": 1,
+  "stderr": "",
+  "stdout": "<?xml version=\"1.0\" encoding=\"utf-8\"?>
+<testsuites>
+	<testcase name=\"should fail\" time=\"*\" classname=\"test\" failure=\"The expression evaluated to a falsy value:  assert(false)\">
+		<failure type=\"testCodeFailure\" message=\"The expression evaluated to a falsy value:  assert(false)\">
+[Error [ERR_TEST_FAILURE]: The expression evaluated to a falsy value:
+
+  assert(false)
+] {
+  code: 'ERR_TEST_FAILURE',
+  failureType: 'testCodeFailure',
+  cause: AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert(false)
+  
+      *
+      *
+      *
+      *
+      * {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '=='
+  }
+}
+		</failure>
+	</testcase>
+	<testcase name=\"should pass\" time=\"*\" classname=\"test\"/>
+</testsuites>
+",
+}
