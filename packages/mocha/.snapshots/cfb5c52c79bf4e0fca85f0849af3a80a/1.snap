@@ -12,7 +12,10 @@ Object {
   1) 
        should fail:
 
-      AssertionError [ERR_ASSERTION]: false == true
+      AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+
+  assert(false)
+
       + expected - actual
 
       -false

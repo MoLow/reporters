@@ -7,7 +7,9 @@ Object {
 		<testcase name=\"is ok\" time=\"*\" classname=\"test\"/>
 		<testcase name=\"fails\" time=\"*\" classname=\"test\" failure=\"this is an error\">
 			<failure type=\"testCodeFailure\" message=\"this is an error\">
-[Error [ERR_TEST_FAILURE]: this is an error] {
+Error [ERR_TEST_FAILURE]: this is an error
+    at async Promise.all (index 0) {
+  code: 'ERR_TEST_FAILURE',
   failureType: 'testCodeFailure',
   cause: Error: this is an error
       *
@@ -18,8 +20,7 @@ Object {
       *
       at async Promise.all (index 0)
       *
-      at async startSubtest (node:internal/test_runner/harness:214:3),
-  code: 'ERR_TEST_FAILURE'
+      *
 }
 			</failure>
 		</testcase>
@@ -30,6 +31,7 @@ Object {
 
   assert(false)
 ] {
+  code: 'ERR_TEST_FAILURE',
   failureType: 'testCodeFailure',
   cause: AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
   
@@ -47,8 +49,7 @@ Object {
     actual: false,
     expected: true,
     operator: '=='
-  },
-  code: 'ERR_TEST_FAILURE'
+  }
 }
 			</failure>
 		</testcase>

@@ -95,7 +95,8 @@ module.exports = async function githubReporter(source) {
       } case 'test:diagnostic':
         if (event.data.file === undefined
           || event.data.line === undefined
-          || event.data.column === undefined) {
+          || event.data.column === undefined
+          || (event.data.line === 1 && event.data.column === 1)) {
           diagnostics.push(event.data.message);
         } else {
           core.notice(event.data.message, extractLocation(event.data));
