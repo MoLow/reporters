@@ -98,7 +98,7 @@ module.exports = async function githubReporter(source) {
           || event.data.column === undefined
           || (event.data.line === 1 && event.data.column === 1)) {
           diagnostics.push(event.data.message);
-        } else {
+        } else if (process.env.GITHUB_ACTIONS_REPORTER_VERBOSE) {
           core.notice(event.data.message, extractLocation(event.data));
         }
         break;
