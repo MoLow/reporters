@@ -62,50 +62,51 @@ function extractLocation(data) {
   return { file, startLine: line, startColumn: column };
 }
 
-module.exports = async function githubReporter(source) {
-  if (!process.env.GITHUB_ACTIONS) {
-    // eslint-disable-next-line no-unused-vars
-    for await (const _ of source);
-    return;
+const counter = { pass: 0, fail: 0 };
+const diagnostics = [];
+
+function isTopLevelDiagnostic(data) {
+  return (data.file === undefined
+          || data.line === undefined
+          || data.column === undefined
+          || (data.line === 1 && data.column === 1));
+}
+
+function handleEvent(event) {
+  switch (event.type) {
+    case 'test:start':
+      core.debug(`starting to run ${event.data.name}`);
+      break;
+    case 'test:pass':
+      counter.pass += 1;
+      core.debug(`completed running ${event.data.name}`);
+      break;
+    case 'test:fail': {
+      const error = event.data.details?.error;
+      if (error?.code === 'ERR_TEST_FAILURE' && error?.failureType === 'subtestsFailed') {
+        // This means the failed subtests are already reported
+        // no need to re-annotate the file itself
+        break;
+      }
+      core.error(util.inspect(error, { colors: false, breakLength: Infinity }), {
+        ...extractLocation(event.data),
+        title: event.data.name,
+      });
+      counter.fail += 1;
+      break;
+    } case 'test:diagnostic':
+      if (isTopLevelDiagnostic(event.data)) {
+        diagnostics.push(event.data.message);
+      } else if (process.env.GITHUB_ACTIONS_REPORTER_VERBOSE) {
+        core.notice(event.data.message, extractLocation(event.data));
+      }
+      break;
+    default:
+      break;
   }
-  const counter = { pass: 0, fail: 0 };
-  const diagnostics = [];
-  for await (const event of source) {
-    switch (event.type) {
-      case 'test:start':
-        core.debug(`starting to run ${event.data.name}`);
-        break;
-      case 'test:pass':
-        counter.pass += 1;
-        core.debug(`completed running ${event.data.name}`);
-        break;
-      case 'test:fail': {
-        const error = event.data.details?.error;
-        if (error?.code === 'ERR_TEST_FAILURE' && error?.failureType === 'subtestsFailed') {
-          // This means the failed subtests are already reported
-          // no need to re-annotate the file itself
-          break;
-        }
-        core.error(util.inspect(error, { colors: false, breakLength: Infinity }), {
-          ...extractLocation(event.data),
-          title: event.data.name,
-        });
-        counter.fail += 1;
-        break;
-      } case 'test:diagnostic':
-        if (event.data.file === undefined
-          || event.data.line === undefined
-          || event.data.column === undefined
-          || (event.data.line === 1 && event.data.column === 1)) {
-          diagnostics.push(event.data.message);
-        } else if (process.env.GITHUB_ACTIONS_REPORTER_VERBOSE) {
-          core.notice(event.data.message, extractLocation(event.data));
-        }
-        break;
-      default:
-        break;
-    }
-  }
+}
+
+async function emitSummary() {
   const formattedDiagnostics = diagnostics.map((d) => {
     const [key, ...rest] = d.split(' ');
     const value = rest.join(' ');
@@ -124,4 +125,20 @@ module.exports = async function githubReporter(source) {
       .addTable(formattedDiagnostics)
       .write();
   }
+}
+
+module.exports = async function githubReporter(source) {
+  if (!process.env.GITHUB_ACTIONS) {
+    // eslint-disable-next-line no-unused-vars
+    for await (const _ of source);
+    return;
+  }
+  for await (const event of source) {
+    handleEvent(event);
+  }
+  await emitSummary();
 };
+
+module.exports.handleEvent = handleEvent;
+module.exports.emitSummary = emitSummary;
+module.exports.isTopLevelDiagnostic = isTopLevelDiagnostic;

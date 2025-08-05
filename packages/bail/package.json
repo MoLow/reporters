@@ -13,7 +13,7 @@
     "./index.js"
   ],
   "scripts": {
-    "test": "node --test-reporter=spec --test-reporter-destination=stdout --test-reporter=../github/index.js --test-reporter-destination=stdout --test"
+    "test": "node --test-reporter=../github-spec/index.js --test"
   },
   "bugs": {
     "url": "https://github.com/MoLow/reporters/issues"

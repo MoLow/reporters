@@ -1,7 +1,8 @@
 Object {
   "exitCode": 1,
   "stderr": "",
-  "stdout": "::debug::starting to run tests
+  "stdout": "this is a console log
+::debug::starting to run tests
 ::debug::starting to run is ok
 ::debug::completed running is ok
 ::debug::starting to run fails

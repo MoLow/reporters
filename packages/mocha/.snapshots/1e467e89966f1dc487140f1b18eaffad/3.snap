@@ -1,7 +1,8 @@
 Object {
   "exitCode": 1,
   "stderr": "",
-  "stdout": "{
+  "stdout": "this is a console log
+{
   state: 'passed',
   isPending: false,
   currentRetry: 0,

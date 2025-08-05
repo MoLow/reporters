@@ -32,6 +32,16 @@ describe('github reporter', () => {
     await snapshot(child, readFileSync(GITHUB_STEP_SUMMARY).toString('utf-8'));
   });
 
+  test('GITHUB_ACTIONS_REPORTER_VERBOSE', async () => {
+    const child = spawnSync(process.execPath, ['--test-reporter', './index.js', '../../tests/example'], {
+      env: {
+        GITHUB_ACTIONS: true, GITHUB_STEP_SUMMARY, GITHUB_WORKSPACE: path.resolve(__dirname, '../../../'), GITHUB_ACTIONS_REPORTER_VERBOSE: true,
+      },
+    });
+
+    await snapshot(child, readFileSync(GITHUB_STEP_SUMMARY).toString('utf-8'));
+  });
+
   test('should noop if not in github actions', async () => {
     const silentChild = spawnSync(process.execPath, ['--test-reporter', './index.js', '../../tests/example'], { env: { } });
     await snapshot(silentChild);

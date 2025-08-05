@@ -1,0 +1,31 @@
+{
+  "name": "@reporters/github-spec",
+  "version": "1.0.0",
+  "description": "A github actions reporter for `node:test`",
+  "type": "commonjs",
+  "keywords": [
+    "github actions",
+    "node:test",
+    "test",
+    "reporter",
+    "reporters"
+  ],
+  "dependencies": {
+    "@actions/core": "^1.10.0",
+    "@reporters/github": "*"
+  },
+  "files": [
+    "./index.js"
+  ],
+  "scripts": {
+    "test": "node --test-reporter=./index.js --test-reporter-destination=stdout --test"
+  },
+  "bugs": {
+    "url": "https://github.com/MoLow/reporters/issues"
+  },
+  "main": "index.js",
+  "homepage": "https://github.com/MoLow/reporters/tree/main/packages/github",
+  "repository": "https://github.com/MoLow/reporters.git",
+  "author": "Moshe Atlow",
+  "license": "MIT"
+}

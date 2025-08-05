@@ -23,6 +23,6 @@ Emitted 'error' event on Duplex instance at:
 Node.js *
 ",
   "stdout": "X
-[31m✖ Bailing on failed test: fail[0m
+✖ Bailing on failed test: fail
 ",
 }
