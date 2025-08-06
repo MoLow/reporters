@@ -59,6 +59,29 @@ function formatError(error, indentation) {
   return `\n${indentation}  ${message}\n`;
 }
 
+const formatDuration = (m) => {
+  let ms = m;
+  if (ms < 0) ms = -ms;
+  const time = {
+    day: Math.floor(ms / 86400000),
+    hour: Math.floor(ms / 3600000) % 24,
+    minute: Math.floor(ms / 60000) % 60,
+    second: Math.floor(ms / 1000) % 60,
+    millisecond: Math.floor(ms) % 1000,
+  };
+  if (ms < 1 && ms > 0) {
+    return `${ms.toFixed(3)} milliseconds`;
+  }
+  if (time.day !== 0 || time.hour !== 0 || time.minute !== 0 || time.second !== 0) {
+    /* c8 ignore next 2 */
+    time.millisecond = 0;
+  }
+  return Object.entries(time)
+    .filter((val) => val[1] !== 0)
+    .map(([key, val]) => `${val} ${key}${val !== 1 ? 's' : ''}`)
+    .join(', ');
+};
+
 class SpecReporter extends Transform {
   #isGitHubActions = Boolean(process.env.GITHUB_ACTIONS);
 
@@ -85,7 +108,7 @@ class SpecReporter extends Transform {
     let color = reporterColorMap[type] ?? 'white';
     let symbol = reporterUnicodeSymbolMap[type] ?? ' ';
     const { skip, todo } = data;
-    const durationMs = data.details?.duration_ms ? styleText(['gray', 'italic'], ` (${data.details.duration_ms}ms)`, { validateStream: !this.#isGitHubActions }) : '';
+    const durationMs = data.details?.duration_ms ? styleText(['gray', 'italic'], ` (${formatDuration(data.details.duration_ms)})`, { validateStream: !this.#isGitHubActions }) : '';
     let title = `${data.name}${durationMs}`;
 
     if (skip !== undefined) {
