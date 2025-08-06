@@ -5,16 +5,16 @@ Object {
 ::error title=should fail,file=tests/example.mjs,line=5,col=3::[Error [ERR_TEST_FAILURE]: The expression evaluated to a falsy value:%0A%0A  assert(false)%0A] {%0A  code: 'ERR_TEST_FAILURE',%0A  failureType: 'testCodeFailure',%0A  cause: AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:%0A  %0A    assert(false)%0A  %0A      at TestContext.<anonymous> (file://CWD/tests/example.mjs:5:3)%0A      at Test.runInAsyncScope (node:async_hooks:214:14)%0A      at Test.run (node:internal/test_runner/test:1081:25)%0A      at Test.start (node:internal/test_runner/test:978:17)%0A      at startSubtestAfterBootstrap (node:internal/test_runner/harness:332:17) {%0A    generatedMessage: true,%0A    code: 'ERR_ASSERTION',%0A    actual: false,%0A    expected: true,%0A    operator: '=='%0A  }%0A}
 ::debug::starting to run should pass
 ::debug::completed running should pass
-::group::✖ should fail (*ms)
+::group::✖ should fail (* millisecond)
 ::endgroup::
-::group::✔ should pass (*ms)
+::group::✔ should pass (* millisecond)
 ::endgroup::
 
 
 ✖ failing tests:
 
 *
-::group::✖ should fail (*ms)
+::group::✖ should fail (* millisecond)
   AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
   
     assert(false)

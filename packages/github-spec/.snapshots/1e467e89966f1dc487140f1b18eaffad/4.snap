@@ -3,24 +3,24 @@ Object {
   "stderr": "",
   "stdout": "this is a console log
 ▶ tests
-  ✔ is ok (*ms)
-  ✖ fails (*ms)
-  ✔ is a diagnostic (*ms)
+  ✔ is ok (* millisecond)
+  ✖ fails (* millisecond)
+  ✔ is a diagnostic (* millisecond)
   ℹ this is a diagnostic
-  ✖ should fail (*ms)
-✖ tests (*ms)
+  ✖ should fail (* millisecond)
+✖ tests (* millisecond)
 ▶ more tests
-  ✔ is ok (*ms)
-✔ more tests (*ms)
-﹣ is skipped (*ms) # SKIP
-✔ is a todo (*ms) # TODO
-✔ top level diagnostic (*ms)
+  ✔ is ok (* millisecond)
+✔ more tests (* millisecond)
+﹣ is skipped (* millisecond) # SKIP
+✔ is a todo (* millisecond) # TODO
+✔ top level diagnostic (* millisecond)
 ℹ top level diagnostic
 
 ✖ failing tests:
 
 *
-✖ fails (*ms)
+✖ fails (* millisecond)
   Error: this is an error
       *
       *
@@ -33,7 +33,7 @@ Object {
       *
 
 *
-✖ should fail (*ms)
+✖ should fail (* millisecond)
   AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
   
     assert(false)

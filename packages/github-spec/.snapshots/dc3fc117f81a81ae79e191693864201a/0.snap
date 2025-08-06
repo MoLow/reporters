@@ -22,27 +22,27 @@ Object {
 ::debug::starting to run top level diagnostic
 ::debug::completed running top level diagnostic
 ▶ tests
-::group::  ✔ is ok (*ms)
+::group::  ✔ is ok (* millisecond)
 ::endgroup::
-::group::  ✖ fails (*ms)
+::group::  ✖ fails (* millisecond)
 ::endgroup::
-::group::  ✔ is a diagnostic (*ms)
+::group::  ✔ is a diagnostic (* millisecond)
   ℹ this is a diagnostic
 ::endgroup::
-::group::  ✖ should fail (*ms)
+::group::  ✖ should fail (* millisecond)
 ::endgroup::
-::group::✖ tests (*ms)
+::group::✖ tests (* millisecond)
 ::endgroup::
 ▶ more tests
-::group::  ✔ is ok (*ms)
+::group::  ✔ is ok (* millisecond)
 ::endgroup::
-::group::✔ more tests (*ms)
+::group::✔ more tests (* millisecond)
 ::endgroup::
-::group::﹣ is skipped (*ms) # SKIP
+::group::﹣ is skipped (* millisecond) # SKIP
 ::endgroup::
-::group::✔ is a todo (*ms) # TODO
+::group::✔ is a todo (* millisecond) # TODO
 ::endgroup::
-::group::✔ top level diagnostic (*ms)
+::group::✔ top level diagnostic (* millisecond)
 ℹ top level diagnostic
 ::endgroup::
 
@@ -50,7 +50,7 @@ Object {
 ✖ failing tests:
 
 *
-::group::✖ fails (*ms)
+::group::✖ fails (* millisecond)
   Error: this is an error
       *
       *
@@ -64,7 +64,7 @@ Object {
 
 *
 ::endgroup::
-::group::✖ should fail (*ms)
+::group::✖ should fail (* millisecond)
   AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
   
     assert(false)

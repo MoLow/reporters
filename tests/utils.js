@@ -12,7 +12,7 @@ function sanitize(str) {
   return str
     .replaceAll(resolve(process.cwd(), '../../'), 'CWD')
     .replaceAll(process.version, '*')
-    .replaceAll(/[0-9.]+ms/g, '*ms')
+    .replaceAll(/[0-9.]+(ms| millisecond)s?/g, '*$1')
     .replaceAll(hostname(), 'HOSTNAME')
     .replaceAll(/time="[0-9.]+"/g, 'time="*"')
     .replaceAll(/test_runner\/harness:[0-9.]+\n/g, 'test_runner/harness:*\n')
