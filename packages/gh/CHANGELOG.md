@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.2](https://github.com/MoLow/reporters/compare/gh-v1.0.1...gh-v1.0.2) (2025-08-06)
+
+
+### Miscellaneous Chores
+
+* **gh:** clean diagnostics ([#142](https://github.com/MoLow/reporters/issues/142)) ([73c0df3](https://github.com/MoLow/reporters/commit/73c0df3e930ea063b80c02c44abe79736f9c89da))
+
 ## [1.0.1](https://github.com/MoLow/reporters/compare/gh-v1.0.0...gh-v1.0.1) (2025-08-06)
 
 
