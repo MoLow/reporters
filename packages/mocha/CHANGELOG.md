@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/MoLow/reporters/compare/mocha-v1.1.0...mocha-v1.1.1) (2025-08-06)
+
+
+### Miscellaneous Chores
+
+* **gh:** rename github-spec to gh ([#140](https://github.com/MoLow/reporters/issues/140)) ([0c50f28](https://github.com/MoLow/reporters/commit/0c50f2893236a5e841683c99ca61269c19f56d5e))
+
 ## [1.1.0](https://github.com/MoLow/reporters/compare/mocha-v1.0.4...mocha-v1.1.0) (2025-08-06)
 
 
