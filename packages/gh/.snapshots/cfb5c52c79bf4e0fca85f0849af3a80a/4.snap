@@ -6,7 +6,7 @@ Object {
   ✔ is ok (* millisecond)
   ✖ fails (* millisecond)
   ✔ is a diagnostic (* millisecond)
-  ℹ this is a diagnostic
+  this is a diagnostic
   ✖ should fail (* millisecond)
 ✖ tests (* millisecond)
 ▶ more tests
@@ -15,7 +15,7 @@ Object {
 ﹣ is skipped (* millisecond) # SKIP
 ✔ is a todo (* millisecond) # TODO
 ✔ top level diagnostic (* millisecond)
-ℹ top level diagnostic
+top level diagnostic
 
 ✖ failing tests:
 

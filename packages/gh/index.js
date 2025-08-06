@@ -13,16 +13,15 @@ const { emitSummary, handleEvent, isTopLevelDiagnostic } = require('@reporters/g
 const reporterColorMap = {
   'test:fail': 'red',
   'test:pass': 'green',
-  'test:diagnostic': 'blue',
+  'test:diagnostic': 'white',
   warn: 'yellow',
   error: 'red',
-  info: 'blue',
+  info: 'white',
 };
 
 const reporterUnicodeSymbolMap = {
   'test:fail': '\u2716 ',
   'test:pass': '\u2714 ',
-  'test:diagnostic': '\u2139 ',
   'test:coverage': '\u2139 ',
   'arrow:right': '\u25B6 ',
   'hyphen:minus': '\uFE63 ',
@@ -226,7 +225,7 @@ class SpecReporter extends Transform {
           return '';
         }
         const diagnosticColor = reporterColorMap[data.level] || reporterColorMap.info;
-        return `${indent(data.nesting)}${styleText(diagnosticColor, `${reporterUnicodeSymbolMap[type]}${data.message}`, { validateStream: !this.#isGitHubActions })}\n`;
+        return `${indent(data.nesting)}${styleText(diagnosticColor, `${reporterUnicodeSymbolMap[type] ?? ''}${data.message}`, { validateStream: !this.#isGitHubActions })}\n`;
       }
       case 'test:summary':
         // We report only the root test summary
