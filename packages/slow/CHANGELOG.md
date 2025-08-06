@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/MoLow/reporters/compare/slow-v1.0.3...slow-v1.1.0) (2025-08-06)
+
+
+### Features
+
+* **github-spec:** new combined reporter ([#136](https://github.com/MoLow/reporters/issues/136)) ([17a051f](https://github.com/MoLow/reporters/commit/17a051f4b4a23ad5f2e19aae58c3803970f7ba47))
+
 ## [1.0.3](https://github.com/MoLow/reporters/compare/slow-v1.0.2...slow-v1.0.3) (2024-12-10)
 
 

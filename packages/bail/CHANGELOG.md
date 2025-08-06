@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/MoLow/reporters/compare/bail-v1.2.1...bail-v1.3.0) (2025-08-06)
+
+
+### Features
+
+* **github-spec:** new combined reporter ([#136](https://github.com/MoLow/reporters/issues/136)) ([17a051f](https://github.com/MoLow/reporters/commit/17a051f4b4a23ad5f2e19aae58c3803970f7ba47))
+
 ## [1.2.1](https://github.com/MoLow/reporters/compare/bail-v1.2.0...bail-v1.2.1) (2024-09-10)
 
 
