@@ -27,7 +27,7 @@ Object {
 ::group::  ✖ fails (* millisecond)
 ::endgroup::
 ::group::  ✔ is a diagnostic (* millisecond)
-  ℹ this is a diagnostic
+  this is a diagnostic
 ::endgroup::
 ::group::  ✖ should fail (* millisecond)
 ::endgroup::
@@ -43,7 +43,7 @@ Object {
 ::group::✔ is a todo (* millisecond) # TODO
 ::endgroup::
 ::group::✔ top level diagnostic (* millisecond)
-ℹ top level diagnostic
+top level diagnostic
 ::endgroup::
 
 
