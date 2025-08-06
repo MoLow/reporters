@@ -1,0 +1,91 @@
+Object {
+  "exitCode": 1,
+  "stderr": "",
+  "stdout": "this is a console log
+::debug::starting to run tests
+::debug::starting to run is ok
+::debug::completed running is ok
+::debug::starting to run fails
+::error title=fails,file=packages/github-spec/tests/example.js,line=9,col=11::Error [ERR_TEST_FAILURE]: this is an error%0A    at async Promise.all (index 0) {%0A  code: 'ERR_TEST_FAILURE',%0A  failureType: 'testCodeFailure',%0A  cause: Error: this is an error%0A      at TestContext.<anonymous> (CWD/tests/example.js:9:11)%0A      at Test.runInAsyncScope (node:async_hooks:214:14)%0A      at Test.run (node:internal/test_runner/test:1081:25)%0A      at Suite.processPendingSubtests (node:internal/test_runner/test:763:18)%0A      at Test.postRun (node:internal/test_runner/test:1210:19)%0A      at Test.run (node:internal/test_runner/test:1138:12)%0A      at async Promise.all (index 0)%0A      at async Suite.run (node:internal/test_runner/test:1485:7)%0A      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:332:3)%0A}
+::debug::starting to run is a diagnostic
+::debug::completed running is a diagnostic
+::debug::starting to run should fail
+::error title=should fail,file=packages/github-spec/tests/example.js,line=12,col=31::[Error [ERR_TEST_FAILURE]: The expression evaluated to a falsy value:%0A%0A  assert(false)%0A] {%0A  code: 'ERR_TEST_FAILURE',%0A  failureType: 'testCodeFailure',%0A  cause: AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:%0A  %0A    assert(false)%0A  %0A      at TestContext.<anonymous> (CWD/tests/example.js:12:31)%0A      at Test.runInAsyncScope (node:async_hooks:214:14)%0A      at Test.run (node:internal/test_runner/test:1081:25)%0A      at Suite.processPendingSubtests (node:internal/test_runner/test:763:18)%0A      at Test.postRun (node:internal/test_runner/test:1210:19)%0A      at Test.run (node:internal/test_runner/test:1138:12)%0A      at async Suite.processPendingSubtests (node:internal/test_runner/test:763:7) {%0A    generatedMessage: true,%0A    code: 'ERR_ASSERTION',%0A    actual: false,%0A    expected: true,%0A    operator: '=='%0A  }%0A}
+::debug::starting to run more tests
+::debug::starting to run is ok
+::debug::completed running is ok
+::debug::completed running more tests
+::debug::starting to run is skipped
+::debug::completed running is skipped
+::debug::starting to run is a todo
+::debug::completed running is a todo
+::debug::starting to run top level diagnostic
+::debug::completed running top level diagnostic
+▶ tests
+::group::  ✔ is ok (*ms)
+::endgroup::
+::group::  ✖ fails (*ms)
+::endgroup::
+::group::  ✔ is a diagnostic (*ms)
+  ℹ this is a diagnostic
+::endgroup::
+::group::  ✖ should fail (*ms)
+::endgroup::
+::group::✖ tests (*ms)
+::endgroup::
+▶ more tests
+::group::  ✔ is ok (*ms)
+::endgroup::
+::group::✔ more tests (*ms)
+::endgroup::
+::group::﹣ is skipped (*ms) # SKIP
+::endgroup::
+::group::✔ is a todo (*ms) # TODO
+::endgroup::
+::group::✔ top level diagnostic (*ms)
+ℹ top level diagnostic
+::endgroup::
+
+
+✖ failing tests:
+
+*
+::group::✖ fails (*ms)
+  Error: this is an error
+      *
+      *
+      *
+      *
+      *
+      *
+      at async Promise.all (index 0)
+      *
+      *
+
+*
+::endgroup::
+::group::✖ should fail (*ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert(false)
+  
+      *
+      *
+      *
+      *
+      *
+      *
+      * {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '=='
+  }
+
+::endgroup::
+::group::Test results (4 passed, 2 failed)
+::notice::Total Tests: 8%0ASuites 📂: 2%0APassed ✅: 4%0AFailed ❌: 2%0ACanceled 🚫: 0%0ASkipped ⏭️: 1%0ATodo 📝: 1%0ADuration 🕐: *ms
+::endgroup::
+",
+}

@@ -1,7 +1,8 @@
 Object {
   "exitCode": 1,
   "stderr": "",
-  "stdout": "<?xml version=\"1.0\" encoding=\"utf-8\"?>
+  "stdout": "this is a console log
+<?xml version=\"1.0\" encoding=\"utf-8\"?>
 <testsuites>
 	<testsuite name=\"tests\" time=\"*\" disabled=\"0\" errors=\"0\" tests=\"4\" failures=\"2\" skipped=\"0\" hostname=\"HOSTNAME\">
 		<testcase name=\"is ok\" time=\"*\" classname=\"test\"/>

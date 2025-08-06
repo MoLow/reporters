@@ -13,7 +13,9 @@ describe('tests', () => {
 });
 
 describe('more tests', () => {
-  it('is ok', () => {});
+  it('is ok', () => {
+    console.log('this is a console log');
+  });
 });
 it.skip('is skipped', () => {});
 it.todo('is a todo');

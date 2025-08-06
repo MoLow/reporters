@@ -17,5 +17,6 @@ Error: invalid reporter \"invalid\"
     *
     *
 ",
-  "stdout": "",
+  "stdout": "this is a console log
+",
 }
