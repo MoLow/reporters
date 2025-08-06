@@ -1,4 +1,4 @@
-[![npm version](https://img.shields.io/npm/v/@reporters/github-spec)](https://www.npmjs.com/package/@reporters/github-spec) ![tests](https://github.com/MoLow/reporters/actions/workflows/test.yaml/badge.svg?branch=main) [![codecov](https://codecov.io/gh/MoLow/reporters/branch/main/graph/badge.svg?token=0LFVC8SCQV)](https://codecov.io/gh/MoLow/reporters)
+[![npm version](https://img.shields.io/npm/v/@reporters/gh)](https://www.npmjs.com/package/@reporters/gh) ![tests](https://github.com/MoLow/reporters/actions/workflows/test.yaml/badge.svg?branch=main) [![codecov](https://codecov.io/gh/MoLow/reporters/branch/main/graph/badge.svg?token=0LFVC8SCQV)](https://codecov.io/gh/MoLow/reporters)
 
 # Github Actions Reporter
 A Github actions reporter for `node:test`
@@ -6,11 +6,11 @@ A Github actions reporter for `node:test`
 ## Installation
 
 ```bash
-npm install --save-dev @reporters/github-spec
+npm install --save-dev @reporters/gh
 ```
 or
 ```bash
-yarn add --dev @reporters/github-spec
+yarn add --dev @reporters/gh
 ```
 
 ## Usage
@@ -18,7 +18,7 @@ yarn add --dev @reporters/github-spec
 ```yaml
 # .github/workflows/test.yml
 - name: Run tests
-  run: node --test --test-reporter=@reporters/github-spec
+  run: node --test --test-reporter=@reporters/gh
 ```
 
 ## Result

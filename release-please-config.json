@@ -15,7 +15,7 @@
   ],
   "packages": {
     "packages/github": {},
-    "packages/github-spec": {},
+    "packages/gh": {},
     "packages/junit": {},
     "packages/silent": {},
     "packages/bail": {},

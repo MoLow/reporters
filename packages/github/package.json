@@ -18,7 +18,7 @@
     "./index.js"
   ],
   "scripts": {
-    "test": "node --test-reporter=../github-spec/index.js --test"
+    "test": "node --test-reporter=../gh/index.js --test"
   },
   "bugs": {
     "url": "https://github.com/MoLow/reporters/issues"
