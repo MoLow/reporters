@@ -38,6 +38,8 @@ REPL Usage
 `;
 const mainMenuWithFilters = mainMenu.replace('REPL Usage', `REPL Usage
  › Press c to clear the filters.`);
+const mainMenuWithPlugin = mainMenu.replace('REPL Usage', 'REPL Usage\n'
+       + ' › Press s to suspend watch mode');
 const compactMenu = '\nREPL Usage: Press w to show more.';
 const filterTestsPrompt = `
 Filter Test
@@ -94,7 +96,9 @@ async function spawnInteractive(commandSequence = 'q', args = []) {
     stdout += data;
     pending.stdout += data;
     const s = pending.stdout;
-    if (s.includes(mainMenu) || s.includes(mainMenuWithFilters) || s.includes(compactMenu)) {
+    // TODO: can we check only the last line of each possible option?
+    if (s.includes(mainMenu) || s.includes(mainMenuWithFilters)
+        || s.includes(compactMenu) || s.includes(mainMenuWithPlugin)) {
       pending.resolve();
     }
   });
@@ -115,7 +119,6 @@ async function spawnInteractive(commandSequence = 'q', args = []) {
     });
   });
 }
-
 describe('testwatch', { concurrency: true, skip: !isSupported ? 'unsupported node version' : false }, () => {
   it('should run all tests on initialization', async () => {
     const { outputs, stderr } = await spawnInteractive('q');
@@ -311,6 +314,20 @@ describe('testwatch', { concurrency: true, skip: !isSupported ? 'unsupported nod
       assert.strictEqual(stderr, '');
       assert.strictEqual(outputs.length, 6);
       assert.match(outputs[5], /No files found for pattern \*\*\/noth1ing\*\.\*/);
+    });
+  });
+
+  describe('Plugins', () => {
+    it('should suspend the watch mode', async () => {
+      const { outputs, stderr } = await spawnInteractive(['s', '\r', 'q']);
+      assert.strictEqual(stderr, '');
+      assert.deepStrictEqual(outputs, [
+        '',
+        '',
+        `${tests}\n${mainMenuWithPlugin}\nTest is suspended.\n`,
+        '',
+        `${compactMenu}\nTest is suspended.\n\n`,
+      ]);
     });
   });
 });
