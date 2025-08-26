@@ -87,11 +87,12 @@ function transformEvent(event) {
         // no need to re-annotate the file itself
         break;
       }
+      const err = error.code === 'ERR_TEST_FAILURE' ? error.cause : error;
       counter.fail += 1;
       return new Command('error', toCommandProperties({
         ...extractLocation(event.data),
         title: event.data.name,
-      }), util.inspect(error, { colors: false, breakLength: Infinity })).toString();
+      }), util.inspect(err, { colors: true, breakLength: Infinity })).toString();
     } case 'test:diagnostic':
       if (isTopLevelDiagnostic(event.data)) {
         diagnostics.push(event.data.message);
