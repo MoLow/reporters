@@ -1,6 +1,6 @@
 {
   "name": "@reporters/github",
-  "version": "1.9.3",
+  "version": "1.10.0",
   "description": "A github actions reporter for `node:test`",
   "type": "commonjs",
   "keywords": [
