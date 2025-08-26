@@ -15,7 +15,8 @@
     "stack-utils": "^2.0.6"
   },
   "files": [
-    "./index.js"
+    "./index.js",
+    "./gh_core.js"
   ],
   "scripts": {
     "test": "node --test-reporter=../gh/index.js --test"
