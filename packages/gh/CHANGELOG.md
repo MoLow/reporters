@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/MoLow/reporters/compare/gh-v1.1.0...gh-v1.1.1) (2025-08-26)
+
+
+### Miscellaneous Chores
+
+* **gh:** upgrade deps ([#152](https://github.com/MoLow/reporters/issues/152)) ([85e0b3e](https://github.com/MoLow/reporters/commit/85e0b3e08eba4291e30fb9017183a293dea56259))
+
 ## [1.1.0](https://github.com/MoLow/reporters/compare/gh-v1.0.5...gh-v1.1.0) (2025-08-26)
 
 
