@@ -4,45 +4,45 @@ Object {
   "stdout": "this is a console log
 ::debug::starting to run tests
 ::debug::starting to run is ok
-::debug::completed running is ok
-::debug::starting to run fails
-::error title=fails,file=packages/gh/tests/example.js,line=9,col=11::Error [ERR_TEST_FAILURE]: this is an error%0A    at async Promise.all (index 0) {%0A  code: 'ERR_TEST_FAILURE',%0A  failureType: 'testCodeFailure',%0A  cause: Error: this is an error%0A      at TestContext.<anonymous> (CWD/tests/example.js:9:11)%0A      at Test.runInAsyncScope (node:async_hooks:214:14)%0A      at Test.run (node:internal/test_runner/test:1047:25)%0A      at Suite.processPendingSubtests (node:internal/test_runner/test:744:18)%0A      at Test.postRun (node:internal/test_runner/test:1173:19)%0A      at Test.run (node:internal/test_runner/test:1101:12)%0A      at async Promise.all (index 0)%0A      at async Suite.run (node:internal/test_runner/test:1442:7)%0A      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)%0A}
-::debug::starting to run is a diagnostic
-::debug::completed running is a diagnostic
-::debug::starting to run should fail
-::error title=should fail,file=packages/gh/tests/example.js,line=12,col=31::[Error [ERR_TEST_FAILURE]: The expression evaluated to a falsy value:%0A%0A  assert(false)%0A] {%0A  code: 'ERR_TEST_FAILURE',%0A  failureType: 'testCodeFailure',%0A  cause: AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:%0A  %0A    assert(false)%0A  %0A      at TestContext.<anonymous> (CWD/tests/example.js:12:31)%0A      at Test.runInAsyncScope (node:async_hooks:214:14)%0A      at Test.run (node:internal/test_runner/test:1047:25)%0A      at Suite.processPendingSubtests (node:internal/test_runner/test:744:18)%0A      at Test.postRun (node:internal/test_runner/test:1173:19)%0A      at Test.run (node:internal/test_runner/test:1101:12)%0A      at async Suite.processPendingSubtests (node:internal/test_runner/test:744:7) {%0A    generatedMessage: true,%0A    code: 'ERR_ASSERTION',%0A    actual: false,%0A    expected: true,%0A    operator: '=='%0A  }%0A}
-::debug::starting to run more tests
-::debug::starting to run is ok
-::debug::completed running is ok
-::debug::completed running more tests
-::debug::starting to run is skipped
-::debug::completed running is skipped
-::debug::starting to run is a todo
-::debug::completed running is a todo
-::debug::starting to run top level diagnostic
-::debug::completed running top level diagnostic
 ▶ tests
 ::group::  ✔ is ok (* millisecond)
+::debug::completed running is ok
+::debug::starting to run fails
 ::endgroup::
 ::group::  ✖ fails (* millisecond)
+::error title=fails,file=packages/gh/tests/example.js,line=9,col=11::Error [ERR_TEST_FAILURE]: this is an error%0A    at async Promise.all (index 0) {%0A  code: 'ERR_TEST_FAILURE',%0A  failureType: 'testCodeFailure',%0A  cause: Error: this is an error%0A      at TestContext.<anonymous> (CWD/tests/example.js:9:11)%0A      at Test.runInAsyncScope (node:async_hooks:214:14)%0A      at Test.run (node:internal/test_runner/test:1047:25)%0A      at Suite.processPendingSubtests (node:internal/test_runner/test:744:18)%0A      at Test.postRun (node:internal/test_runner/test:1173:19)%0A      at Test.run (node:internal/test_runner/test:1101:12)%0A      at async Promise.all (index 0)%0A      at async Suite.run (node:internal/test_runner/test:1442:7)%0A      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)%0A}
+::debug::starting to run is a diagnostic
 ::endgroup::
 ::group::  ✔ is a diagnostic (* millisecond)
+::debug::completed running is a diagnostic
   this is a diagnostic
+::debug::starting to run should fail
 ::endgroup::
 ::group::  ✖ should fail (* millisecond)
+::error title=should fail,file=packages/gh/tests/example.js,line=12,col=31::[Error [ERR_TEST_FAILURE]: The expression evaluated to a falsy value:%0A%0A  assert(false)%0A] {%0A  code: 'ERR_TEST_FAILURE',%0A  failureType: 'testCodeFailure',%0A  cause: AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:%0A  %0A    assert(false)%0A  %0A      at TestContext.<anonymous> (CWD/tests/example.js:12:31)%0A      at Test.runInAsyncScope (node:async_hooks:214:14)%0A      at Test.run (node:internal/test_runner/test:1047:25)%0A      at Suite.processPendingSubtests (node:internal/test_runner/test:744:18)%0A      at Test.postRun (node:internal/test_runner/test:1173:19)%0A      at Test.run (node:internal/test_runner/test:1101:12)%0A      at async Suite.processPendingSubtests (node:internal/test_runner/test:744:7) {%0A    generatedMessage: true,%0A    code: 'ERR_ASSERTION',%0A    actual: false,%0A    expected: true,%0A    operator: '=='%0A  }%0A}
 ::endgroup::
 ::group::✖ tests (* millisecond)
+::debug::starting to run more tests
+::debug::starting to run is ok
 ::endgroup::
 ▶ more tests
 ::group::  ✔ is ok (* millisecond)
+::debug::completed running is ok
 ::endgroup::
 ::group::✔ more tests (* millisecond)
+::debug::completed running more tests
+::debug::starting to run is skipped
 ::endgroup::
 ::group::﹣ is skipped (* millisecond) # SKIP
+::debug::completed running is skipped
+::debug::starting to run is a todo
 ::endgroup::
 ::group::✔ is a todo (* millisecond) # TODO
+::debug::completed running is a todo
+::debug::starting to run top level diagnostic
 ::endgroup::
 ::group::✔ top level diagnostic (* millisecond)
+::debug::completed running top level diagnostic
 top level diagnostic
 ::endgroup::
 

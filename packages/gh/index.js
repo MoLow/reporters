@@ -8,7 +8,8 @@ const { Transform } = require('node:stream');
 const { relative } = require('node:path');
 // eslint-disable-next-line import/no-unresolved
 const { spec: Spec } = require('node:test/reporters');
-const { emitSummary, handleEvent, isTopLevelDiagnostic } = require('@reporters/github');
+const { getSummary, transformEvent, isTopLevelDiagnostic } = require('@reporters/github');
+const { Command } = require('@reporters/github/gh_core');
 
 const reporterColorMap = {
   'test:fail': 'red',
@@ -81,6 +82,8 @@ const formatDuration = (m) => {
     .join(', ');
 };
 
+const endGroup = new Command('endgroup').toString();
+
 class SpecReporter extends Transform {
   #isGitHubActions = Boolean(process.env.GITHUB_ACTIONS);
 
@@ -127,22 +130,19 @@ class SpecReporter extends Transform {
       symbol = reporterUnicodeSymbolMap['hyphen:minus'];
     }
 
-    let ghGroup = '';
-    let p = prefix;
+    const header = `${indentation}${styleText(color, `${symbol}${title}`, { validateStream: !this.#isGitHubActions })}`;
     if (this.#isGitHubActions) {
-      ghGroup = '::group::';
-      if (this.#reportedGroup) {
-        p = `::endgroup::\n${prefix}`;
-      }
+      const eg = this.#reportedGroup ? endGroup : '';
       this.#reportedGroup = true;
+      return `${eg}${prefix}${new Command('group', {}, header, { EOL: '' }).toString()}${err}`;
     }
-    return `${p}${ghGroup}${indentation}${styleText(color, `${symbol}${title}`, { validateStream: !this.#isGitHubActions })}${err}`;
+    return `${prefix}${header}${err}`;
   }
 
   #formatFailedTestResults() {
     if (this.#failedTests.length === 0) {
       /* c8 ignore next 2 */
-      return this.#reportedGroup ? '::endgroup::\n' : '';
+      return this.#reportedGroup ? endGroup : '';
     }
 
     const results = [
@@ -150,7 +150,7 @@ class SpecReporter extends Transform {
     ];
 
     if (this.#reportedGroup) {
-      results.unshift('::endgroup::\n');
+      results.unshift(endGroup);
       this.#reportedGroup = false; // Reset the group state for the next run
     }
 
@@ -168,7 +168,7 @@ class SpecReporter extends Transform {
     }
 
     if (this.#reportedGroup) {
-      results.push('::endgroup::\n');
+      results.push(endGroup);
     }
 
     this.#failedTests = []; // Clean up the failed tests
@@ -206,26 +206,27 @@ class SpecReporter extends Transform {
   }
 
   #handleEvent({ type, data }) {
+    let res = '';
     if (this.#isGitHubActions) {
-      handleEvent({ type, data });
+      res = transformEvent({ type, data });
     }
     switch (type) {
       case 'test:fail':
         if (data.details?.error?.failureType !== 'subtestsFailed') {
           this.#failedTests.push(data);
         }
-        return this.#handleTestReportEvent(type, data);
+        return this.#handleTestReportEvent(type, data) + res;
       case 'test:pass':
-        return this.#handleTestReportEvent(type, data);
+        return this.#handleTestReportEvent(type, data) + res;
       case 'test:start':
         this.#stack.unshift({ __proto__: null, data, type });
-        break;
+        return res;
       case 'test:diagnostic': {
         if (isTopLevelDiagnostic(data)) {
-          return '';
+          return res;
         }
         const diagnosticColor = reporterColorMap[data.level] || reporterColorMap.info;
-        return `${indent(data.nesting)}${styleText(diagnosticColor, `${reporterUnicodeSymbolMap[type] ?? ''}${data.message}`, { validateStream: !this.#isGitHubActions })}\n`;
+        return `${res}${indent(data.nesting)}${styleText(diagnosticColor, `${reporterUnicodeSymbolMap[type] ?? ''}${data.message}`, { validateStream: !this.#isGitHubActions })}\n`;
       }
       case 'test:summary':
         // We report only the root test summary
@@ -249,10 +250,12 @@ class SpecReporter extends Transform {
   }
 
   _flush(callback) {
-    callback(null, this.#formatFailedTestResults());
-    if (this.#isGitHubActions) {
-      emitSummary();
-    }
+    Promise.resolve(this.#isGitHubActions ? getSummary() : '').then((summary) => {
+      callback(null, this.#formatFailedTestResults() + summary);
+    }).catch((err) => {
+      /* c8 ignore next 2 */
+      callback(err);
+    });
   }
 }
 

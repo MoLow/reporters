@@ -49,7 +49,8 @@ top level diagnostic
     code: 'ERR_ASSERTION',
     actual: false,
     expected: true,
-    operator: '=='
+    operator: '==',
+    diff: 'simple'
   }
 ",
 }
