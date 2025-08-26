@@ -6,6 +6,7 @@ const util = require('node:util');
 const { EOL } = require('node:os');
 const core = require('@actions/core');
 const StackUtils = require('stack-utils');
+const { Command, toCommandProperties } = require('./gh_core');
 
 const WORKSPACE = process.env.GITHUB_WORKSPACE ?? '';
 
@@ -72,15 +73,13 @@ function isTopLevelDiagnostic(data) {
           || (data.line === 1 && data.column === 1));
 }
 
-function handleEvent(event) {
+function transformEvent(event) {
   switch (event.type) {
     case 'test:start':
-      core.debug(`starting to run ${event.data.name}`);
-      break;
+      return new Command('debug', {}, `starting to run ${event.data.name}`).toString();
     case 'test:pass':
       counter.pass += 1;
-      core.debug(`completed running ${event.data.name}`);
-      break;
+      return new Command('debug', {}, `completed running ${event.data.name}`).toString();
     case 'test:fail': {
       const error = event.data.details?.error;
       if (error?.code === 'ERR_TEST_FAILURE' && error?.failureType === 'subtestsFailed') {
@@ -88,25 +87,25 @@ function handleEvent(event) {
         // no need to re-annotate the file itself
         break;
       }
-      core.error(util.inspect(error, { colors: false, breakLength: Infinity }), {
+      counter.fail += 1;
+      return new Command('error', toCommandProperties({
         ...extractLocation(event.data),
         title: event.data.name,
-      });
-      counter.fail += 1;
-      break;
+      }), util.inspect(error, { colors: false, breakLength: Infinity })).toString();
     } case 'test:diagnostic':
       if (isTopLevelDiagnostic(event.data)) {
         diagnostics.push(event.data.message);
       } else if (process.env.GITHUB_ACTIONS_REPORTER_VERBOSE) {
-        core.notice(event.data.message, extractLocation(event.data));
+        return new Command('notice', toCommandProperties(extractLocation(event.data)), `${event.data.message}`).toString();
       }
       break;
     default:
       break;
   }
+  return '';
 }
 
-async function emitSummary() {
+async function getSummary() {
   const formattedDiagnostics = diagnostics.map((d) => {
     const [key, ...rest] = d.split(' ');
     const value = rest.join(' ');
@@ -115,9 +114,10 @@ async function emitSummary() {
       DIAGNOSTIC_VALUES[key] ? DIAGNOSTIC_VALUES[key](value) : value,
     ];
   });
-  core.startGroup(`Test results (${formattedDiagnostics.find(([key]) => key === DIAGNOSTIC_KEYS.pass)?.[1] ?? counter.pass} passed, ${formattedDiagnostics.find(([key]) => key === DIAGNOSTIC_KEYS.fail)?.[1] ?? counter.fail} failed)`);
-  core.notice(formattedDiagnostics.map((d) => d.join(': ')).join(EOL));
-  core.endGroup();
+  let res = '';
+  res += new Command('group', {}, `Test results (${formattedDiagnostics.find(([key]) => key === DIAGNOSTIC_KEYS.pass)?.[1] ?? counter.pass} passed, ${formattedDiagnostics.find(([key]) => key === DIAGNOSTIC_KEYS.fail)?.[1] ?? counter.fail} failed)`).toString();
+  res += new Command('notice', {}, formattedDiagnostics.map((d) => d.join(': ')).join(EOL)).toString();
+  res += new Command('endgroup').toString();
 
   if (process.env.GITHUB_STEP_SUMMARY) {
     await core.summary
@@ -125,20 +125,21 @@ async function emitSummary() {
       .addTable(formattedDiagnostics)
       .write();
   }
+  return res;
 }
 
-module.exports = async function githubReporter(source) {
+module.exports = async function* githubReporter(source) {
   if (!process.env.GITHUB_ACTIONS) {
     // eslint-disable-next-line no-unused-vars
     for await (const _ of source);
     return;
   }
   for await (const event of source) {
-    handleEvent(event);
+    yield transformEvent(event);
   }
-  await emitSummary();
+  yield await getSummary();
 };
 
-module.exports.handleEvent = handleEvent;
-module.exports.emitSummary = emitSummary;
+module.exports.transformEvent = transformEvent;
+module.exports.getSummary = getSummary;
 module.exports.isTopLevelDiagnostic = isTopLevelDiagnostic;
