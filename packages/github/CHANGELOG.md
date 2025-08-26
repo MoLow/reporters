@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.3](https://github.com/MoLow/reporters/compare/github-v1.9.2...github-v1.9.3) (2025-08-26)
+
+
+### Bug Fixes
+
+* **github:** add missing file ([#146](https://github.com/MoLow/reporters/issues/146)) ([5d302bb](https://github.com/MoLow/reporters/commit/5d302bb7abe1d20b447c9c8881aecb5945efdc95))
+
 ## [1.9.2](https://github.com/MoLow/reporters/compare/github-v1.9.1...github-v1.9.2) (2025-08-26)
 
 

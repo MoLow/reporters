@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.4](https://github.com/MoLow/reporters/compare/gh-v1.0.3...gh-v1.0.4) (2025-08-26)
+
+
+### Bug Fixes
+
+* **github:** add missing file ([#146](https://github.com/MoLow/reporters/issues/146)) ([5d302bb](https://github.com/MoLow/reporters/commit/5d302bb7abe1d20b447c9c8881aecb5945efdc95))
+
 ## [1.0.3](https://github.com/MoLow/reporters/compare/gh-v1.0.2...gh-v1.0.3) (2025-08-26)
 
 
