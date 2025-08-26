@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.0](https://github.com/MoLow/reporters/compare/github-v1.9.3...github-v1.10.0) (2025-08-26)
+
+
+### Features
+
+* nicer error messages in GitHub Actions ([#150](https://github.com/MoLow/reporters/issues/150)) ([c6f942b](https://github.com/MoLow/reporters/commit/c6f942b78beb7b19a51d1a1d57e4274e47f1a3c5))
+
 ## [1.9.3](https://github.com/MoLow/reporters/compare/github-v1.9.2...github-v1.9.3) (2025-08-26)
 
 
