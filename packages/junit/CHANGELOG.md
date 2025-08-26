@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.2](https://github.com/MoLow/reporters/compare/junit-v1.4.1...junit-v1.4.2) (2025-08-26)
+
+
+### Bug Fixes
+
+* **gh:** fix error grouping issues ([#144](https://github.com/MoLow/reporters/issues/144)) ([13bf329](https://github.com/MoLow/reporters/commit/13bf3296621a1d2cf3131a7b33e9c2cf9d661e76))
+
 ## [1.4.1](https://github.com/MoLow/reporters/compare/junit-v1.4.0...junit-v1.4.1) (2025-08-06)
 
 

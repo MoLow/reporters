@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.3](https://github.com/MoLow/reporters/compare/gh-v1.0.2...gh-v1.0.3) (2025-08-26)
+
+
+### Bug Fixes
+
+* **gh:** fix error grouping issues ([#144](https://github.com/MoLow/reporters/issues/144)) ([13bf329](https://github.com/MoLow/reporters/commit/13bf3296621a1d2cf3131a7b33e9c2cf9d661e76))
+
 ## [1.0.2](https://github.com/MoLow/reporters/compare/gh-v1.0.1...gh-v1.0.2) (2025-08-06)
 
 
