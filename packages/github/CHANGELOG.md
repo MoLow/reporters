@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.0](https://github.com/MoLow/reporters/compare/github-v1.10.0...github-v1.11.0) (2025-09-02)
+
+
+### Features
+
+* **gh:** nicer output for duration in summary ([#154](https://github.com/MoLow/reporters/issues/154)) ([f03c0dd](https://github.com/MoLow/reporters/commit/f03c0dd6d3c90fffab4fcf06b1d631cdf275de08))
+
 ## [1.10.0](https://github.com/MoLow/reporters/compare/github-v1.9.3...github-v1.10.0) (2025-08-26)
 
 
