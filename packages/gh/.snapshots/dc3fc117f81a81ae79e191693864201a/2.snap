@@ -36,7 +36,7 @@ Object {
 
 ::endgroup::
 ::group::Test results (1 passed, 1 failed)
-::notice::Total Tests: 2%0ASuites 📂: 0%0APassed ✅: 1%0AFailed ❌: 1%0ACanceled 🚫: 0%0ASkipped ⏭️: 0%0ATodo 📝: 0%0ADuration 🕐: *ms
+::notice::Total Tests: 2%0ASuites 📂: 0%0APassed ✅: 1%0AFailed ❌: 1%0ACanceled 🚫: 0%0ASkipped ⏭️: 0%0ATodo 📝: 0%0ADuration 🕐: * millisecond
 ::endgroup::
 ",
 }

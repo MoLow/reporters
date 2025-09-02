@@ -144,3 +144,4 @@ module.exports = async function* githubReporter(source) {
 module.exports.transformEvent = transformEvent;
 module.exports.getSummary = getSummary;
 module.exports.isTopLevelDiagnostic = isTopLevelDiagnostic;
+module.exports.DIAGNOSTIC_VALUES = DIAGNOSTIC_VALUES;

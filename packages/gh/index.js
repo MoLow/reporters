@@ -8,7 +8,9 @@ const { Transform } = require('node:stream');
 const { relative } = require('node:path');
 // eslint-disable-next-line import/no-unresolved
 const { spec: Spec } = require('node:test/reporters');
-const { getSummary, transformEvent, isTopLevelDiagnostic } = require('@reporters/github');
+const {
+  getSummary, transformEvent, isTopLevelDiagnostic, DIAGNOSTIC_VALUES,
+} = require('@reporters/github');
 const { Command } = require('@reporters/github/gh_core');
 
 const reporterColorMap = {
@@ -101,6 +103,7 @@ class SpecReporter extends Transform {
 
   constructor() {
     super({ __proto__: null, writableObjectMode: true });
+    DIAGNOSTIC_VALUES.duration_ms = formatDuration;
     if (this.#isGitHubActions) {
       inspectOptions.colors = true;
     }

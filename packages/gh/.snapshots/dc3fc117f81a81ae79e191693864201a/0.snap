@@ -85,7 +85,7 @@ top level diagnostic
 
 ::endgroup::
 ::group::Test results (4 passed, 2 failed)
-::notice::Total Tests: 8%0ASuites 📂: 2%0APassed ✅: 4%0AFailed ❌: 2%0ACanceled 🚫: 0%0ASkipped ⏭️: 1%0ATodo 📝: 1%0ADuration 🕐: *ms
+::notice::Total Tests: 8%0ASuites 📂: 2%0APassed ✅: 4%0AFailed ❌: 2%0ACanceled 🚫: 0%0ASkipped ⏭️: 1%0ATodo 📝: 1%0ADuration 🕐: * millisecond
 ::endgroup::
 ",
 }
