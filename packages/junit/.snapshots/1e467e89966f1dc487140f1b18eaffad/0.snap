@@ -49,7 +49,8 @@ Error [ERR_TEST_FAILURE]: this is an error
     code: 'ERR_ASSERTION',
     actual: false,
     expected: true,
-    operator: '=='
+    operator: '==',
+    diff: 'simple'
   }
 }
 			</failure>

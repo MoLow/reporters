@@ -10,7 +10,7 @@ Object {
 ::debug::starting to run fails
 ::endgroup::
 ::group::  ✖ fails (* millisecond)
-::error title=fails,file=packages/gh/tests/example.js,line=9,col=11::Error: this is an error%0A    at TestContext.<anonymous> (CWD/tests/example.js:9:11)%0A    at Test.runInAsyncScope (node:async_hooks:214:14)%0A    at Test.run (node:internal/test_runner/test:1081:25)%0A    at Suite.processPendingSubtests (node:internal/test_runner/test:763:18)%0A    at Test.postRun (node:internal/test_runner/test:1210:19)%0A    at Test.run (node:internal/test_runner/test:1138:12)%0A    at async Promise.all (index 0)%0A    at async Suite.run (node:internal/test_runner/test:1485:7)%0A    at async startSubtestAfterBootstrap (node:internal/test_runner/harness:332:3)
+::error title=fails,file=packages/gh/tests/example.js,line=9,col=11::Error: this is an error%0A    at TestContext.<anonymous> (CWD/tests/example.js:9:11)%0A    at Test.runInAsyncScope (node:async_hooks:214:14)%0A    at Test.run (node:internal/test_runner/test:1106:25)%0A    at Suite.processPendingSubtests (node:internal/test_runner/test:788:18)%0A    at Test.postRun (node:internal/test_runner/test:1235:19)%0A    at Test.run (node:internal/test_runner/test:1163:12)%0A    at async Promise.all (index 0)%0A    at async Suite.run (node:internal/test_runner/test:1516:7)%0A    at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3)
 ::debug::starting to run is a diagnostic
 ::endgroup::
 ::group::  ✔ is a diagnostic (* millisecond)
@@ -19,7 +19,7 @@ Object {
 ::debug::starting to run should fail
 ::endgroup::
 ::group::  ✖ should fail (* millisecond)
-::error title=should fail,file=packages/gh/tests/example.js,line=12,col=31::AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:%0A%0A  assert(false)%0A%0A    at TestContext.<anonymous> (CWD/tests/example.js:12:31)%0A    at Test.runInAsyncScope (node:async_hooks:214:14)%0A    at Test.run (node:internal/test_runner/test:1081:25)%0A    at Suite.processPendingSubtests (node:internal/test_runner/test:763:18)%0A    at Test.postRun (node:internal/test_runner/test:1210:19)%0A    at Test.run (node:internal/test_runner/test:1138:12)%0A    at async Suite.processPendingSubtests (node:internal/test_runner/test:763:7) {%0A  generatedMessage: true,%0A  code: 'ERR_ASSERTION',%0A  actual: false,%0A  expected: true,%0A  operator: '==',%0A  diff: 'simple'%0A}
+::error title=should fail,file=packages/gh/tests/example.js,line=12,col=31::AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:%0A%0A  assert(false)%0A%0A    at TestContext.<anonymous> (CWD/tests/example.js:12:31)%0A    at Test.runInAsyncScope (node:async_hooks:214:14)%0A    at Test.run (node:internal/test_runner/test:1106:25)%0A    at Suite.processPendingSubtests (node:internal/test_runner/test:788:18)%0A    at Test.postRun (node:internal/test_runner/test:1235:19)%0A    at Test.run (node:internal/test_runner/test:1163:12)%0A    at async Suite.processPendingSubtests (node:internal/test_runner/test:788:7) {%0A  generatedMessage: true,%0A  code: 'ERR_ASSERTION',%0A  actual: false,%0A  expected: true,%0A  operator: '==',%0A  diff: 'simple'%0A}
 ::endgroup::
 ::group::✖ tests (* millisecond)
 ::debug::starting to run more tests
@@ -86,7 +86,7 @@ top level diagnostic
 
 ::endgroup::
 ::group::Test results (4 passed, 2 failed)
-::notice::Total Tests: 8%0ASuites 📂: 2%0APassed ✅: 4%0AFailed ❌: 2%0ACanceled 🚫: 0%0ASkipped ⏭️: 1%0ATodo 📝: 1%0ADuration 🕐: *ms
+::notice::Total Tests: 8%0ASuites 📂: 2%0APassed ✅: 4%0AFailed ❌: 2%0ACanceled 🚫: 0%0ASkipped ⏭️: 1%0ATodo 📝: 1%0ADuration 🕐: * millisecond
 ::endgroup::
 ",
 }

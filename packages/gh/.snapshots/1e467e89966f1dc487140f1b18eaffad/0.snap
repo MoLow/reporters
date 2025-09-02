@@ -19,7 +19,7 @@ Object {
 ::debug::starting to run should fail
 ::endgroup::
 ::group::  ✖ should fail (* millisecond)
-::error title=should fail,file=packages/gh/tests/example.js,line=12,col=31::AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:%0A%0A  assert(false)%0A%0A    at TestContext.<anonymous> (CWD/tests/example.js:12:31)%0A    at Test.runInAsyncScope (node:async_hooks:214:14)%0A    at Test.run (node:internal/test_runner/test:1047:25)%0A    at Suite.processPendingSubtests (node:internal/test_runner/test:744:18)%0A    at Test.postRun (node:internal/test_runner/test:1173:19)%0A    at Test.run (node:internal/test_runner/test:1101:12)%0A    at async Suite.processPendingSubtests (node:internal/test_runner/test:744:7) {%0A  generatedMessage: true,%0A  code: 'ERR_ASSERTION',%0A  actual: false,%0A  expected: true,%0A  operator: '=='%0A}
+::error title=should fail,file=packages/gh/tests/example.js,line=12,col=31::AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:%0A%0A  assert(false)%0A%0A    at TestContext.<anonymous> (CWD/tests/example.js:12:31)%0A    at Test.runInAsyncScope (node:async_hooks:214:14)%0A    at Test.run (node:internal/test_runner/test:1047:25)%0A    at Suite.processPendingSubtests (node:internal/test_runner/test:744:18)%0A    at Test.postRun (node:internal/test_runner/test:1173:19)%0A    at Test.run (node:internal/test_runner/test:1101:12)%0A    at async Suite.processPendingSubtests (node:internal/test_runner/test:744:7) {%0A  generatedMessage: true,%0A  code: 'ERR_ASSERTION',%0A  actual: false,%0A  expected: true,%0A  operator: '==',%0A  diff: 'simple'%0A}
 ::endgroup::
 ::group::✖ tests (* millisecond)
 ::debug::starting to run more tests
@@ -80,12 +80,13 @@ top level diagnostic
     code: 'ERR_ASSERTION',
     actual: false,
     expected: true,
-    operator: '=='
+    operator: '==',
+    diff: 'simple'
   }
 
 ::endgroup::
 ::group::Test results (4 passed, 2 failed)
-::notice::Total Tests: 8%0ASuites 📂: 2%0APassed ✅: 4%0AFailed ❌: 2%0ACanceled 🚫: 0%0ASkipped ⏭️: 1%0ATodo 📝: 1%0ADuration 🕐: *ms
+::notice::Total Tests: 8%0ASuites 📂: 2%0APassed ✅: 4%0AFailed ❌: 2%0ACanceled 🚫: 0%0ASkipped ⏭️: 1%0ATodo 📝: 1%0ADuration 🕐: * millisecond
 ::endgroup::
 ",
 }
