@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/MoLow/reporters/compare/gh-v1.2.0...gh-v1.2.1) (2025-09-03)
+
+
+### Bug Fixes
+
+* **gh:** upgrade github ([#156](https://github.com/MoLow/reporters/issues/156)) ([5794088](https://github.com/MoLow/reporters/commit/5794088d41a4f50881d7ccf79312786959717fa8))
+
 ## [1.2.0](https://github.com/MoLow/reporters/compare/gh-v1.1.1...gh-v1.2.0) (2025-09-02)
 
 
