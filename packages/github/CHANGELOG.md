@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.1](https://github.com/MoLow/reporters/compare/github-v1.11.0...github-v1.11.1) (2026-01-28)
+
+
+### Miscellaneous Chores
+
+* update snapshots ([#160](https://github.com/MoLow/reporters/issues/160)) ([7ba5ae0](https://github.com/MoLow/reporters/commit/7ba5ae0c43ccc2dcbf12540320519903f6d09545))
+
 ## [1.11.0](https://github.com/MoLow/reporters/compare/github-v1.10.0...github-v1.11.0) (2025-09-02)
 
 

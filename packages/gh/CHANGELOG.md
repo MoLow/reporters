@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.2](https://github.com/MoLow/reporters/compare/gh-v1.2.1...gh-v1.2.2) (2026-01-28)
+
+
+### Miscellaneous Chores
+
+* update snapshots ([#160](https://github.com/MoLow/reporters/issues/160)) ([7ba5ae0](https://github.com/MoLow/reporters/commit/7ba5ae0c43ccc2dcbf12540320519903f6d09545))
+
 ## [1.2.1](https://github.com/MoLow/reporters/compare/gh-v1.2.0...gh-v1.2.1) (2025-09-03)
 
 
