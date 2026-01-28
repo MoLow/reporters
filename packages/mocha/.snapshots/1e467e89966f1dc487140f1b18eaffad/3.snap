@@ -45,6 +45,12 @@ Object {
   fullTitle: ' is a todo'
 }
 {
+  state: 'pending',
+  isPending: true,
+  currentRetry: 0,
+  fullTitle: ' is a failing todo'
+}
+{
   state: 'passed',
   isPending: false,
   currentRetry: 0,

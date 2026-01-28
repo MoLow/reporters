@@ -28,6 +28,7 @@ const reporterUnicodeSymbolMap = {
   'test:coverage': '\u2139 ',
   'arrow:right': '\u25B6 ',
   'hyphen:minus': '\uFE63 ',
+  'warning:alert': '\u26A0 ',
 };
 
 const indentMemo = new Map();
@@ -112,25 +113,31 @@ class SpecReporter extends Transform {
   #formatTestReport(type, data, prefix = '', indentation = '', hasChildren = false, showErrorDetails = true) {
     let color = reporterColorMap[type] ?? 'white';
     let symbol = reporterUnicodeSymbolMap[type] ?? ' ';
-    const { skip, todo } = data;
+    const { skip, todo, expectFailure } = data;
     const durationMs = data.details?.duration_ms ? styleText(['gray', 'italic'], ` (${formatDuration(data.details.duration_ms)})`, { validateStream: !this.#isGitHubActions }) : '';
     let title = `${data.name}${durationMs}`;
 
     if (skip !== undefined) {
       title += ` # ${typeof skip === 'string' && skip.length ? skip : 'SKIP'}`;
+      color = 'gray';
+      symbol = reporterUnicodeSymbolMap['hyphen:minus'];
     } else if (todo !== undefined) {
       title += ` # ${typeof todo === 'string' && todo.length ? todo : 'TODO'}`;
+      if (type === 'test:fail') {
+        color = 'yellow';
+        symbol = reporterUnicodeSymbolMap['warning:alert'];
+      }
+    } else if (expectFailure !== undefined) {
+      /* c8 ignore next 3 */ // Not yest supported in current node
+      title += ' # EXPECTED FAILURE';
+      color = 'yellow';
+      symbol = reporterUnicodeSymbolMap['warning:alert'];
     }
 
     const error = showErrorDetails ? formatError(data.details?.error, indentation) : '';
     let err = error;
     if (hasChildren) {
       err = !error || data.details?.error?.failureType === 'subtestsFailed' ? '' : `\n${error}`;
-    }
-
-    if (skip !== undefined) {
-      color = 'gray';
-      symbol = reporterUnicodeSymbolMap['hyphen:minus'];
     }
 
     const header = `${indentation}${styleText(color, `${symbol}${title}`, { validateStream: !this.#isGitHubActions })}`;
