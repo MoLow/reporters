@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.0](https://github.com/MoLow/reporters/compare/github-v1.11.1...github-v1.12.0) (2026-01-28)
+
+
+### Features
+
+* **gh:** style todo diffrently ([#167](https://github.com/MoLow/reporters/issues/167)) ([de565dd](https://github.com/MoLow/reporters/commit/de565dd74d9a788880277112475a78dcb47338b2))
+
 ## [1.11.1](https://github.com/MoLow/reporters/compare/github-v1.11.0...github-v1.11.1) (2026-01-28)
 
 

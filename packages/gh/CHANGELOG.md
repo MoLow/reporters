@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/MoLow/reporters/compare/gh-v1.2.2...gh-v1.3.0) (2026-01-28)
+
+
+### Features
+
+* **gh:** style todo diffrently ([#167](https://github.com/MoLow/reporters/issues/167)) ([de565dd](https://github.com/MoLow/reporters/commit/de565dd74d9a788880277112475a78dcb47338b2))
+
 ## [1.2.2](https://github.com/MoLow/reporters/compare/gh-v1.2.1...gh-v1.2.2) (2026-01-28)
 
 

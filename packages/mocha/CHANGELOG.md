@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/MoLow/reporters/compare/mocha-v1.1.1...mocha-v1.2.0) (2026-01-28)
+
+
+### Features
+
+* **gh:** style todo diffrently ([#167](https://github.com/MoLow/reporters/issues/167)) ([de565dd](https://github.com/MoLow/reporters/commit/de565dd74d9a788880277112475a78dcb47338b2))
+
 ## [1.1.1](https://github.com/MoLow/reporters/compare/mocha-v1.1.0...mocha-v1.1.1) (2025-08-06)
 
 
