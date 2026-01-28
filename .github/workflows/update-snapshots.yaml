@@ -36,10 +36,17 @@ jobs:
       - run: yarn install --ignore-engines
       - run: yarn test:update-snapshots
 
+      - name: Create GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.PR_CREATOR_APP_ID }}
+          private-key: ${{ secrets.PR_CREATOR_PRIVATE_KEY }}
+
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v8
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
           commit-message: 'chore: update snapshots'
           branch: chore/update-snapshots
           delete-branch: true
