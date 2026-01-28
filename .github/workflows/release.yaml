@@ -42,7 +42,7 @@ jobs:
   
   npm-publish:
     needs: release-please
-    if: ${{ needs.release-please.outputs.releases_created }}
+    if: ${{ needs.release-please.outputs.releases_created && needs.release-please.outputs.packages && fromJson(needs.release-please.outputs.packages || '[]')[0] != null }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -50,7 +50,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package: ${{ fromJson(needs.release-please.outputs.packages )}}
+        package: ${{ fromJson(needs.release-please.outputs.packages || '[]') }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v6
