@@ -12,18 +12,23 @@ jobs:
       releases_created:  ${{ steps.release.outputs.releases_created }}
       packages:  ${{ steps.get-released-packages.outputs.result }}
     steps:
-      - uses: google-github-actions/release-please-action@v3
+      - name: Create GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.PR_CREATOR_APP_ID }}
+          private-key: ${{ secrets.PR_CREATOR_PRIVATE_KEY }}
+      - uses: googleapis/release-please-action@v4
         id: release
         with:
-          command: manifest
-          monorepo-tags: true
-      - uses: actions/checkout@v3
+          token: ${{ steps.app-token.outputs.token }}
+      - uses: actions/checkout@v5
         if: ${{ steps.release.outputs.releases_created }}
       - id: get-released-packages
         if: ${{ steps.release.outputs.releases_created }}
-        uses: actions/github-script@v6
+        uses: actions/github-script@v8
         with:
-            github-token: ${{secrets.GITHUB_TOKEN}}
+            github-token: ${{ steps.app-token.outputs.token }}
             script: |
               const path = require('path');
               const outputs = ${{ toJSON(steps.release.outputs) }};
@@ -37,7 +42,7 @@ jobs:
   
   npm-publish:
     needs: release-please
-    if: ${{ needs.release-please.outputs.releases_created }}
+    if: ${{ needs.release-please.outputs.releases_created && needs.release-please.outputs.packages && fromJson(needs.release-please.outputs.packages || '[]')[0] != null }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -45,10 +50,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package: ${{ fromJson(needs.release-please.outputs.packages )}}
+        package: ${{ fromJson(needs.release-please.outputs.packages || '[]') }}
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
         with:
           node-version: lts/*
           registry-url: 'https://registry.npmjs.org'
