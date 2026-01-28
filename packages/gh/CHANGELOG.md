@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.2](https://github.com/MoLow/reporters/compare/gh-v1.2.1...gh-v1.2.2) (2026-01-28)
+
+
+### Bug Fixes
+
+* **deps:** upgrade @actions/core to version 2.0.3 ([#158](https://github.com/MoLow/reporters/issues/158)) ([e26e326](https://github.com/MoLow/reporters/commit/e26e32672a4fd2b6a922c7983baef6b0dcf3f9b2))
+
+
+### Miscellaneous Chores
+
+* update snapshots ([#160](https://github.com/MoLow/reporters/issues/160)) ([7ba5ae0](https://github.com/MoLow/reporters/commit/7ba5ae0c43ccc2dcbf12540320519903f6d09545))
+
 ## [1.2.1](https://github.com/MoLow/reporters/compare/gh-v1.2.0...gh-v1.2.1) (2025-09-03)
 
 
