@@ -1,6 +1,6 @@
 {
   "name": "@reporters/junit",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "A jUnit reporter for `node:test`",
   "type": "commonjs",
   "keywords": [
