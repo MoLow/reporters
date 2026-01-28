@@ -64,5 +64,3 @@ jobs:
           echo "PACKAGE_NAME=$PACKAGE_NAME" >> $GITHUB_OUTPUT
       - run: npm publish --provenance --access public
         working-directory: packages/${{ steps.package-name.outputs.PACKAGE_NAME }}
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
