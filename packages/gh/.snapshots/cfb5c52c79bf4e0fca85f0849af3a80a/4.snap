@@ -14,6 +14,7 @@ Object {
 ✔ more tests (* millisecond)
 ﹣ is skipped (* millisecond) # SKIP
 ✔ is a todo (* millisecond) # TODO
+⚠ is a failing todo (* millisecond) # TODO
 ✔ top level diagnostic (* millisecond)
 top level diagnostic
 
@@ -34,6 +35,27 @@ top level diagnostic
 
 *
 ✖ should fail (* millisecond)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert(false)
+  
+      *
+      *
+      *
+      *
+      *
+      *
+      * {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+*
+⚠ is a failing todo (* millisecond) # TODO
   AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
   
     assert(false)

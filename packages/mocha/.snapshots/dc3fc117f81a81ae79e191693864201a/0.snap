@@ -15,10 +15,11 @@ this is a console log
 
   - is skipped
   - is a todo
+  - is a failing todo
   ✔ top level diagnostic
 
   4 passing (*ms)
-  2 pending
+  3 pending
   2 failing
 
   1) 

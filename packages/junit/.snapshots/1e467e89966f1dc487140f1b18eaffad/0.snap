@@ -65,6 +65,36 @@ Error [ERR_TEST_FAILURE]: this is an error
 	<testcase name=\"is a todo\" time=\"*\" classname=\"test\">
 		<skipped type=\"todo\" message=\"true\"/>
 	</testcase>
+	<testcase name=\"is a failing todo\" time=\"*\" classname=\"test\" failure=\"The expression evaluated to a falsy value:  assert(false)\">
+		<skipped type=\"todo\" message=\"true\"/>
+		<failure type=\"testCodeFailure\" message=\"The expression evaluated to a falsy value:  assert(false)\">
+[Error [ERR_TEST_FAILURE]: The expression evaluated to a falsy value:
+
+  assert(false)
+] {
+  code: 'ERR_TEST_FAILURE',
+  failureType: 'testCodeFailure',
+  cause: AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert(false)
+  
+      *
+      *
+      *
+      *
+      *
+      *
+      * {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+}
+		</failure>
+	</testcase>
 	<testcase name=\"top level diagnostic\" time=\"*\" classname=\"test\"/>
 </testsuites>
 ",

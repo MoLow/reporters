@@ -20,11 +20,13 @@ Object {
 ::debug::completed running is skipped
 ::debug::starting to run is a todo
 ::debug::completed running is a todo
+::debug::starting to run is a failing todo
+::error title=is a failing todo,file=packages/github/tests/example.js,line=22,col=36::AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:%0A%0A  assert(false)%0A%0A    at TestContext.<anonymous> (CWD/tests/example.js:22:36)%0A    at Test.runInAsyncScope (node:async_hooks:206:9)%0A    at Test.run (node:internal/test_runner/test:796:25)%0A    at Test.processPendingSubtests (node:internal/test_runner/test:526:18)%0A    at Test.postRun (node:internal/test_runner/test:889:19)%0A    at Test.run (node:internal/test_runner/test:835:12)%0A    at async Test.processPendingSubtests (node:internal/test_runner/test:526:7) {%0A  generatedMessage: true,%0A  code: 'ERR_ASSERTION',%0A  actual: false,%0A  expected: true,%0A  operator: '=='%0A}
 ::debug::starting to run top level diagnostic
 ::debug::completed running top level diagnostic
-::notice file=tests/example.js,line=23,col=1::top level diagnostic
+::notice file=tests/example.js,line=24,col=1::top level diagnostic
 ::group::Test results (4 passed, 2 failed)
-::notice::Total Tests: 8%0ASuites 📂: 2%0APassed ✅: 4%0AFailed ❌: 2%0ACanceled 🚫: 0%0ASkipped ⏭️: 1%0ATodo 📝: 1%0ADuration 🕐: *ms
+::notice::Total Tests: 9%0ASuites 📂: 2%0APassed ✅: 4%0AFailed ❌: 2%0ACanceled 🚫: 0%0ASkipped ⏭️: 1%0ATodo 📝: 2%0ADuration 🕐: *ms
 ::endgroup::
 ",
 }
