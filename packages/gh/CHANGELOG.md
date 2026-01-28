@@ -1,5 +1,40 @@
 # Changelog
 
+## [1.3.0](https://github.com/MoLow/reporters/compare/gh-v1.2.3...gh-v1.3.0) (2026-01-28)
+
+
+### Features
+
+* **gh:** nicer output for duration in summary ([#154](https://github.com/MoLow/reporters/issues/154)) ([f03c0dd](https://github.com/MoLow/reporters/commit/f03c0dd6d3c90fffab4fcf06b1d631cdf275de08))
+* nicer error messages in GitHub Actions ([#150](https://github.com/MoLow/reporters/issues/150)) ([c6f942b](https://github.com/MoLow/reporters/commit/c6f942b78beb7b19a51d1a1d57e4274e47f1a3c5))
+
+
+### Bug Fixes
+
+* **deps:** upgrade @actions/core to version 2.0.3 ([#158](https://github.com/MoLow/reporters/issues/158)) ([e26e326](https://github.com/MoLow/reporters/commit/e26e32672a4fd2b6a922c7983baef6b0dcf3f9b2))
+* **gh:** fix error grouping issues ([#144](https://github.com/MoLow/reporters/issues/144)) ([13bf329](https://github.com/MoLow/reporters/commit/13bf3296621a1d2cf3131a7b33e9c2cf9d661e76))
+* **gh:** fix github version ([#148](https://github.com/MoLow/reporters/issues/148)) ([e6f9bf0](https://github.com/MoLow/reporters/commit/e6f9bf014cc09f7d375496dfea77c4833f610258))
+* **gh:** upgrade github ([#156](https://github.com/MoLow/reporters/issues/156)) ([5794088](https://github.com/MoLow/reporters/commit/5794088d41a4f50881d7ccf79312786959717fa8))
+* **github:** add missing file ([#146](https://github.com/MoLow/reporters/issues/146)) ([5d302bb](https://github.com/MoLow/reporters/commit/5d302bb7abe1d20b447c9c8881aecb5945efdc95))
+
+
+### Miscellaneous Chores
+
+* **gh:** clean diagnostics ([#142](https://github.com/MoLow/reporters/issues/142)) ([73c0df3](https://github.com/MoLow/reporters/commit/73c0df3e930ea063b80c02c44abe79736f9c89da))
+* **gh:** rename github-spec to gh ([#140](https://github.com/MoLow/reporters/issues/140)) ([0c50f28](https://github.com/MoLow/reporters/commit/0c50f2893236a5e841683c99ca61269c19f56d5e))
+* **gh:** upgrade deps ([#152](https://github.com/MoLow/reporters/issues/152)) ([85e0b3e](https://github.com/MoLow/reporters/commit/85e0b3e08eba4291e30fb9017183a293dea56259))
+* release main ([#139](https://github.com/MoLow/reporters/issues/139)) ([fc5dfc3](https://github.com/MoLow/reporters/commit/fc5dfc38215e894c4d124da4fb6090bd53097098))
+* release main ([#143](https://github.com/MoLow/reporters/issues/143)) ([0abb219](https://github.com/MoLow/reporters/commit/0abb219043bd3db8f1bad9471d115815adb742b8))
+* release main ([#145](https://github.com/MoLow/reporters/issues/145)) ([46fe651](https://github.com/MoLow/reporters/commit/46fe651c12d97f2a206fa5a6d90a67cea4c0aac2))
+* release main ([#147](https://github.com/MoLow/reporters/issues/147)) ([75526f0](https://github.com/MoLow/reporters/commit/75526f0251999f40a06946c4d7370dff63c4f82e))
+* release main ([#149](https://github.com/MoLow/reporters/issues/149)) ([4c4e07b](https://github.com/MoLow/reporters/commit/4c4e07b3006b4fef32399cd4e52379cfd7e6dbda))
+* release main ([#151](https://github.com/MoLow/reporters/issues/151)) ([9f3775a](https://github.com/MoLow/reporters/commit/9f3775ad43800c23ba2ba6727ee96fe65c4702b8))
+* release main ([#153](https://github.com/MoLow/reporters/issues/153)) ([bea7fb6](https://github.com/MoLow/reporters/commit/bea7fb68a5af0bef7ae1720248ddf928c115ed0b))
+* release main ([#155](https://github.com/MoLow/reporters/issues/155)) ([f096bfb](https://github.com/MoLow/reporters/commit/f096bfb256a7614cc847882a278b2149b3256902))
+* release main ([#157](https://github.com/MoLow/reporters/issues/157)) ([b9fc317](https://github.com/MoLow/reporters/commit/b9fc3174061670c3a8af4933649aef32199b3edc))
+* release main ([#164](https://github.com/MoLow/reporters/issues/164)) ([8ff5c6b](https://github.com/MoLow/reporters/commit/8ff5c6b971718ad00fbd00a1ffe2d1b7586f9de0))
+* update snapshots ([#160](https://github.com/MoLow/reporters/issues/160)) ([7ba5ae0](https://github.com/MoLow/reporters/commit/7ba5ae0c43ccc2dcbf12540320519903f6d09545))
+
 ## [1.2.2](https://github.com/MoLow/reporters/compare/gh-v1.2.1...gh-v1.2.2) (2026-01-28)
 
 
