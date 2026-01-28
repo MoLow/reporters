@@ -1,0 +1,49 @@
+name: Update Snapshots
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  update-snapshots:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js v20
+        uses: actions/setup-node@v6
+        with:
+          node-version: v20
+          check-latest: true
+      - run: yarn install --ignore-engines
+      - run: yarn test:update-snapshots
+
+      - name: Setup Node.js v22
+        uses: actions/setup-node@v6
+        with:
+          node-version: v22
+          check-latest: true
+      - run: yarn install --ignore-engines
+      - run: yarn test:update-snapshots
+
+      - name: Setup Node.js v24
+        uses: actions/setup-node@v6
+        with:
+          node-version: v24
+          check-latest: true
+      - run: yarn install --ignore-engines
+      - run: yarn test:update-snapshots
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v8
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: 'chore: update snapshots'
+          branch: chore/update-snapshots
+          delete-branch: true
+          title: 'chore: update snapshots'
+          body: |
+            Automated snapshot updates from the daily update-snapshots workflow.
+            Snapshots were updated across Node.js v20, v22, and v24.
