@@ -6,7 +6,7 @@ Object {
 ::debug::starting to run is ok
 ::debug::completed running is ok
 ::debug::starting to run fails
-::error title=fails,file=packages/github/tests/example.js,line=9,col=11::Error: this is an error%0A    at TestContext.<anonymous> (CWD/tests/example.js:9:11)%0A    at Test.runInAsyncScope (node:async_hooks:214:14)%0A    at Test.run (node:internal/test_runner/test:1106:25)%0A    at Suite.processPendingSubtests (node:internal/test_runner/test:788:18)%0A    at Test.postRun (node:internal/test_runner/test:1235:19)%0A    at Test.run (node:internal/test_runner/test:1163:12)%0A    at async Promise.all (index 0)%0A    at async Suite.run (node:internal/test_runner/test:1516:7)%0A    at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3)
+::error title=fails,file=packages/github/tests/example.js,line=9,col=11::Error: this is an error%0A    at TestContext.<anonymous> (CWD/tests/example.js:9:11)%0A    at Test.runInAsyncScope (node:async_hooks:214:14)%0A    at Test.run (node:internal/test_runner/test:1106:25)%0A    at Suite.processPendingSubtests (node:internal/test_runner/test:788:18)%0A    at Test.postRun (node:internal/test_runner/test:1235:19)%0A    at Test.run (node:internal/test_runner/test:1163:12)%0A    at async Promise.all (index 0)%0A    at async Suite.run (node:internal/test_runner/test:1518:7)%0A    at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3)
 ::debug::starting to run is a diagnostic
 ::debug::completed running is a diagnostic
 ::debug::starting to run should fail
