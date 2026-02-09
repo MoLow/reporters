@@ -18,6 +18,7 @@ if (!isSupported) {
 }
 // eslint-disable-next-line import/no-unresolved, import/order
 const { spec: SpecReporter } = require('node:test/reporters');
+const WatchSuspendPlugin = require('./tests/fixtures/suspend-plugin');
 
 const KEYS = {
   CTRLC: '\x03',
@@ -41,6 +42,11 @@ process.stdin.setRawMode?.(true);
 class REPL {
   #controller = new AbortController();
 
+  #hooks = {
+    shouldRunTestSuite: [],
+    onTestRunComplete: [],
+  };
+
   #filesFilter = process.argv[2] || '';
 
   #testsFilter = '';
@@ -62,12 +68,20 @@ class REPL {
     this.#clear();
     this.#controller.abort();
     this.#controller = new AbortController();
+    if (this.#hooks.shouldRunTestSuite.some((fn) => !fn())) {
+      this.#clear();
+      this.#emitter.emit('drained');
+      this.#hooks.onTestRunComplete.forEach((fn) => fn());
+      return;
+    }
+
     const filter = this.#filesFilter ? `**/${this.#filesFilter}*.*` : '**/?(*.)+(spec|test).[jt]s';
     const files = await glob(filter, { ignore: 'node_modules/**' });
 
     if (!files.length) {
       process.stdout.write(chalk.red(`\nNo files found for pattern ${filter}\n`));
       this.#emitter.emit('drained');
+      this.#hooks.onTestRunComplete.forEach((fn) => fn());
       return;
     }
 
@@ -92,6 +106,7 @@ class REPL {
             setImmediate(() => {
               this.#emitter.emit('drained');
               drained = true;
+              this.#hooks.onTestRunComplete.forEach((fn) => fn());
             });
           }
         }
@@ -239,9 +254,32 @@ ${Object.entries(this.#currentCommands)
       }
     }
   }
+
+  registerPlugin(plugin) {
+    // TODO: should we be compatible (as much as possible) to Jest API for easy migration?
+    const usageInfo = plugin.getUsageInfo();
+
+    // TODO: enable override t,p overridable
+    this.#currentCommands = Object.freeze({
+      [usageInfo.key]: {
+        fn: plugin.run.bind(plugin),
+        description: usageInfo.description,
+      },
+      ...this.#currentCommands,
+    });
+
+    plugin.apply({
+      shouldRunTestSuite: (fn) => this.#hooks.shouldRunTestSuite.push(fn),
+      onTestRunComplete: (fn) => this.#hooks.onTestRunComplete.push(fn),
+    });
+  }
 }
 
-new REPL().run()
+const repl = new REPL();
+// TODO: only for testing/development. remove this after we have config.
+repl.registerPlugin(new WatchSuspendPlugin());
+
+repl.run()
   .then(() => process.exit(0))
   .catch((error) => {
     /* c8 ignore next 2 */
