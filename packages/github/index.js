@@ -100,6 +100,27 @@ function transformEvent(event) {
         return new Command('notice', toCommandProperties(extractLocation(event.data)), `${event.data.message}`).toString();
       }
       break;
+    /* c8 ignore start */
+    case 'test:interrupted': {
+      const { tests } = event.data;
+      let res = '';
+      for (let i = 0; i < tests.length; i += 1) {
+        const test = tests[i];
+        const file = test.file ? getFilePath(test.file) : undefined;
+        let msg = `Interrupted while running: ${test.name}`;
+        if (file) {
+          msg += ` at ${file}:${test.line}:${test.column}`;
+        }
+        res += new Command('warning', toCommandProperties({
+          file,
+          startLine: test.line,
+          startColumn: test.column,
+          title: `Interrupted: ${test.name}`,
+        }), msg).toString();
+      }
+      return res;
+    }
+    /* c8 ignore stop */
     default:
       break;
   }

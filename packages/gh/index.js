@@ -245,10 +245,44 @@ class SpecReporter extends Transform {
           return this.#formatFailedTestResults();
         }
         break;
+      /* c8 ignore next 2 */
+      case 'test:interrupted':
+        return this.#formatInterruptedTests(data.tests) + res;
       default:
     }
     return ''; // No output for other event types
   }
+
+  /* c8 ignore start */
+  #formatInterruptedTests(tests) {
+    if (tests.length === 0) {
+      return '';
+    }
+
+    const results = [];
+
+    if (this.#reportedGroup) {
+      results.push(endGroup);
+      this.#reportedGroup = false;
+    }
+
+    results.push(
+      `\n${styleText('yellow', 'Interrupted while running:', { validateStream: !this.#isGitHubActions })}\n`,
+    );
+
+    for (let i = 0; i < tests.length; i += 1) {
+      const test = tests[i];
+      let msg = `${indent(test.nesting)}${reporterUnicodeSymbolMap['warning:alert']}${test.name}`;
+      if (test.file) {
+        const relPath = relative(this.#cwd, test.file);
+        msg += ` ${styleText('gray', `(${relPath}:${test.line}:${test.column})`, { validateStream: !this.#isGitHubActions })}`;
+      }
+      results.push(msg);
+    }
+
+    return `${results.join('\n')}\n`;
+  }
+  /* c8 ignore stop */
 
   _transform({ type, data }, encoding, callback) {
     if (type === 'test:coverage' || type === 'test:stderr' || type === 'test:stdout') {
