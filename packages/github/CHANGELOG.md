@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.13.0](https://github.com/MoLow/reporters/compare/github-v1.12.0...github-v1.13.0) (2026-04-16)
+
+
+### Features
+
+* handle test:interrupted event ([#172](https://github.com/MoLow/reporters/issues/172)) ([79f71f4](https://github.com/MoLow/reporters/commit/79f71f483f5fac4776583bdba91f011f3e6124b5))
+
+
+### Miscellaneous Chores
+
+* update snapshots ([#169](https://github.com/MoLow/reporters/issues/169)) ([8791cab](https://github.com/MoLow/reporters/commit/8791cab49ede1921862a64d7b3b864ea6f5f80ef))
+* update snapshots ([#171](https://github.com/MoLow/reporters/issues/171)) ([889b64f](https://github.com/MoLow/reporters/commit/889b64fda81bc376c08560af8ec5218d01830d2f))
+
 ## [1.12.0](https://github.com/MoLow/reporters/compare/github-v1.11.1...github-v1.12.0) (2026-01-28)
 
 
