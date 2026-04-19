@@ -12,7 +12,7 @@
   ],
   "dependencies": {
     "@actions/core": "^2.0.3",
-    "@reporters/github": "^1.11.0"
+    "@reporters/github": "^1.13.1"
   },
   "files": [
     "./index.js"
