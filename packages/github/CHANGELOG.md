@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.13.1](https://github.com/MoLow/reporters/compare/github-v1.13.0...github-v1.13.1) (2026-04-19)
+
+
+### Bug Fixes
+
+* **github:** tolerate test:fail events without a details.error ([#175](https://github.com/MoLow/reporters/issues/175)) ([3c2da34](https://github.com/MoLow/reporters/commit/3c2da34398246ef8be55558e9850d67abbf62c12))
+
+
+### Miscellaneous Chores
+
+* update snapshots ([#173](https://github.com/MoLow/reporters/issues/173)) ([5637d57](https://github.com/MoLow/reporters/commit/5637d575a8efa1b495f5f1de62ecd7eece21e4ff))
+
 ## [1.13.0](https://github.com/MoLow/reporters/compare/github-v1.12.0...github-v1.13.0) (2026-04-16)
 
 
