@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.2](https://github.com/MoLow/reporters/compare/gh-v1.4.1...gh-v1.4.2) (2026-04-19)
+
+
+### Bug Fixes
+
+* bump github reporter to include bugfixes ([#176](https://github.com/MoLow/reporters/issues/176)) ([3430a9f](https://github.com/MoLow/reporters/commit/3430a9fc2c80cb5e3c4d59623c743ddae14560ca))
+
 ## [1.4.1](https://github.com/MoLow/reporters/compare/gh-v1.4.0...gh-v1.4.1) (2026-04-19)
 
 
