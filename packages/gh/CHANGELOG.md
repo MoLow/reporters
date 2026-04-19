@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/MoLow/reporters/compare/gh-v1.4.0...gh-v1.4.1) (2026-04-19)
+
+
+### Miscellaneous Chores
+
+* update snapshots ([#173](https://github.com/MoLow/reporters/issues/173)) ([5637d57](https://github.com/MoLow/reporters/commit/5637d575a8efa1b495f5f1de62ecd7eece21e4ff))
+
 ## [1.4.0](https://github.com/MoLow/reporters/compare/gh-v1.3.0...gh-v1.4.0) (2026-04-16)
 
 
