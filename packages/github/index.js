@@ -82,9 +82,9 @@ function transformEvent(event) {
       return new Command('debug', {}, `completed running ${event.data.name}`).toString();
     case 'test:fail': {
       const error = event.data.details?.error;
-      if (error?.code === 'ERR_TEST_FAILURE' && error?.failureType === 'subtestsFailed') {
-        // This means the failed subtests are already reported
-        // no need to re-annotate the file itself
+      if (!error || (error.code === 'ERR_TEST_FAILURE' && error.failureType === 'subtestsFailed')) {
+        // Either no error object on the event, or failed subtests are already
+        // reported — no need to re-annotate the file itself.
         break;
       }
       const err = error.code === 'ERR_TEST_FAILURE' ? error.cause : error;

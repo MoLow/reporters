@@ -1,12 +1,14 @@
 'use strict';
 
 const { test, describe, beforeEach } = require('node:test');
+const assert = require('node:assert');
 const { spawnSync } = require('child_process');
 const { tmpdir } = require('os');
 const { join } = require('path');
 const path = require('path');
 const { readFileSync, writeFileSync } = require('fs');
 const { Snap, nodeMajor } = require('../../../tests/utils');
+const { transformEvent } = require('../index');
 
 const snapshot = Snap(`${__filename}.${nodeMajor}`);
 const GITHUB_STEP_SUMMARY = join(tmpdir(), 'github-actions-test-reporter');
@@ -45,5 +47,31 @@ describe('github reporter', () => {
   test('should noop if not in github actions', async () => {
     const silentChild = spawnSync(process.execPath, ['--test-reporter', './index.js', '../../tests/example'], { env: { } });
     await snapshot(silentChild);
+  });
+
+  test('transformEvent tolerates test:fail with no error object', () => {
+    // Node can emit test:fail where details.error is null (e.g. hook re-runs
+    // that reset this.error — see lib/internal/test_runner/test.js). The
+    // reporter must not throw on such events, otherwise the unhandled 'error'
+    // on the Transform stream crashes the whole test runner.
+    assert.doesNotThrow(() => transformEvent({
+      type: 'test:fail',
+      data: {
+        name: 'no error',
+        details: { error: null },
+        file: 'x.js',
+        line: 1,
+        column: 1,
+      },
+    }));
+    assert.doesNotThrow(() => transformEvent({
+      type: 'test:fail',
+      data: {
+        name: 'no details',
+        file: 'x.js',
+        line: 1,
+        column: 1,
+      },
+    }));
   });
 });
