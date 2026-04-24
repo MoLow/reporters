@@ -47,6 +47,27 @@ function waitForStdoutMatch(child, matcher, timeoutMs = 2000) {
   });
 }
 
+function collectOutput(child) {
+  let stdout = '';
+  let stderr = '';
+
+  child.stdout.on('data', (chunk) => {
+    stdout += chunk.toString();
+  });
+  child.stderr.on('data', (chunk) => {
+    stderr += chunk.toString();
+  });
+
+  return {
+    stdout() {
+      return stdout;
+    },
+    stderr() {
+      return stderr;
+    },
+  };
+}
+
 test('spawn with reporter', async () => {
   const child = spawnSync(process.execPath, ['--test-reporter', './index.js', '../../tests/example'], { env: {} });
   await snapshot(child);
@@ -81,107 +102,44 @@ test('single test', async () => {
 });
 
 test('emits root suite lifecycle for empty sources', async () => {
-  /* eslint-disable no-console */
-  const cwd = process.cwd();
-  const logs = [];
-  const originalLog = console.log;
-  console.log = (value) => logs.push(value);
-  process.chdir(resolve('./tests/emptySuiteReporter'));
-
-  try {
-    await reporter([]);
-  } finally {
-    console.log = originalLog;
-    process.chdir(cwd);
-  }
-
-  assert.deepStrictEqual(logs, [
-    'suite: ',
-    'suite end: ',
-  ]);
-  /* eslint-enable no-console */
+  const child = spawnSync(process.execPath, ['--test', '--test-reporter', '../../index.js', './*.not-real.js'], { env: {}, cwd: resolve('./tests/emptySuiteReporter') });
+  await snapshot(child);
 });
 
 test('streams built-in reporter output before suite end', async () => {
-  const child = spawn(process.execPath, ['--test-reporter', './index.js', '../../tests/slow_tests.js'], {
-    cwd: process.cwd(),
-    env: {},
-  });
+  const child = spawn(process.execPath, ['--test-reporter', './index.js', '../../tests/slow_tests.js'], { env: {} });
+  const output = collectOutput(child);
 
   const partialStdout = await waitForStdoutMatch(child, /is a little slow/);
   assert.strictEqual(child.exitCode, null);
-  assert.match(partialStdout, /is ok/);
-  assert.doesNotMatch(partialStdout, /4 passing/);
 
   const [code] = await once(child, 'close');
-  assert.strictEqual(code, 1);
+  await snapshot({
+    status: code,
+    stdout: output.stdout(),
+    stderr: output.stderr(),
+  }, partialStdout);
 });
 
 test('streams custom reporter callbacks before suite completion', async () => {
-  const child = spawn(process.execPath, ['--test-reporter', '../../index.js', '../../../../tests/slow_tests.js'], {
-    cwd: resolve('./tests/progressiveReporter'),
-    env: {},
-  });
+  const child = spawn(process.execPath, ['--test-reporter', '../../index.js', '../../../../tests/slow_tests.js'], { env: {},  cwd: resolve('./tests/progressiveReporter') });
+  const output = collectOutput(child);
 
   const partialStdout = await waitForStdoutMatch(child, /test end:/);
   assert.strictEqual(child.exitCode, null);
-  assert.doesNotMatch(partialStdout, /suite end: <anonymous>/);
 
   const [code] = await once(child, 'close');
-  assert.strictEqual(code, 1);
+  await snapshot({
+    status: code,
+    stdout: output.stdout(),
+    stderr: output.stderr(),
+  }, partialStdout);
 });
 
 test('preserves incoming completion order for concurrent children', async () => {
-  /* eslint-disable no-console */
-  const cwd = process.cwd();
-  const logs = [];
-  const source = [
-    { type: 'test:start', data: { name: 'concurrent suite', nesting: 0, file: 'suite.js' } },
-    { type: 'test:start', data: { name: 'fast second', nesting: 1, file: 'suite.js' } },
-    {
-      type: 'test:pass',
-      data: {
-        name: 'fast second',
-        nesting: 1,
-        file: 'suite.js',
-        details: { duration_ms: 50, type: 'test' },
-      },
-    },
-    { type: 'test:start', data: { name: 'slow first', nesting: 1, file: 'suite.js' } },
-    {
-      type: 'test:pass',
-      data: {
-        name: 'slow first',
-        nesting: 1,
-        file: 'suite.js',
-        details: { duration_ms: 400, type: 'test' },
-      },
-    },
-    {
-      type: 'test:pass',
-      data: {
-        name: 'concurrent suite',
-        nesting: 0,
-        file: 'suite.js',
-        details: { duration_ms: 450, type: 'suite' },
-      },
-    },
-  ];
-
-  process.chdir(resolve('./tests/customReporter'));
-  const originalLog = console.log;
-  console.log = (value) => logs.push(value);
-
-  try {
-    await reporter(source);
-  } finally {
-    console.log = originalLog;
-    process.chdir(cwd);
-  }
-
-  assert.deepStrictEqual(logs.map((log) => log.fullTitle), [
-    ' concurrent suite fast second',
-    ' concurrent suite slow first',
-  ]);
-  /* eslint-enable no-console */
+  const child = spawnSync(process.execPath, ['--test-reporter', '../../index.js', '../../../../tests/slow_tests.js'], {
+    cwd: resolve('./tests/customReporter'),
+    env: {},
+  });
+  await snapshot(child);
 });

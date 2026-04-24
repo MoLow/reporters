@@ -1,0 +1,11 @@
+Object {
+  "exitCode": 1,
+  "stderr": "",
+  "stdout": "test end:  <anonymous> is ok
+test end:  <anonymous> is a little slow
+test end:  <anonymous> is pretty slow
+test end:  <anonymous> is too slow
+test end:  <anonymous> fails
+suite end: <anonymous>
+",
+}

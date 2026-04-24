@@ -1,0 +1,35 @@
+Object {
+  "exitCode": 1,
+  "stderr": "",
+  "stdout": "{
+  state: 'passed',
+  isPending: false,
+  currentRetry: 0,
+  fullTitle: ' <anonymous> is ok'
+}
+{
+  state: 'passed',
+  isPending: false,
+  currentRetry: 0,
+  fullTitle: ' <anonymous> is a little slow'
+}
+{
+  state: 'passed',
+  isPending: false,
+  currentRetry: 0,
+  fullTitle: ' <anonymous> is pretty slow'
+}
+{
+  state: 'passed',
+  isPending: false,
+  currentRetry: 0,
+  fullTitle: ' <anonymous> is too slow'
+}
+{
+  state: 'failed',
+  isPending: false,
+  currentRetry: 0,
+  fullTitle: ' <anonymous> fails'
+}
+",
+}
