@@ -122,7 +122,7 @@ test('streams built-in reporter output before suite end', async () => {
 });
 
 test('streams custom reporter callbacks before suite completion', async () => {
-  const child = spawn(process.execPath, ['--test-reporter', '../../index.js', '../../../../tests/slow_tests.js'], { env: {},  cwd: resolve('./tests/progressiveReporter') });
+  const child = spawn(process.execPath, ['--test-reporter', '../../index.js', '../../../../tests/slow_tests.js'], { env: {}, cwd: resolve('./tests/progressiveReporter') });
   const output = collectOutput(child);
 
   const partialStdout = await waitForStdoutMatch(child, /test end:/);
