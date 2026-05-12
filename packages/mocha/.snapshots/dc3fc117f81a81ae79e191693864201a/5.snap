@@ -1,0 +1,6 @@
+Object {
+  "exitCode": 1,
+  "stderr": "Could not find 'CWD/packages/mocha/tests/emptySuiteReporter/*.not-real.js'
+",
+  "stdout": "",
+}
