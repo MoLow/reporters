@@ -39,6 +39,8 @@ class Test {
     this.parent = parent;
     this.root = !parent;
     this.children = [];
+    this.kind = 'test';
+    this.started = false;
     this.#mochaOptions = mochaOptions;
 
     this.body = '';
@@ -48,15 +50,19 @@ class Test {
     this._afterEach = [];
   }
 
-  applyTestEvent(event, passed) {
+  applyStartEvent(event) {
     this.title = event.data.name;
     this.file = event.data.file;
+    this.nesting = event.data.nesting;
+  }
+
+  applyTestEvent(event, passed) {
+    this.applyStartEvent(event);
     this.pending = Boolean(event.data.skip || event.data.todo);
     this.duration = event.data.details?.duration_ms;
     const error = event.data.details?.error;
     this.err = error?.cause instanceof Error ? error.cause : error;
     this.passed = passed;
-    this.nesting = event.data.nesting;
   }
 
   get state() {
@@ -90,17 +96,25 @@ class Test {
     return this.titlePath().join(' ');
   }
 
-  finalize() {
-    this.suites = this._suites;
-    this.tests = this._tests;
+  markSuite() {
+    this.kind = 'suite';
   }
 
-  get _suites() {
-    return this.children.filter((child) => child.children.length > 0);
+  beginSuite() {
+    this.markSuite();
+    this.started = true;
   }
 
-  get _tests() {
-    return this.children.filter((child) => child.children.length === 0);
+  get isSuite() {
+    return this.kind === 'suite';
+  }
+
+  get suites() {
+    return this.children.filter((child) => child.isSuite);
+  }
+
+  get tests() {
+    return this.children.filter((child) => !child.isSuite);
   }
 }
 
@@ -118,11 +132,16 @@ class Runner extends EventEmitter {
 
   #reporter;
 
-  #root = new Test();
-
-  #current = this.#root;
-
   #mochaOptions = loadOptions([]);
+
+  #root = new Test(null, this.#mochaOptions);
+
+  #activeNodes = [];
+
+  constructor() {
+    super();
+    this.#root.markSuite();
+  }
 
   async init() {
     const reporterName = this.#mochaOptions.reporter ?? 'spec';
@@ -135,10 +154,12 @@ class Runner extends EventEmitter {
       try {
         Reporter = await import(reporterName).then((m) => m.default || m);
       } catch (err) {
+        // eslint-disable-next-line no-console
         console.error(err);
       }
     }
     if (!Reporter) {
+      // eslint-disable-next-line no-console
       console.error(new Error(`invalid reporter "${reporterName}"`));
       return;
     }
@@ -147,72 +168,144 @@ class Runner extends EventEmitter {
   }
 
   get suite() {
-    return this.#current;
+    return this.#root;
   }
 
   end() {
     if (!this.#reporter) {
       return;
     }
+    this.#closeActiveSuites();
     this.stats.end = new Date();
     this.stats.duration = this.stats.end - this.stats.start;
-    this.#report();
+    this.#startRootSuite();
+    this.emit(EVENT_SUITE_END, this.#root);
     this.emit(EVENT_RUN_END);
     if (typeof this.#reporter.done === 'function') {
       this.#reporter.done(this.stats.failures, () => {});
     }
   }
 
-  #report(suite = this.#root) {
-    /* Not like mocha,  node:test runs tests as soon as they are encountered
-    so the exact structure is unknown until all suites end */
-    this.emit(EVENT_SUITE_BEGIN, suite);
-    suite.finalize();
-    for (const s of suite.suites) {
-      this.#report(s);
+  #startRootSuite() {
+    if (this.#root.started) {
+      return;
     }
-    for (const test of suite.tests) {
-      this.emit(EVENT_TEST_BEGIN, test);
-      if (test.pending) {
-        this.emit(EVENT_TEST_PENDING, test);
-      } else if (!test.passed) {
-        this.emit(EVENT_TEST_FAIL, test, test.err);
-      } else {
-        this.emit(EVENT_TEST_PASS, test);
+    this.#root.beginSuite();
+    this.emit(EVENT_SUITE_BEGIN, this.#root);
+  }
+
+  #findParent(nesting) {
+    if (nesting === 0) {
+      return this.#root;
+    }
+    return this.#activeNodes[nesting - 1] ?? this.#root;
+  }
+
+  #matchesNode(node, event) {
+    return node
+      && node.nesting === event.data.nesting
+      && node.title === event.data.name;
+  }
+
+  #ensureNode(event) {
+    const { nesting } = event.data;
+    const existingNode = this.#activeNodes[nesting];
+    if (this.#matchesNode(existingNode, event)) {
+      return existingNode;
+    }
+
+    const parent = this.#findParent(nesting);
+    const node = new Test(parent, this.#mochaOptions);
+    node.applyStartEvent(event);
+    parent.children.push(node);
+    this.#activeNodes[nesting] = node;
+    this.#activeNodes.length = nesting + 1;
+    return node;
+  }
+
+  #openSuite(node) {
+    if (node.started) {
+      return;
+    }
+    node.beginSuite();
+    this.emit(EVENT_SUITE_BEGIN, node);
+  }
+
+  #ensureOpenAncestors(nesting) {
+    for (let i = 0; i < nesting; i += 1) {
+      const node = this.#activeNodes[i];
+      if (node) {
+        this.#openSuite(node);
       }
-      this.emit(EVENT_TEST_END, test);
     }
-    this.emit(EVENT_SUITE_END, suite);
   }
 
-  addChild(event, passed) {
-    const current = this.#current;
-    this.#current = new Test(current);
-    this.#current.applyTestEvent(event, passed);
-    current.children.push(this.#current);
+  #trimActiveNodes() {
+    while (
+      this.#activeNodes.length > 0
+      && this.#activeNodes[this.#activeNodes.length - 1] === undefined
+    ) {
+      this.#activeNodes.pop();
+    }
   }
 
-  isNewTest(event) {
-    return this.#current.title !== event.data.name || this.#current.nesting !== event.data.nesting;
+  #reportTest(node) {
+    this.stats.tests += 1;
+    this.emit(EVENT_TEST_BEGIN, node);
+    if (node.pending) {
+      this.stats.pending += 1;
+      this.emit(EVENT_TEST_PENDING, node);
+    } else if (!node.passed) {
+      this.stats.failures += 1;
+      this.emit(EVENT_TEST_FAIL, node, node.err);
+    } else {
+      this.stats.passes += 1;
+      this.emit(EVENT_TEST_PASS, node);
+    }
+    this.emit(EVENT_TEST_END, node);
   }
 
-  childCompleted(event, passed) {
-    this.#current.applyTestEvent(event, passed);
-    if (this.#current?.nesting === event.data.nesting) {
-      if (this.#current.children.length > 0) {
-        this.stats.suites += 1;
-      } else if (this.#current.pending) {
-        this.stats.tests += 1;
-        this.stats.pending += 1;
-      } else if (!this.#current.passed) {
-        this.stats.tests += 1;
-        this.stats.failures += 1;
-      } else {
-        this.stats.tests += 1;
-        this.stats.passes += 1;
+  #closeSuite(node) {
+    this.stats.suites += 1;
+    this.#openSuite(node);
+    this.emit(EVENT_SUITE_END, node);
+  }
+
+  #completeNode(event, passed) {
+    const node = this.#ensureNode(event);
+    this.#ensureOpenAncestors(event.data.nesting);
+    node.applyTestEvent(event, passed);
+
+    if (event.data.details?.type === 'suite' || node.children.length > 0) {
+      this.#closeSuite(node);
+    } else {
+      this.#reportTest(node);
+    }
+
+    this.#activeNodes[event.data.nesting] = undefined;
+    this.#trimActiveNodes();
+  }
+
+  onTestStart(event) {
+    this.#startRootSuite();
+    this.#ensureOpenAncestors(event.data.nesting);
+    this.#ensureNode(event);
+  }
+
+  onTestComplete(event, passed) {
+    this.#startRootSuite();
+    this.#completeNode(event, passed);
+  }
+
+  #closeActiveSuites() {
+    for (let i = this.#activeNodes.length - 1; i >= 0; i -= 1) {
+      const node = this.#activeNodes[i];
+      if (node && node.isSuite) {
+        this.#closeSuite(node);
+        this.#activeNodes[i] = undefined;
       }
-      this.#current = this.#current.parent;
     }
+    this.#trimActiveNodes();
   }
 }
 
@@ -223,14 +316,11 @@ module.exports = async function mochaReporter(source) {
   for await (const event of source) {
     switch (event.type) {
       case 'test:start':
-        runner.addChild(event, false);
+        runner.onTestStart(event);
         break;
       case 'test:pass':
       case 'test:fail': {
-        if (runner.isNewTest(event)) {
-          runner.addChild(event, event.type === 'test:pass');
-        }
-        runner.childCompleted(event, event.type === 'test:pass');
+        runner.onTestComplete(event, event.type === 'test:pass');
         break;
       }
       default:

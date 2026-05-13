@@ -1,0 +1,35 @@
+Object {
+  "exitCode": 1,
+  "stderr": "",
+  "stdout": "
+
+  <anonymous>
+    ✔ is ok
+    ✔ is a little slow (*ms)
+    ✔ is pretty slow (*ms)
+    ✔ is too slow (*ms)
+    1) fails
+
+
+  4 passing (1s)
+  1 failing
+
+  1) 
+       <anonymous>
+         fails:
+     Error: this is an error
+      *
+      *
+      *
+      *
+      *
+      *
+      at new Promise (<anonymous>)
+      *
+      *
+      at Array.map (<anonymous>)
+
+
+
+",
+}
