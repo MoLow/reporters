@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/MoLow/reporters/compare/mocha-v1.2.0...mocha-v1.3.0) (2026-05-13)
+
+
+### Features
+
+* **mocha:** stream test output progressively ([#178](https://github.com/MoLow/reporters/issues/178)) ([71a123e](https://github.com/MoLow/reporters/commit/71a123ed7da67547bc399463c33020d5a1d65fca))
+
 ## [1.2.0](https://github.com/MoLow/reporters/compare/mocha-v1.1.1...mocha-v1.2.0) (2026-01-28)
 
 
