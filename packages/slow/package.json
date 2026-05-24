@@ -2,7 +2,7 @@
   "name": "@reporters/slow",
   "version": "1.1.1",
   "description": "A slow tests reporter for `node:test`",
-  "type": "commonjs",
+  "type": "module",
   "keywords": [
     "node:test",
     "test",

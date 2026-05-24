@@ -1,3 +1,5 @@
+'use strict';
+
 const Reporter = require('./reporter.js');
 
 module.exports = {

@@ -1,14 +1,12 @@
-'use strict';
+import { test } from 'node:test';
+import { once } from 'node:events';
+import { resolve } from 'node:path';
+import { spawn, spawnSync } from 'node:child_process';
+import assert from 'node:assert';
+import { Snap, nodeMajor } from '../../../tests/utils.js';
+import reporter from '../index.js';
 
-const { test } = require('node:test');
-const { once } = require('node:events');
-const { resolve } = require('node:path');
-const { spawn, spawnSync } = require('node:child_process');
-const assert = require('assert');
-const { Snap, nodeMajor } = require('../../../tests/utils');
-const reporter = require('../index');
-
-const snapshot = Snap(`${__filename}.${nodeMajor}`);
+const snapshot = Snap(`${import.meta.filename}.${nodeMajor}`);
 
 function waitForStdoutMatch(child, matcher, timeoutMs = 2000) {
   let stdout = '';

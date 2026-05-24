@@ -1,14 +1,11 @@
-'use strict';
+import { test, describe, beforeEach } from 'node:test';
+import { spawnSync } from 'node:child_process';
+import { tmpdir } from 'node:os';
+import path, { join } from 'node:path';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { Snap, nodeMajor } from '../../../tests/utils.js';
 
-const { test, describe, beforeEach } = require('node:test');
-const { spawnSync } = require('child_process');
-const { tmpdir } = require('os');
-const { join } = require('path');
-const path = require('path');
-const { readFileSync, writeFileSync } = require('fs');
-const { Snap, nodeMajor } = require('../../../tests/utils');
-
-const snapshot = Snap(`${__filename}.${nodeMajor}`);
+const snapshot = Snap(`${import.meta.filename}.${nodeMajor}`);
 const GITHUB_STEP_SUMMARY = join(tmpdir(), 'github-actions-test-reporter');
 
 describe('github spec reporter', () => {
@@ -18,7 +15,7 @@ describe('github spec reporter', () => {
 
   test('spawn with reporter', async (t) => {
     const child = spawnSync(process.execPath, ['--test-reporter', './index.js', '../../tests/example'], {
-      env: { GITHUB_ACTIONS: true, GITHUB_STEP_SUMMARY, GITHUB_WORKSPACE: path.resolve(__dirname, '../../../') },
+      env: { GITHUB_ACTIONS: true, GITHUB_STEP_SUMMARY, GITHUB_WORKSPACE: path.resolve(import.meta.dirname, '../../../') },
     });
 
     t.diagnostic('This is a diagnostic message');
@@ -28,7 +25,7 @@ describe('github spec reporter', () => {
 
   test('spawn with reporter - esm', async () => {
     const child = spawnSync(process.execPath, ['--test-reporter', './index.js', '../../tests/example.mjs'], {
-      env: { GITHUB_ACTIONS: true, GITHUB_STEP_SUMMARY, GITHUB_WORKSPACE: path.resolve(__dirname, '../../../') },
+      env: { GITHUB_ACTIONS: true, GITHUB_STEP_SUMMARY, GITHUB_WORKSPACE: path.resolve(import.meta.dirname, '../../../') },
     });
 
     await snapshot(child, readFileSync(GITHUB_STEP_SUMMARY).toString('utf-8'));

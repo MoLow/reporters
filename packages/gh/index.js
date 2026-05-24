@@ -1,17 +1,14 @@
-'use strict';
-
 /* eslint-disable no-underscore-dangle */
 
-const assert = require('node:assert');
-const { styleText, inspect } = require('node:util');
-const { Transform } = require('node:stream');
-const { relative } = require('node:path');
-// eslint-disable-next-line import/no-unresolved
-const { spec: Spec } = require('node:test/reporters');
-const {
+import assert from 'node:assert';
+import { styleText, inspect } from 'node:util';
+import { Transform } from 'node:stream';
+import { relative } from 'node:path';
+import { spec as Spec } from 'node:test/reporters';
+import {
   getSummary, transformEvent, isTopLevelDiagnostic, DIAGNOSTIC_VALUES,
-} = require('@reporters/github');
-const { Command } = require('@reporters/github/gh_core');
+} from '@reporters/github';
+import { Command } from '@reporters/github/gh_core';
 
 const reporterColorMap = {
   'test:fail': 'red',
@@ -303,4 +300,4 @@ class SpecReporter extends Transform {
   }
 }
 
-module.exports = new SpecReporter();
+export default new SpecReporter();

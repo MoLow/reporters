@@ -1,12 +1,10 @@
-'use strict';
+import { test } from 'node:test';
+import { spawnSync } from 'node:child_process';
+import assert from 'node:assert';
+import reporter from '../index.js';
+import { Snap, nodeMajor } from '../../../tests/utils.js';
 
-const { test } = require('node:test');
-const { spawnSync } = require('child_process');
-const assert = require('assert');
-const reporter = require('../index');
-const { Snap, nodeMajor } = require('../../../tests/utils');
-
-const snapshot = Snap(`${__filename}.${nodeMajor}`);
+const snapshot = Snap(`${import.meta.filename}.${nodeMajor}`);
 
 test('spawn with reporter', async () => {
   const child = spawnSync(process.execPath, ['--test-reporter', './index.js', '../../tests/example'], { env: {} });

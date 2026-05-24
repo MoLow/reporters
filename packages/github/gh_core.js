@@ -1,18 +1,37 @@
-'use strict';
+import { EOL } from 'node:os';
 
-// From Github Core SDK code
-// eslint-disable-next-line import/no-unresolved
-const coreUtils = require('@actions/core/lib/utils');
-const { EOL } = require('node:os');
+function toCommandValue(input) {
+  if (input === null || input === undefined) {
+    return '';
+  }
+  if (typeof input === 'string' || input instanceof String) {
+    return input;
+  }
+  return JSON.stringify(input);
+}
+
+export function toCommandProperties(annotationProperties) {
+  if (!Object.keys(annotationProperties).length) {
+    return {};
+  }
+  return {
+    title: annotationProperties.title,
+    file: annotationProperties.file,
+    line: annotationProperties.startLine,
+    endLine: annotationProperties.endLine,
+    col: annotationProperties.startColumn,
+    endColumn: annotationProperties.endColumn,
+  };
+}
 
 function escapeData(s) {
-  return coreUtils.toCommandValue(s)
+  return toCommandValue(s)
     .replace(/%/g, '%25')
     .replace(/\r/g, '%0D')
     .replace(/\n/g, '%0A');
 }
 function escapeProperty(s) {
-  return coreUtils.toCommandValue(s)
+  return toCommandValue(s)
     .replace(/%/g, '%25')
     .replace(/\r/g, '%0D')
     .replace(/\n/g, '%0A')
@@ -21,7 +40,7 @@ function escapeProperty(s) {
 }
 
 const CMD_STRING = '::';
-class Command {
+export class Command {
   constructor(command, properties, message, options = { EOL }) {
     this.command = command ?? 'missing.command';
     this.properties = properties;
@@ -54,8 +73,3 @@ class Command {
     return cmdStr;
   }
 }
-
-module.exports = {
-  toCommandProperties: coreUtils.toCommandProperties,
-  Command,
-};
