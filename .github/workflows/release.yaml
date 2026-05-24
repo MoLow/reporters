@@ -4,9 +4,16 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      packages:
+        description: 'JSON array of package names to publish (e.g. ["@reporters/bail","@reporters/github"])'
+        required: true
+        type: string
 
 jobs:
   release-please:
+    if: ${{ github.event_name == 'push' }}
     runs-on: ubuntu-latest
     outputs:
       releases_created:  ${{ steps.release.outputs.releases_created }}
@@ -39,10 +46,10 @@ jobs:
                   return require(path.join('${{ github.workspace }}', match[1], 'package.json')).name;
                 })
                 .filter(Boolean);
-  
+
   npm-publish:
     needs: release-please
-    if: ${{ needs.release-please.outputs.releases_created && needs.release-please.outputs.packages && fromJson(needs.release-please.outputs.packages || '[]')[0] != null }}
+    if: ${{ always() && (github.event_name == 'workflow_dispatch' || (needs.release-please.result == 'success' && needs.release-please.outputs.releases_created && needs.release-please.outputs.packages && fromJson(needs.release-please.outputs.packages || '[]')[0] != null)) }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -50,14 +57,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package: ${{ fromJson(needs.release-please.outputs.packages || '[]') }}
+        package: ${{ fromJson(github.event_name == 'workflow_dispatch' && inputs.packages || needs.release-please.outputs.packages || '[]') }}
     steps:
       - uses: actions/checkout@v5
+      - run: corepack enable
       - uses: actions/setup-node@v6
         with:
           node-version: lts/*
           registry-url: 'https://registry.npmjs.org'
-      - run: yarn install
+      - run: yarn install --immutable
       - id: package-name
         run: |
           PACKAGE_NAME=$(node -p "PACKAGE_NAME='${{ matrix.package }}'.split('/')[1]")
