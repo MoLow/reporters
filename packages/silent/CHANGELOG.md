@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.0.0](https://github.com/MoLow/reporters/compare/silent-v1.3.1...silent-v2.0.0) (2026-05-24)
+
+
+### ⚠ BREAKING CHANGES
+
+* packages are now ESM-only. CommonJS consumers require Node.js >=22 (for require(esm)); reporters loaded via Node's --test-reporter flag continue to work on all supported versions.
+
+### Features
+
+* convert packages to ESM, upgrade Node and Yarn ([d4cd2eb](https://github.com/MoLow/reporters/commit/d4cd2ebcd9d1f700d297768f937519079da17ec0))
+
 ## [1.3.1](https://github.com/MoLow/reporters/compare/silent-v1.3.0...silent-v1.3.1) (2025-08-06)
 
 
