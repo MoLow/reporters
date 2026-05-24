@@ -1,8 +1,6 @@
-'use strict';
-
 /* eslint-disable camelcase */
 /* eslint-disable no-continue */
-const ms = require('ms');
+import ms from 'ms';
 
 const GRAY = '\x1b[38;5;8m';
 const CLEAR = '\x1b[0m';
@@ -15,7 +13,7 @@ const THRESHOLDS = [
 
 const COLORED_CWD = `${GRAY}${process.cwd()}${CLEAR}`;
 
-module.exports = async function* slowTestsReporter(source) {
+export default async function* slowTestsReporter(source) {
   const files = new Map();
   for await (const event of source) {
     if (event.type !== 'test:pass' && event.type !== 'test:fail') continue;
@@ -44,4 +42,4 @@ module.exports = async function* slowTestsReporter(source) {
       yield `  ${color}-${CLEAR} ${name} [${color}${ms(duration_ms)}${CLEAR}] (${CLEAR}${colord_file}:${line}:${column})\n`;
     }
   }
-};
+}

@@ -1,12 +1,10 @@
-'use strict';
-
-const { describe, it } = require('node:test');
-const { spawn } = require('node:child_process');
-const { once } = require('node:events');
-const assert = require('node:assert');
-const path = require('node:path');
-const chalk = require('chalk');
-const { isSupported, major } = require('../nodeVersion');
+import { describe, it } from 'node:test';
+import { spawn } from 'node:child_process';
+import { once } from 'node:events';
+import assert from 'node:assert';
+import path from 'node:path';
+import chalk from 'chalk';
+import { isSupported, major } from '../nodeVersion.js';
 
 const clear = '\x1Bc';
 const esc = '\x1b';
@@ -53,7 +51,7 @@ function debug(str) {
     const delimiter = chalk.bgWhite('--CLEAR--');
     const CLEAR_LINES = chalk.bgWhite('--CLEAR_LINES--');
     const postfix = str.endsWith('\n') ? '' : '\n';
-    // eslint-disable-next-line no-loop-func, no-plusplus
+
     process.stdout.write(str.replaceAll(clear, () => chalk.bold.white(`${delimiter}\n`)).replaceAll(clearLines, CLEAR_LINES) + postfix);
   }
 }
@@ -68,7 +66,7 @@ async function spawnInteractive(commandSequence = 'q', args = []) {
   let stderr = '';
   let stdout = '';
   const child = spawn(process.execPath, ['../../index.js', ...args], {
-    env: {}, cwd: path.resolve(__dirname, 'fixtures'),
+    env: {}, cwd: path.resolve(import.meta.dirname, 'fixtures'),
   });
   child.stdin.setEncoding('utf8');
   let pending = promiseDefer();
@@ -134,7 +132,7 @@ describe('testwatch', { concurrency: true, skip: !isSupported ? 'unsupported nod
   });
   it('should exit on sigkill', async () => {
     const child = spawn(process.execPath, ['../../index.js'], {
-      env: {}, cwd: path.resolve(__dirname, 'fixtures'),
+      env: {}, cwd: path.resolve(import.meta.dirname, 'fixtures'),
     });
     let stderr = '';
     let stdout = '';

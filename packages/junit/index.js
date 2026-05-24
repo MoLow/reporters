@@ -1,7 +1,5 @@
-'use strict';
-
-const util = require('node:util');
-const { hostname } = require('node:os');
+import util from 'node:util';
+import { hostname } from 'node:os';
 
 const HOSTNAME = hostname();
 
@@ -39,7 +37,7 @@ function isSkipped(node) {
   return node?.children.some((c) => c.tag === 'skipped') || node?.props?.skipped;
 }
 
-module.exports = async function* junitReporter(source) {
+export default async function* junitReporter(source) {
   yield '<?xml version="1.0" encoding="utf-8"?>\n';
   yield '<testsuites>\n';
   let currentSuite = null;
@@ -123,4 +121,4 @@ module.exports = async function* junitReporter(source) {
     yield treeToXML(suite);
   }
   yield '</testsuites>\n';
-};
+}

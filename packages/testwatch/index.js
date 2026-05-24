@@ -1,23 +1,21 @@
 #!/usr/bin/env node
 
-'use strict';
-
-const { run } = require('node:test');
-const { pipeline } = require('node:stream/promises');
-const {
+import { run } from 'node:test';
+import { pipeline } from 'node:stream/promises';
+import {
   on, once, EventEmitter, setMaxListeners,
-} = require('node:events');
-const { glob } = require('glob');
-const chalk = require('chalk');
-const { isSupported } = require('./nodeVersion');
+} from 'node:events';
+import { glob } from 'glob';
+import chalk from 'chalk';
+
+import { spec as SpecReporter } from 'node:test/reporters';
+import { isSupported } from './nodeVersion.js';
 
 if (!isSupported) {
   /* c8 ignore next 3 */
   console.log(chalk.magenta('Node.js <= 20.3.0 is not supported.'));
   process.exit(0);
 }
-// eslint-disable-next-line import/no-unresolved, import/order
-const { spec: SpecReporter } = require('node:test/reporters');
 
 const KEYS = {
   CTRLC: '\x03',

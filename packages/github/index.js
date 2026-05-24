@@ -1,12 +1,10 @@
-'use strict';
-
-const path = require('node:path');
-const { fileURLToPath } = require('node:url');
-const util = require('node:util');
-const { EOL } = require('node:os');
-const core = require('@actions/core');
-const StackUtils = require('stack-utils');
-const { Command, toCommandProperties } = require('./gh_core');
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import util from 'node:util';
+import { EOL } from 'node:os';
+import { summary } from '@actions/core';
+import StackUtils from 'stack-utils';
+import { Command, toCommandProperties } from './gh_core.js';
 
 const WORKSPACE = process.env.GITHUB_WORKSPACE ?? '';
 
@@ -44,7 +42,7 @@ const DIAGNOSTIC_KEYS = {
   duration_ms: 'Duration 🕐',
 };
 
-const DIAGNOSTIC_VALUES = {
+export const DIAGNOSTIC_VALUES = {
   duration_ms: (value) => `${Number(value).toFixed(3)}ms`,
 };
 
@@ -66,14 +64,14 @@ function extractLocation(data) {
 const counter = { pass: 0, fail: 0 };
 const diagnostics = [];
 
-function isTopLevelDiagnostic(data) {
+export function isTopLevelDiagnostic(data) {
   return (data.file === undefined
           || data.line === undefined
           || data.column === undefined
           || (data.line === 1 && data.column === 1));
 }
 
-function transformEvent(event) {
+export function transformEvent(event) {
   switch (event.type) {
     case 'test:start':
       return new Command('debug', {}, `starting to run ${event.data.name}`).toString();
@@ -83,8 +81,6 @@ function transformEvent(event) {
     case 'test:fail': {
       const error = event.data.details?.error;
       if (!error || (error.code === 'ERR_TEST_FAILURE' && error.failureType === 'subtestsFailed')) {
-        // Either no error object on the event, or failed subtests are already
-        // reported — no need to re-annotate the file itself.
         break;
       }
       const err = error.code === 'ERR_TEST_FAILURE' ? error.cause : error;
@@ -127,7 +123,7 @@ function transformEvent(event) {
   return '';
 }
 
-async function getSummary() {
+export async function getSummary() {
   const formattedDiagnostics = diagnostics.map((d) => {
     const [key, ...rest] = d.split(' ');
     const value = rest.join(' ');
@@ -142,7 +138,7 @@ async function getSummary() {
   res += new Command('endgroup').toString();
 
   if (process.env.GITHUB_STEP_SUMMARY) {
-    await core.summary
+    await summary
       .addHeading('Test Results')
       .addTable(formattedDiagnostics)
       .write();
@@ -150,7 +146,7 @@ async function getSummary() {
   return res;
 }
 
-module.exports = async function* githubReporter(source) {
+export default async function* githubReporter(source) {
   if (!process.env.GITHUB_ACTIONS) {
     // eslint-disable-next-line no-unused-vars
     for await (const _ of source);
@@ -160,9 +156,4 @@ module.exports = async function* githubReporter(source) {
     yield transformEvent(event);
   }
   yield await getSummary();
-};
-
-module.exports.transformEvent = transformEvent;
-module.exports.getSummary = getSummary;
-module.exports.isTopLevelDiagnostic = isTopLevelDiagnostic;
-module.exports.DIAGNOSTIC_VALUES = DIAGNOSTIC_VALUES;
+}

@@ -1,16 +1,13 @@
-'use strict';
+import { test, describe, beforeEach } from 'node:test';
+import assert from 'node:assert';
+import { spawnSync } from 'node:child_process';
+import { tmpdir } from 'node:os';
+import path, { join } from 'node:path';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { Snap, nodeMajor } from '../../../tests/utils.js';
+import { transformEvent } from '../index.js';
 
-const { test, describe, beforeEach } = require('node:test');
-const assert = require('node:assert');
-const { spawnSync } = require('child_process');
-const { tmpdir } = require('os');
-const { join } = require('path');
-const path = require('path');
-const { readFileSync, writeFileSync } = require('fs');
-const { Snap, nodeMajor } = require('../../../tests/utils');
-const { transformEvent } = require('../index');
-
-const snapshot = Snap(`${__filename}.${nodeMajor}`);
+const snapshot = Snap(`${import.meta.filename}.${nodeMajor}`);
 const GITHUB_STEP_SUMMARY = join(tmpdir(), 'github-actions-test-reporter');
 
 describe('github reporter', () => {
@@ -20,7 +17,7 @@ describe('github reporter', () => {
 
   test('spawn with reporter', async () => {
     const child = spawnSync(process.execPath, ['--test-reporter', './index.js', '../../tests/example'], {
-      env: { GITHUB_ACTIONS: true, GITHUB_STEP_SUMMARY, GITHUB_WORKSPACE: path.resolve(__dirname, '../../../') },
+      env: { GITHUB_ACTIONS: true, GITHUB_STEP_SUMMARY, GITHUB_WORKSPACE: path.resolve(import.meta.dirname, '../../../') },
     });
 
     await snapshot(child, readFileSync(GITHUB_STEP_SUMMARY).toString('utf-8'));
@@ -28,7 +25,7 @@ describe('github reporter', () => {
 
   test('spawn with reporter - esm', async () => {
     const child = spawnSync(process.execPath, ['--test-reporter', './index.js', '../../tests/example.mjs'], {
-      env: { GITHUB_ACTIONS: true, GITHUB_STEP_SUMMARY, GITHUB_WORKSPACE: path.resolve(__dirname, '../../../') },
+      env: { GITHUB_ACTIONS: true, GITHUB_STEP_SUMMARY, GITHUB_WORKSPACE: path.resolve(import.meta.dirname, '../../../') },
     });
 
     await snapshot(child, readFileSync(GITHUB_STEP_SUMMARY).toString('utf-8'));
@@ -37,7 +34,7 @@ describe('github reporter', () => {
   test('GITHUB_ACTIONS_REPORTER_VERBOSE', async () => {
     const child = spawnSync(process.execPath, ['--test-reporter', './index.js', '../../tests/example'], {
       env: {
-        GITHUB_ACTIONS: true, GITHUB_STEP_SUMMARY, GITHUB_WORKSPACE: path.resolve(__dirname, '../../../'), GITHUB_ACTIONS_REPORTER_VERBOSE: true,
+        GITHUB_ACTIONS: true, GITHUB_STEP_SUMMARY, GITHUB_WORKSPACE: path.resolve(import.meta.dirname, '../../../'), GITHUB_ACTIONS_REPORTER_VERBOSE: true,
       },
     });
 

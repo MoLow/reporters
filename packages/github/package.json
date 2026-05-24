@@ -2,7 +2,7 @@
   "name": "@reporters/github",
   "version": "1.13.1",
   "description": "A github actions reporter for `node:test`",
-  "type": "commonjs",
+  "type": "module",
   "keywords": [
     "github actions",
     "node:test",
@@ -11,7 +11,7 @@
     "reporters"
   ],
   "dependencies": {
-    "@actions/core": "^2.0.3",
+    "@actions/core": "^3.0.1",
     "stack-utils": "^2.0.6"
   },
   "files": [
@@ -25,6 +25,10 @@
     "url": "https://github.com/MoLow/reporters/issues"
   },
   "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./gh_core": "./gh_core.js"
+  },
   "homepage": "https://github.com/MoLow/reporters/tree/main/packages/github",
   "repository": "https://github.com/MoLow/reporters.git",
   "author": "Moshe Atlow",

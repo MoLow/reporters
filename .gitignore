@@ -104,3 +104,11 @@ dist
 
 # TernJS port file
 .tern-port
+
+# Yarn 4 (Berry) - keep releases/plugins/patches but not local install cache
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions

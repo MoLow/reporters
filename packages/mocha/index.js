@@ -1,12 +1,9 @@
 /* eslint-disable class-methods-use-this */
 /* eslint-disable no-underscore-dangle */
-/* eslint-disable max-classes-per-file */
 
-'use strict';
-
-const { EventEmitter } = require('node:events');
-const Mocha = require('mocha');
-const { loadOptions } = require('mocha/lib/cli');
+import { EventEmitter } from 'node:events';
+import Mocha from 'mocha';
+import { loadOptions } from 'mocha/lib/cli/options.js';
 
 const {
   EVENT_RUN_BEGIN,
@@ -309,7 +306,7 @@ class Runner extends EventEmitter {
   }
 }
 
-module.exports = async function mochaReporter(source) {
+export default async function mochaReporter(source) {
   const runner = new Runner();
   await runner.init();
 
@@ -329,4 +326,4 @@ module.exports = async function mochaReporter(source) {
   }
 
   runner.end();
-};
+}

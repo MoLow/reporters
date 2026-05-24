@@ -2,7 +2,7 @@
   "name": "@reporters/junit",
   "version": "1.6.0",
   "description": "A jUnit reporter for `node:test`",
-  "type": "commonjs",
+  "type": "module",
   "keywords": [
     "junit",
     "node:test",

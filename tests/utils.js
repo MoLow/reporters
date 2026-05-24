@@ -3,7 +3,6 @@
 const assert = require('node:assert');
 const { hostname } = require('node:os');
 const { resolve } = require('node:path');
-// eslint-disable-next-line import/no-unresolved
 const { format: prettyFormat } = require('pretty-format');
 
 const nodeMajor = process.versions.node.split('.')[0];
@@ -25,7 +24,6 @@ function snapshot(filename) {
   // eslint-disable-next-line no-underscore-dangle
   let snap_;
   async function snap(actual) {
-    // eslint-disable-next-line import/extensions
     snap_ ??= (await import('./snap.mjs')).default(filename);
     return snap_(actual);
   }
