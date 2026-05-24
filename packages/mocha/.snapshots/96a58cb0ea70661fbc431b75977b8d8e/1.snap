@@ -1,0 +1,33 @@
+Object {
+  "exitCode": 1,
+  "stderr": "",
+  "stdout": "
+
+  1) should fail
+  ✔ should pass
+
+  1 passing (*ms)
+  1 failing
+
+  1) 
+       should fail:
+
+      AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+
+  assert(false)
+
+      + expected - actual
+
+      -false
+      +true
+      
+      *
+      *
+      *
+      *
+      *
+
+
+
+",
+}

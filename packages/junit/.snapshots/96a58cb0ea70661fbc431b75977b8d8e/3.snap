@@ -1,0 +1,12 @@
+Array [
+  "<?xml version=\"1.0\" encoding=\"utf-8\"?>
+",
+  "<testsuites>
+",
+  "	<undefined name=\"root\">
+	<testcase name=\"test\" time=\"0.100000\" classname=\"test\"/>
+	</undefined>
+",
+  "</testsuites>
+",
+]
