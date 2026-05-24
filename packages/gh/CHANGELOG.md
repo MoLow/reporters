@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.0.0](https://github.com/MoLow/reporters/compare/gh-v1.4.2...gh-v2.0.0) (2026-05-24)
+
+
+### ⚠ BREAKING CHANGES
+
+* packages are now ESM-only. CommonJS consumers require Node.js >=22 (for require(esm)); reporters loaded via Node's --test-reporter flag continue to work on all supported versions.
+
+### Features
+
+* convert packages to ESM, upgrade Node and Yarn ([d4cd2eb](https://github.com/MoLow/reporters/commit/d4cd2ebcd9d1f700d297768f937519079da17ec0))
+
+
+### Miscellaneous Chores
+
+* update snapshots ([69a3595](https://github.com/MoLow/reporters/commit/69a359567fe61a0cd218b636640abdec8d276257))
+* update snapshots ([#180](https://github.com/MoLow/reporters/issues/180)) ([92339de](https://github.com/MoLow/reporters/commit/92339de636cc97b9ad8df51d6974d8e8c5e74cb7))
+
 ## [1.4.2](https://github.com/MoLow/reporters/compare/gh-v1.4.1...gh-v1.4.2) (2026-04-19)
 
 
