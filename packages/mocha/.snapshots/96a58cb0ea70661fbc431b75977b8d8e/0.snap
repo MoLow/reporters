@@ -1,0 +1,63 @@
+Object {
+  "exitCode": 1,
+  "stderr": "",
+  "stdout": "
+this is a console log
+
+  tests
+    ✔ is ok
+    1) fails
+    ✔ is a diagnostic
+    2) should fail
+
+  more tests
+    ✔ is ok
+
+  - is skipped
+  - is a todo
+  - is a failing todo
+  ✔ top level diagnostic
+
+  4 passing (*ms)
+  3 pending
+  2 failing
+
+  1) 
+       tests
+         fails:
+     Error: this is an error
+      *
+      *
+      *
+      *
+      *
+      *
+      at async Promise.all (index 0)
+      *
+      *
+
+  2) 
+       tests
+         should fail:
+
+      AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+
+  assert(false)
+
+      + expected - actual
+
+      -false
+      +true
+      
+      *
+      *
+      *
+      *
+      *
+      *
+      *
+
+
+
+",
+}
