@@ -1,0 +1,21 @@
+Object {
+  "exitCode": 0,
+  "stderr": "",
+  "stdout": "::debug::starting to run a passing test
+::group::✔ a passing test (* millisecond)
+::debug::completed running a passing test
+::debug::starting to run a passing suite
+::debug::starting to run passes
+::endgroup::
+▶ a passing suite
+::group::  ✔ passes (* millisecond)
+::debug::completed running passes
+::endgroup::
+::group::✔ a passing suite (* millisecond)
+::debug::completed running a passing suite
+::endgroup::
+::group::Test results (2 passed, 0 failed)
+::notice::Total Tests: 2%0ASuites 📂: 1%0APassed ✅: 2%0AFailed ❌: 0%0ACanceled 🚫: 0%0ASkipped ⏭️: 0%0ATodo 📝: 0%0ADuration 🕐: * millisecond
+::endgroup::
+",
+}
