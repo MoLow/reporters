@@ -45,6 +45,9 @@ const formatDuration = (m) => {
 
 const endGroup = new Command('endgroup').toString();
 
+// eslint-disable-next-line no-control-regex
+const ansi = /\[[0-9;]*m/g;
+
 // The upstream reporter renders durations as `(<ms>ms)`; rewrite them to the
 // humanized form used across the GitHub reporter.
 function rewriteDuration(text) {
@@ -64,13 +67,19 @@ function splitReport(text) {
 class SpecReporter extends Transform {
   #isGitHubActions = Boolean(process.env.GITHUB_ACTIONS);
 
-  #specReporter = new Spec();
+  #specReporter;
 
   #reportedGroup = false;
 
   constructor() {
     super({ __proto__: null, writableObjectMode: true });
     DIAGNOSTIC_VALUES.duration_ms = formatDuration;
+    if (this.#isGitHubActions) {
+      // GitHub Actions renders ANSI but isn't a TTY, so the upstream reporter
+      // would otherwise emit no color. Force it on before constructing it.
+      process.env.FORCE_COLOR ??= '1';
+    }
+    this.#specReporter = new Spec();
   }
 
   // Delegate to the upstream `spec` reporter and capture the text it would emit
@@ -110,7 +119,8 @@ class SpecReporter extends Transform {
     const lines = block.split('\n');
     for (let i = 0; i < lines.length; i += 1) {
       const line = lines[i];
-      if (/^[✖⚠] /.test(line) && !/failing tests:$/.test(line)) {
+      const plain = line.replace(ansi, '');
+      if (/^[✖⚠] /.test(plain) && !/failing tests:$/.test(plain)) {
         const eg = this.#reportedGroup ? endGroup : '';
         this.#reportedGroup = true;
         lines[i] = `${eg}${new Command('group', {}, line, { EOL: '' }).toString()}`;
