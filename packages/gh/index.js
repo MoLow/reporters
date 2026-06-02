@@ -100,7 +100,9 @@ class SpecReporter extends Transform {
     }
     const eg = this.#reportedGroup ? endGroup : '';
     this.#reportedGroup = true;
-    return `${eg}${prefix}${new Command('group', {}, header, { EOL: '' }).toString()}${trailer}`;
+    // Parent prefix lines lead with the `▶` marker at column 0 in Actions.
+    const movedPrefix = prefix.replace(/^( *)(▶ )/gm, '$2$1');
+    return `${eg}${movedPrefix}${new Command('group', {}, header, { EOL: '' }).toString()}${trailer}`;
   }
 
   // The upstream reporter emits the whole "failing tests:" section (headers and
