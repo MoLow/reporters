@@ -16,10 +16,34 @@ node --test \
 Available reporters:
 
 - [bail](https://www.npmjs.com/package/@reporters/bail) - bail on first failure
-- [gh](https://www.npmjs.com/package/@reporters/gh) - a all in one github actions reporter
-- [github](https://www.npmjs.com/package/@reporters/github) - report to github actions
+- [gh](https://www.npmjs.com/package/@reporters/gh) - all-in-one GitHub Actions reporter (readable log + annotations + summary in one)
+- [github](https://www.npmjs.com/package/@reporters/github) - GitHub Actions annotations + job summary only (pair with another reporter for the log)
 - [jUnit](https://www.npmjs.com/package/@reporters/junit) - report to jUnit 
 - [mocha](https://www.npmjs.com/package/@reporters/mocha) - use any mocha reporter with `node:test`
 - [silent](https://www.npmjs.com/package/@reporters/silent) - a silent reporter
 - [slow](https://www.npmjs.com/package/@reporters/slow) - report slow tests
 - [testwatch](https://www.npmjs.com/package/@reporters/testwatch) - An interactive REPL for `node:test` watch mode.
+
+## GitHub Actions: `gh` vs `github`
+
+Both [`@reporters/gh`](https://www.npmjs.com/package/@reporters/gh) and [`@reporters/github`](https://www.npmjs.com/package/@reporters/github) add GitHub Actions annotations (inline errors + diagnostics) and a job summary. The difference is whether they also produce the human-readable test log:
+
+| | `@reporters/gh` | `@reporters/github` |
+|---|---|---|
+| Human-readable log | ✅ built in (spec-style) | ❌ none — pair with another reporter |
+| Annotations + job summary | ✅ | ✅ |
+| Reporters needed | one | two (it + e.g. `spec`) |
+| Output outside GitHub Actions | spec-style log | nothing (no-op) |
+| Best when | you want a single reporter that does everything | you already have a reporter you like and just want to add annotations |
+
+In short: reach for **`gh`** for the batteries-included experience, or **`github`** to layer annotations onto your own choice of reporter.
+
+```bash
+# gh — one reporter: readable log + annotations + summary
+node --test --test-reporter=@reporters/gh
+
+# github — annotations + summary, paired with spec for the readable log
+node --test \
+  --test-reporter=@reporters/github --test-reporter-destination=stdout \
+  --test-reporter=spec --test-reporter-destination=stdout
+```
