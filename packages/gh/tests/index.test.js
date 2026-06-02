@@ -35,4 +35,12 @@ describe('github spec reporter', () => {
     const silentChild = spawnSync(process.execPath, ['--test-reporter', './index.js', '../../tests/example'], { env: { } });
     await snapshot(silentChild);
   });
+
+  test('spawn with reporter - all passing', async () => {
+    const child = spawnSync(process.execPath, ['--test-reporter', './index.js', '../../tests/example-pass.mjs'], {
+      env: { GITHUB_ACTIONS: true, GITHUB_STEP_SUMMARY, GITHUB_WORKSPACE: path.resolve(import.meta.dirname, '../../../') },
+    });
+
+    await snapshot(child, readFileSync(GITHUB_STEP_SUMMARY).toString('utf-8'));
+  });
 });
