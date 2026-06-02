@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.1](https://github.com/MoLow/reporters/compare/junit-v2.0.0...junit-v2.0.1) (2026-06-02)
+
+
+### Miscellaneous Chores
+
+* update snapshots ([#184](https://github.com/MoLow/reporters/issues/184)) ([7717fde](https://github.com/MoLow/reporters/commit/7717fde479f6dd41bb2a11efb75e9d7c3a9712ee))
+
 ## [2.0.0](https://github.com/MoLow/reporters/compare/junit-v1.6.0...junit-v2.0.0) (2026-05-24)
 
 

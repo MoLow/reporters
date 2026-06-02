@@ -1,5 +1,27 @@
 # Changelog
 
+## [2.0.1](https://github.com/MoLow/reporters/compare/gh-v2.0.0...gh-v2.0.1) (2026-06-02)
+
+
+### Documentation
+
+* explain @reporters/gh vs @reporters/github ([#187](https://github.com/MoLow/reporters/issues/187)) ([e2b86c4](https://github.com/MoLow/reporters/commit/e2b86c417513cc5940ec5d9c98686d2c0c9a54e3))
+
+
+### Miscellaneous Chores
+
+* update snapshots ([#184](https://github.com/MoLow/reporters/issues/184)) ([7717fde](https://github.com/MoLow/reporters/commit/7717fde479f6dd41bb2a11efb75e9d7c3a9712ee))
+
+
+### Code Refactoring
+
+* **gh:** reuse upstream spec reporter instead of forking it ([#183](https://github.com/MoLow/reporters/issues/183)) ([0a2c8da](https://github.com/MoLow/reporters/commit/0a2c8da2d475a9b9b93447360ba89868ffc8083d))
+
+
+### Tests
+
+* bring overall coverage to 100% ([#186](https://github.com/MoLow/reporters/issues/186)) ([d69194a](https://github.com/MoLow/reporters/commit/d69194a1193e76f370ac4b466648a6ccf23ecca8))
+
 ## [2.0.0](https://github.com/MoLow/reporters/compare/gh-v1.4.2...gh-v2.0.0) (2026-05-24)
 
 
