@@ -16,9 +16,6 @@ Object {
     assert(false)
   
       *
-      *
-      *
-      *
       * {
     generatedMessage: true,
     code: 'ERR_ASSERTION',

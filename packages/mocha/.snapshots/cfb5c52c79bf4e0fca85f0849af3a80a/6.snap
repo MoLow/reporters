@@ -19,13 +19,7 @@ Object {
          fails:
      Error: this is an error
       *
-      *
-      *
-      *
-      *
-      *
       at new Promise (<anonymous>)
-      *
       *
       at Array.map (<anonymous>)
 

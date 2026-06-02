@@ -14,13 +14,7 @@ Error [ERR_TEST_FAILURE]: this is an error
   failureType: 'testCodeFailure',
   cause: Error: this is an error
       *
-      *
-      *
-      *
-      *
-      *
       at async Promise.all (index 0)
-      *
       *
 }
 			</failure>
@@ -38,11 +32,6 @@ Error [ERR_TEST_FAILURE]: this is an error
   
     assert(false)
   
-      *
-      *
-      *
-      *
-      *
       *
       * {
     generatedMessage: true,
@@ -77,11 +66,6 @@ Error [ERR_TEST_FAILURE]: this is an error
   
     assert(false)
   
-      *
-      *
-      *
-      *
-      *
       *
       * {
     generatedMessage: true,
