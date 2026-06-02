@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.0.1](https://github.com/MoLow/reporters/compare/mocha-v2.0.0...mocha-v2.0.1) (2026-06-02)
+
+
+### Miscellaneous Chores
+
+* update snapshots ([#184](https://github.com/MoLow/reporters/issues/184)) ([7717fde](https://github.com/MoLow/reporters/commit/7717fde479f6dd41bb2a11efb75e9d7c3a9712ee))
+
+
+### Tests
+
+* bring overall coverage to 100% ([#186](https://github.com/MoLow/reporters/issues/186)) ([d69194a](https://github.com/MoLow/reporters/commit/d69194a1193e76f370ac4b466648a6ccf23ecca8))
+
 ## [2.0.0](https://github.com/MoLow/reporters/compare/mocha-v1.3.0...mocha-v2.0.0) (2026-05-24)
 
 
