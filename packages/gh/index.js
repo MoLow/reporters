@@ -1,32 +1,14 @@
 /* eslint-disable no-underscore-dangle */
 
-import assert from 'node:assert';
-import { styleText, inspect } from 'node:util';
+import { styleText } from 'node:util';
 import { Transform } from 'node:stream';
-import { relative } from 'node:path';
 import { spec as Spec } from 'node:test/reporters';
 import {
   getSummary, transformEvent, isTopLevelDiagnostic, DIAGNOSTIC_VALUES,
 } from '@reporters/github';
 import { Command } from '@reporters/github/gh_core';
 
-const reporterColorMap = {
-  'test:fail': 'red',
-  'test:pass': 'green',
-  'test:diagnostic': 'white',
-  warn: 'yellow',
-  error: 'red',
-  info: 'white',
-};
-
-const reporterUnicodeSymbolMap = {
-  'test:fail': '\u2716 ',
-  'test:pass': '\u2714 ',
-  'test:coverage': '\u2139 ',
-  'arrow:right': '\u25B6 ',
-  'hyphen:minus': '\uFE63 ',
-  'warning:alert': '\u26A0 ',
-};
+const diagnosticColorMap = { __proto__: null, warn: 'yellow', error: 'red' };
 
 const indentMemo = new Map();
 function indent(nesting) {
@@ -36,27 +18,6 @@ function indent(nesting) {
     indentMemo.set(nesting, value);
   }
   return value;
-}
-
-function inspectWithNoCustomRetry(obj, options) {
-  try {
-    return inspect(obj, options);
-  } catch {
-    /* c8 ignore next 2 */
-    return inspect(obj, { ...options, customInspect: false });
-  }
-}
-
-const inspectOptions = {
-  __proto__: null,
-  breakLength: Infinity,
-};
-
-function formatError(error, indentation) {
-  if (!error) return '';
-  const err = error.code === 'ERR_TEST_FAILURE' ? error.cause : error;
-  const message = inspectWithNoCustomRetry(err, inspectOptions).split(/\r?\n/).join(`\n${indentation}  `);
-  return `\n${indentation}  ${message}\n`;
 }
 
 const formatDuration = (m) => {
@@ -84,18 +45,29 @@ const formatDuration = (m) => {
 
 const endGroup = new Command('endgroup').toString();
 
+// eslint-disable-next-line no-control-regex
+const ansi = /\[[0-9;]*m/g;
+
+// The upstream reporter renders durations as `(<ms>ms)`; rewrite them to the
+// humanized form used across the GitHub reporter.
+function rewriteDuration(text) {
+  return text.replace(/\(([0-9]+(?:\.[0-9]+)?)ms\)/g, (_, ms) => `(${formatDuration(Number(ms))})`);
+}
+
+// Separate the upstream per-test output into its parent `▶` prefix lines and the
+// final result line, so the result line can be wrapped in a group.
+function splitReport(text) {
+  const body = text.endsWith('\n') ? text.slice(0, -1) : text;
+  const idx = body.lastIndexOf('\n');
+  return idx === -1
+    ? { prefix: '', header: body }
+    : { prefix: body.slice(0, idx + 1), header: body.slice(idx + 1) };
+}
+
 class SpecReporter extends Transform {
   #isGitHubActions = Boolean(process.env.GITHUB_ACTIONS);
 
-  #specReporter = new Spec();
-
-  #stack = [];
-
-  #reported = [];
-
-  #failedTests = [];
-
-  #cwd = process.cwd();
+  #specReporter;
 
   #reportedGroup = false;
 
@@ -103,113 +75,64 @@ class SpecReporter extends Transform {
     super({ __proto__: null, writableObjectMode: true });
     DIAGNOSTIC_VALUES.duration_ms = formatDuration;
     if (this.#isGitHubActions) {
-      inspectOptions.colors = true;
+      // GitHub Actions renders ANSI but isn't a TTY, so the upstream reporter
+      // would otherwise emit no color. Force it on before constructing it.
+      process.env.FORCE_COLOR ??= '1';
     }
+    this.#specReporter = new Spec();
   }
 
-  #formatTestReport(type, data, prefix = '', indentation = '', hasChildren = false, showErrorDetails = true) {
-    let color = reporterColorMap[type] ?? 'white';
-    let symbol = reporterUnicodeSymbolMap[type] ?? ' ';
-    const { skip, todo, expectFailure } = data;
-    const durationMs = data.details?.duration_ms ? styleText(['gray', 'italic'], ` (${formatDuration(data.details.duration_ms)})`, { validateStream: !this.#isGitHubActions }) : '';
-    let title = `${data.name}${durationMs}`;
-
-    if (skip !== undefined) {
-      title += ` # ${typeof skip === 'string' && skip.length ? skip : 'SKIP'}`;
-      color = 'gray';
-      symbol = reporterUnicodeSymbolMap['hyphen:minus'];
-    } else if (todo !== undefined) {
-      title += ` # ${typeof todo === 'string' && todo.length ? todo : 'TODO'}`;
-      if (type === 'test:fail') {
-        color = 'yellow';
-        symbol = reporterUnicodeSymbolMap['warning:alert'];
-      }
-    } else if (expectFailure !== undefined) {
-      /* c8 ignore next 3 */ // Not yest supported in current node
-      title += ' # EXPECTED FAILURE';
-      color = 'yellow';
-      symbol = reporterUnicodeSymbolMap['warning:alert'];
-    }
-
-    const error = showErrorDetails ? formatError(data.details?.error, indentation) : '';
-    let err = error;
-    if (hasChildren) {
-      err = !error || data.details?.error?.failureType === 'subtestsFailed' ? '' : `\n${error}`;
-    }
-
-    const header = `${indentation}${styleText(color, `${symbol}${title}`, { validateStream: !this.#isGitHubActions })}`;
-    if (this.#isGitHubActions) {
-      const eg = this.#reportedGroup ? endGroup : '';
-      this.#reportedGroup = true;
-      return `${eg}${prefix}${new Command('group', {}, header, { EOL: '' }).toString()}${err}`;
-    }
-    return `${prefix}${header}${err}`;
+  // Delegate to the upstream `spec` reporter and capture the text it would emit
+  // for a single event. The inner reporter keeps its own stack/state, so feeding
+  // it every test event keeps its prefix/nesting bookkeeping correct.
+  #specOutput(type, data) {
+    let out = '';
+    this.#specReporter._transform({ __proto__: null, type, data }, null, (err, chunk) => {
+      if (err) throw err;
+      if (chunk) out = chunk;
+    });
+    return out;
   }
 
-  #formatFailedTestResults() {
-    if (this.#failedTests.length === 0) {
-      /* c8 ignore next 2 */
+  #group(prefix, header, trailer = '') {
+    if (!this.#isGitHubActions) {
+      return `${prefix}${header}${trailer}`;
+    }
+    const eg = this.#reportedGroup ? endGroup : '';
+    this.#reportedGroup = true;
+    // Parent prefix lines lead with the `▶` marker at column 0 in Actions.
+    const movedPrefix = prefix.replace(/^( *)(▶ )/gm, '$2$1');
+    return `${eg}${movedPrefix}${new Command('group', {}, header, { EOL: '' }).toString()}${trailer}`;
+  }
+
+  // The upstream reporter emits the whole "failing tests:" section (headers and
+  // error bodies). Wrap each failed test's header line in a group for GitHub
+  // Actions; the parent's open group is closed first.
+  #reshapeFailures(text) {
+    const block = rewriteDuration(text);
+    if (!this.#isGitHubActions) {
+      return block;
+    }
+    if (block === '') {
       return this.#reportedGroup ? endGroup : '';
     }
-
-    const results = [
-      `\n${styleText('red', `${reporterUnicodeSymbolMap['test:fail']}failing tests:`, { validateStream: !this.#isGitHubActions })}\n`,
-    ];
-
-    if (this.#reportedGroup) {
-      results.unshift(endGroup);
-      this.#reportedGroup = false; // Reset the group state for the next run
-    }
-
-    for (let i = 0; i < this.#failedTests.length; i += 1) {
-      const test = this.#failedTests[i];
-      const formattedErr = this.#formatTestReport('test:fail', test);
-
-      if (test.file) {
-        const relPath = relative(this.#cwd, test.file);
-        const location = `test at ${relPath}:${test.line}:${test.column}`;
-        results.push(location);
-      }
-
-      results.push(formattedErr);
-    }
-
-    if (this.#reportedGroup) {
-      results.push(endGroup);
-    }
-
-    this.#failedTests = []; // Clean up the failed tests
-    return results.join('\n');
-  }
-
-  #handleTestReportEvent(type, data) {
-    const subtest = this.#stack.shift(); // This is the matching `test:start` event
-    if (subtest) {
-      assert(subtest.type === 'test:start');
-      assert(subtest.data.nesting === data.nesting);
-      assert(subtest.data.name === data.name);
-    }
-    let prefix = '';
-    while (this.#stack.length) {
-      // Report all the parent `test:start` events
-      const parent = this.#stack.pop();
-      assert(parent.type === 'test:start');
-      const msg = parent.data;
-      this.#reported.unshift(msg);
-      if (this.#isGitHubActions) {
-        prefix += `${reporterUnicodeSymbolMap['arrow:right']}${indent(msg.nesting)}${msg.name}\n`;
-      } else {
-        prefix += `${indent(msg.nesting)}${reporterUnicodeSymbolMap['arrow:right']}${msg.name}\n`;
+    let result = this.#reportedGroup ? `${endGroup}\n` : '';
+    this.#reportedGroup = false;
+    const lines = block.split('\n');
+    for (let i = 0; i < lines.length; i += 1) {
+      const line = lines[i];
+      const plain = line.replace(ansi, '');
+      if (/^[✖⚠] /.test(plain) && !/failing tests:$/.test(plain)) {
+        const eg = this.#reportedGroup ? endGroup : '';
+        this.#reportedGroup = true;
+        lines[i] = `${eg}${new Command('group', {}, line, { EOL: '' }).toString()}`;
       }
     }
-    let hasChildren = false;
-    if (this.#reported[0] && this.#reported[0].nesting === data.nesting
-       && this.#reported[0].name === data.name) {
-      this.#reported.shift();
-      hasChildren = true;
+    result += lines.join('\n');
+    if (this.#reportedGroup) {
+      result += `\n${endGroup}`;
     }
-    const indentation = indent(data.nesting);
-    return `${this.#formatTestReport(type, data, prefix, indentation, hasChildren, false)}\n`;
+    return result;
   }
 
   #handleEvent({ type, data }) {
@@ -219,65 +142,46 @@ class SpecReporter extends Transform {
     }
     switch (type) {
       case 'test:fail':
-        if (data.details?.error?.failureType !== 'subtestsFailed') {
-          this.#failedTests.push(data);
-        }
-        return this.#handleTestReportEvent(type, data) + res;
-      case 'test:pass':
-        return this.#handleTestReportEvent(type, data) + res;
+      case 'test:pass': {
+        const { prefix, header } = splitReport(rewriteDuration(this.#specOutput(type, data)));
+        return this.#group(prefix, header, '\n') + res;
+      }
       case 'test:start':
-        this.#stack.unshift({ __proto__: null, data, type });
+        // Feed the event to the upstream reporter so it can track nesting, but it
+        // emits nothing for `test:start` itself.
+        this.#specOutput(type, data);
         return res;
       case 'test:diagnostic': {
         if (isTopLevelDiagnostic(data)) {
           return res;
         }
-        const diagnosticColor = reporterColorMap[data.level] || reporterColorMap.info;
-        return `${res}${indent(data.nesting)}${styleText(diagnosticColor, `${reporterUnicodeSymbolMap[type] ?? ''}${data.message}`, { validateStream: !this.#isGitHubActions })}\n`;
+        const diagnosticColor = diagnosticColorMap[data.level] || 'white';
+        return `${res}${indent(data.nesting)}${styleText(diagnosticColor, `${data.message}`, { validateStream: !this.#isGitHubActions })}\n`;
       }
       case 'test:summary':
         // We report only the root test summary
         if (data.file === undefined) {
           /* c8 ignore next 2 */
-          return this.#formatFailedTestResults();
+          return this.#reshapeFailures(this.#specOutput(type, data));
         }
         break;
       /* c8 ignore next 2 */
       case 'test:interrupted':
-        return this.#formatInterruptedTests(data.tests) + res;
+        return this.#reshapeInterrupted(this.#specOutput(type, data)) + res;
       default:
     }
     return ''; // No output for other event types
   }
 
+  // The upstream reporter formats the interrupted-tests block; close any open
+  // group before it for GitHub Actions.
   /* c8 ignore start */
-  #formatInterruptedTests(tests) {
-    if (tests.length === 0) {
-      return '';
+  #reshapeInterrupted(text) {
+    if (text === '' || !this.#isGitHubActions || !this.#reportedGroup) {
+      return text;
     }
-
-    const results = [];
-
-    if (this.#reportedGroup) {
-      results.push(endGroup);
-      this.#reportedGroup = false;
-    }
-
-    results.push(
-      `\n${styleText('yellow', 'Interrupted while running:', { validateStream: !this.#isGitHubActions })}\n`,
-    );
-
-    for (let i = 0; i < tests.length; i += 1) {
-      const test = tests[i];
-      let msg = `${indent(test.nesting)}${reporterUnicodeSymbolMap['warning:alert']}${test.name}`;
-      if (test.file) {
-        const relPath = relative(this.#cwd, test.file);
-        msg += ` ${styleText('gray', `(${relPath}:${test.line}:${test.column})`, { validateStream: !this.#isGitHubActions })}`;
-      }
-      results.push(msg);
-    }
-
-    return `${results.join('\n')}\n`;
+    this.#reportedGroup = false;
+    return `${endGroup}\n${text}`;
   }
   /* c8 ignore stop */
 
@@ -291,8 +195,13 @@ class SpecReporter extends Transform {
   }
 
   _flush(callback) {
+    let failures = '';
+    this.#specReporter._flush((err, chunk) => {
+      if (err) throw err;
+      if (chunk) failures = chunk;
+    });
     Promise.resolve(this.#isGitHubActions ? getSummary() : '').then((summary) => {
-      callback(null, this.#formatFailedTestResults() + summary);
+      callback(null, this.#reshapeFailures(failures) + summary);
     }).catch((err) => {
       /* c8 ignore next 2 */
       callback(err);
