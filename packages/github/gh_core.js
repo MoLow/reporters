@@ -11,9 +11,11 @@ function toCommandValue(input) {
 }
 
 export function toCommandProperties(annotationProperties) {
+  /* c8 ignore start */ // callers always pass at least one property
   if (!Object.keys(annotationProperties).length) {
     return {};
   }
+  /* c8 ignore stop */
   return {
     title: annotationProperties.title,
     file: annotationProperties.file,
