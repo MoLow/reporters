@@ -17,7 +17,8 @@ function sanitize(str) {
     .replaceAll(/test_runner\/harness:[0-9.]+\n/g, 'test_runner/harness:*\n')
     // eslint-disable-next-line no-control-regex
     .replaceAll(/\u001b\[[0-9;]*m/g, '')
-    .replace(/(?<=\n)(\s+)((.+?)\s+\()?(?:\(?(.+?):(\d+)(?::(\d+))?)\)?(\s+\{)?(\[\d+m)?(\n|$)/g, '$1*$7$8\n');
+    .replace(/(?<=\n)(\s+)((.+?)\s+\()?(?:\(?(.+?):(\d+)(?::(\d+))?)\)?(\s+\{)?(\[\d+m)?(\n|$)/g, '$1*$7$8\n')
+    .replace(/(?<=\n)(\s*)\*\n(?:\s*\*\n)+/g, '$1*\n');
 }
 
 function snapshot(filename) {

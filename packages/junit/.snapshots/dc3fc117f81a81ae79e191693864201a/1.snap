@@ -17,12 +17,6 @@ Error [ERR_TEST_FAILURE]: The expression evaluated to a falsy value:
     assert(false)
   
       *
-      *
-      *
-      *
-      *
-      *
-      *
       * {
     generatedMessage: true,
     code: 'ERR_ASSERTION',

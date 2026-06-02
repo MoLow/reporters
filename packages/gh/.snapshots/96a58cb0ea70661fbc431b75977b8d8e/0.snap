@@ -57,27 +57,14 @@ top level diagnostic
 ::group::✖ fails (* millisecond)
   Error: this is an error
       *
-      *
-      *
-      *
-      *
-      *
       at async Promise.all (index 0)
       *
-      *
-
-*
 ::endgroup::
 ::group::✖ should fail (* millisecond)
   AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
   
     assert(false)
   
-      *
-      *
-      *
-      *
-      *
       *
       * {
     generatedMessage: true,
@@ -95,11 +82,6 @@ top level diagnostic
   
     assert(false)
   
-      *
-      *
-      *
-      *
-      *
       *
       * {
     generatedMessage: true,

@@ -27,13 +27,7 @@ this is a console log
          fails:
      Error: this is an error
       *
-      *
-      *
-      *
-      *
-      *
       at async Promise.all (index 0)
-      *
       *
 
   2) 
@@ -49,12 +43,6 @@ this is a console log
       -false
       +true
       
-      *
-      *
-      *
-      *
-      *
-      *
       *
 
 
