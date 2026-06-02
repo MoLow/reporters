@@ -41,7 +41,7 @@ Object {
 ::debug::completed running is a todo
 ::debug::starting to run is a failing todo
 ::endgroup::
-::group::⚠ is a failing todo (* millisecond) # TODO
+::group::✖ is a failing todo (* millisecond) # TODO
 ::error title=is a failing todo,file=packages/gh/tests/example.js,line=22,col=36::AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:%0A%0A  assert(false)%0A%0A    at TestContext.<anonymous> (CWD/tests/example.js:22:36)%0A    at Test.runInAsyncScope (node:async_hooks:214:14)%0A    at Test.run (node:internal/test_runner/test:1047:25)%0A    at Test.processPendingSubtests (node:internal/test_runner/test:744:18)%0A    at Test.postRun (node:internal/test_runner/test:1173:19)%0A    at Test.run (node:internal/test_runner/test:1101:12)%0A    at async Test.processPendingSubtests (node:internal/test_runner/test:744:7) {%0A  generatedMessage: true,%0A  code: 'ERR_ASSERTION',%0A  actual: false,%0A  expected: true,%0A  operator: '==',%0A  diff: 'simple'%0A}
 ::debug::starting to run top level diagnostic
 ::endgroup::
@@ -77,7 +77,7 @@ top level diagnostic
 
 *
 ::endgroup::
-::group::⚠ is a failing todo (* millisecond) # TODO
+::group::✖ is a failing todo (* millisecond) # TODO
   AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
   
     assert(false)
