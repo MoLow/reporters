@@ -1,8 +1,16 @@
 [![npm version](https://img.shields.io/npm/v/@reporters/gh)](https://www.npmjs.com/package/@reporters/gh) ![tests](https://github.com/MoLow/reporters/actions/workflows/test.yaml/badge.svg?branch=main) [![codecov](https://codecov.io/gh/MoLow/reporters/branch/main/graph/badge.svg?token=0LFVC8SCQV)](https://codecov.io/gh/MoLow/reporters)
 
-# Github Actions Reporter
-A Github actions reporter for `node:test`
- 
+# GitHub Actions Reporter (all-in-one)
+An all-in-one GitHub Actions reporter for `node:test`: it prints a readable, spec-style test log **and** emits GitHub Actions annotations and a job summary — from a single reporter.
+
+Outside GitHub Actions it falls back to the plain spec-style log, so the same command works locally and in CI.
+
+> **`gh` vs [`github`](https://www.npmjs.com/package/@reporters/github)**
+> - **`@reporters/gh`** (this package) — all-in-one: a human-readable log **plus** annotations and summary, from one reporter. Use it when you want a single `--test-reporter` that does everything.
+> - **`@reporters/github`** — annotations and summary **only**; it prints no readable log, so you pair it with another reporter (e.g. `spec`). Use it when you already have a reporter you like and just want to layer GitHub annotations on top.
+>
+> See the [full comparison in the main README](https://github.com/MoLow/reporters#github-actions-gh-vs-github).
+
 ## Installation
 
 ```bash
@@ -19,6 +27,12 @@ yarn add --dev @reporters/gh
 # .github/workflows/test.yml
 - name: Run tests
   run: node --test --test-reporter=@reporters/gh
+```
+
+The same command also works locally — when not running in GitHub Actions it just prints the spec-style log (no annotations):
+
+```bash
+node --test --test-reporter=@reporters/gh
 ```
 
 ## Result
