@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.2](https://github.com/MoLow/reporters/compare/gh-v2.0.1...gh-v2.0.2) (2026-06-02)
+
+
+### Bug Fixes
+
+* **gh:** republish with resolved workspace dependency ([#189](https://github.com/MoLow/reporters/issues/189)) ([f1104f1](https://github.com/MoLow/reporters/commit/f1104f1587e6a86cddbf73c007ee10ff31856274))
+
 ## [2.0.1](https://github.com/MoLow/reporters/compare/gh-v2.0.0...gh-v2.0.1) (2026-06-02)
 
 
