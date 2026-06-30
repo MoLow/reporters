@@ -64,6 +64,55 @@ test('parseWireLines parses NDJSON and skips blank or truncated lines', () => {
   assert.deepStrictEqual(events.map((e) => e.type), ['test:start', 'test:pass']);
 });
 
+test('toWireEvent copies every known field and flattens nested errors', () => {
+  const cause = new Error('root cause');
+  const wrapper = Object.assign(new Error('wrapper'), { cause });
+  const wire = toWireEvent({
+    type: 'test:fail',
+    data: {
+      name: 't',
+      nesting: 2,
+      file: '/a.test.js',
+      testId: 7,
+      parentId: 3,
+      line: 10,
+      column: 4,
+      tags: ['slow'],
+      todo: 'later',
+      skip: false,
+      message: 'msg',
+      level: 'warn',
+      count: 5,
+      type: 'suite',
+      counts: { tests: 1 },
+      duration_ms: 12,
+      success: false,
+      details: { duration_ms: 12, type: 'suite', passed: false, error: wrapper },
+    },
+  });
+  const d = wire.data;
+  assert.deepStrictEqual(
+    [d.name, d.nesting, d.file, d.testId, d.parentId, d.line, d.column],
+    ['t', 2, '/a.test.js', 7, 3, 10, 4],
+  );
+  assert.deepStrictEqual([d.tags, d.todo, d.skip, d.message, d.level, d.count], [['slow'], 'later', false, 'msg', 'warn', 5]);
+  assert.deepStrictEqual([d.type, d.counts, d.duration_ms, d.success], ['suite', { tests: 1 }, 12, false]);
+  assert.strictEqual(d.details?.type, 'suite');
+  const err = d.details?.error as { message: string; cause: { message: string } };
+  assert.strictEqual(err.message, 'wrapper');
+  assert.strictEqual(err.cause.message, 'root cause');
+});
+
+test('toWireEvent tolerates a non-Error error value and a missing error', () => {
+  const withString = toWireEvent({ type: 'test:fail', data: { details: { error: 'boom' as unknown as Error } } });
+  assert.strictEqual((withString.data.details?.error as { message: string }).message, 'boom');
+  const noError = toWireEvent({ type: 'test:pass', data: { details: { duration_ms: 1 } } });
+  assert.strictEqual(noError.data.details?.error, undefined);
+  // an event with no data object at all
+  const noData = toWireEvent({ type: 'test:watch:drained' } as unknown as Parameters<typeof toWireEvent>[0]);
+  assert.deepStrictEqual(noData.data, {});
+});
+
 test('toWireEvent + parseWireLines round-trips an event', () => {
   const [event] = parseWireLines(serializeWireLine(toWireEvent({
     type: 'test:fail',

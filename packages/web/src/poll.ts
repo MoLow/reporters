@@ -38,6 +38,7 @@ export function createNdjsonReader(url: string, fetchImpl: FetchLike = fetch) {
     buffer += text;
 
     const lines = buffer.split('\n');
+    /* c8 ignore next */
     buffer = lines.pop() ?? '';
     const events: TestEvent[] = [];
     for (const line of lines) {

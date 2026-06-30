@@ -38,6 +38,25 @@ test('shows the error message under a failed leaf test', () => {
   assert.match(text, /expected 1 to equal 2/);
 });
 
+test('falls back to <unknown> for a file-less node and prints the summary duration', () => {
+  const snapshot = build([
+    { type: 'test:start', data: { name: 't', nesting: 0, testId: 1 } },
+    { type: 'test:pass', data: { name: 't', nesting: 0, testId: 1, details: { duration_ms: 2 } } },
+    { type: 'test:summary', data: { file: undefined, success: true, duration_ms: 7, counts: {} } },
+  ]);
+  const text = renderTreeText(snapshot);
+  assert.match(text, /<unknown>/);
+  assert.match(text, /7ms/);
+});
+
+test('uses the full path when a file has no trailing basename segment', () => {
+  const snapshot = build([
+    { type: 'test:start', data: { name: 't', nesting: 0, file: '/x/y/', testId: 1 } },
+    { type: 'test:pass', data: { name: 't', nesting: 0, file: '/x/y/', testId: 1 } },
+  ]);
+  assert.match(renderTreeText(snapshot), /\/x\/y\//);
+});
+
 test('renders a summary line from the counts', () => {
   const snapshot = build([
     { type: 'test:pass', data: { name: 'a', nesting: 0, file: '/a.test.js', testId: 1 } },

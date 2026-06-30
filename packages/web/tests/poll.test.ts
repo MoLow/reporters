@@ -60,13 +60,25 @@ test('a non-range source (200) returns all events and flags a reset', async () =
   assert.deepStrictEqual(result.events.map((e) => e.type), ['a', 'b']);
 });
 
-test('malformed lines are skipped, valid ones still parsed', async () => {
+test('blank and malformed lines are skipped, valid ones still parsed', async () => {
   const { fetchImpl } = mockFetch([
-    { status: 206, body: '{"type":"a"}\nnot json\n{"type":"b"}\n' },
+    { status: 206, body: '{"type":"a"}\n\n   \nnot json\n{"type":"b"}\n' },
   ]);
   const reader = createNdjsonReader('http://x/run.ndjson', fetchImpl);
   const { events } = await reader.pull();
   assert.deepStrictEqual(events.map((e) => e.type), ['a', 'b']);
+});
+
+test('defaults to the global fetch when none is provided', async () => {
+  const original = globalThis.fetch;
+  globalThis.fetch = (async () => ({ status: 200, text: async () => '{"type":"z"}\n' })) as unknown as typeof fetch;
+  try {
+    const reader = createNdjsonReader('http://x/run.ndjson');
+    const { events } = await reader.pull();
+    assert.deepStrictEqual(events.map((e) => e.type), ['z']);
+  } finally {
+    globalThis.fetch = original;
+  }
 });
 
 test('416 (nothing new) yields no events', async () => {
