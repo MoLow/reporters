@@ -121,3 +121,29 @@ test('per-file summary does not overwrite the overall summary', () => {
   ]);
   assert.strictEqual(store.getSnapshot().summary, undefined);
 });
+
+test('with testId but no parentId, hierarchy falls back to the nesting stack', () => {
+  // Models a Node build that emits testId but not parentId (e.g. 26.2.x).
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:start', data: { name: 'suite', nesting: 0, file: '/a.test.js', testId: 1 } },
+    { type: 'test:start', data: { name: 'child', nesting: 1, file: '/a.test.js', testId: 2 } },
+    { type: 'test:pass', data: { name: 'child', nesting: 1, file: '/a.test.js', testId: 2 } },
+    { type: 'test:pass', data: { name: 'suite', nesting: 0, file: '/a.test.js', testId: 1, details: { type: 'suite' } } },
+  ]);
+  const suite = store.getSnapshot().root.children[0].children[0];
+  assert.strictEqual(suite.name, 'suite');
+  assert.strictEqual(suite.children.length, 1);
+  assert.strictEqual(suite.children[0].name, 'child');
+});
+
+test('subscribe is notified on apply and stops after unsubscribe', () => {
+  const store = createTreeStore();
+  let calls = 0;
+  const unsubscribe = store.subscribe(() => { calls += 1; });
+  store.apply({ type: 'test:pass', data: { name: 't', nesting: 0, file: '/a.test.js', testId: 1 } });
+  assert.strictEqual(calls, 1);
+  unsubscribe();
+  store.apply({ type: 'test:pass', data: { name: 'u', nesting: 0, file: '/a.test.js', testId: 2 } });
+  assert.strictEqual(calls, 1);
+});

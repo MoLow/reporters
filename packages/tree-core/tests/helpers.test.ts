@@ -3,7 +3,21 @@ import assert from 'node:assert';
 import { formatDuration } from '../src/format.ts';
 import { toWireEvent, serializeWireLine, parseWireLines } from '../src/wire.ts';
 import { defaultExpanded } from '../src/expand.ts';
+import * as api from '../src/index.ts';
 import type { TestNode } from '../src/types.ts';
+
+test('the package entrypoint re-exports the public API and theme tokens', () => {
+  assert.strictEqual(typeof api.createTreeStore, 'function');
+  assert.strictEqual(typeof api.formatDuration, 'function');
+  assert.strictEqual(typeof api.toWireEvent, 'function');
+  assert.strictEqual(typeof api.parseWireLines, 'function');
+  assert.strictEqual(typeof api.serializeWireLine, 'function');
+  assert.strictEqual(typeof api.defaultExpanded, 'function');
+  assert.strictEqual(api.SYMBOLS.passed, '✔');
+  assert.ok(api.SPINNER_FRAMES.length > 0);
+  assert.ok(api.INK_COLOR.failed && api.WEB_COLOR.failed);
+  assert.ok(api.STATUS_LABEL.passed && api.TREE_GUIDES.vertical);
+});
 
 test('formatDuration renders ms, seconds and minutes', () => {
   assert.strictEqual(formatDuration(0), '0ms');
