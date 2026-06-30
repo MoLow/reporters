@@ -95,6 +95,25 @@ test('real concurrent stream builds the suite with all subtests', () => {
   assert.strictEqual(root.counts.failed, 0);
 });
 
+test('concurrent sibling suites keep their own children (nesting-stack correctness)', () => {
+  // Guards that overlapping sibling suites are correctly parented on every Node
+  // version — via parentId where available, and via the nesting stack on builds
+  // (e.g. v22) that emit neither testId nor parentId.
+  const events = captureEvents(['fixtures/concurrent-siblings.mjs']);
+  const { root } = build(events);
+
+  const suites: Record<string, string[]> = {};
+  (function walk(node: TestNode) {
+    if (node.type === 'suite') suites[node.name] = node.children.map((c) => c.name).sort();
+    node.children.forEach(walk);
+  }(root));
+
+  assert.deepStrictEqual(suites['suite A'], ['a1', 'a2']);
+  assert.deepStrictEqual(suites['suite B'], ['b1', 'b2']);
+  assert.strictEqual(root.counts.passed, 4);
+  assert.strictEqual(root.counts.failed, 0);
+});
+
 test('replaying the captured real stream into a fresh store is deterministic', () => {
   // This is how the web viewer rebuilds on a full refetch: a fresh store,
   // replayed from the start, must always yield the identical tree.
