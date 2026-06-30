@@ -8,7 +8,7 @@
   "scripts": {
     "mono": "c8 node scripts/mono-run.js",
     "build": "yarn workspace @reporters/tree-core build && yarn workspace @reporters/live build && yarn workspace @reporters/web build",
-    "test": "yarn workspace @reporters/tree-core build && yarn mono test",
+    "test": "yarn build && yarn mono test",
     "test:clean-snapshots": "rm -rf packages/**/.snapshots",
     "test:update-snapshots": "SNAP_UPDATE=1 yarn test",
     "lint": "eslint ."
