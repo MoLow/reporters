@@ -9,6 +9,11 @@ import type { TestEvent, TestNode } from '../src/types.ts';
 const here = dirname(fileURLToPath(import.meta.url));
 const captureReporter = join(here, 'capture-reporter.mjs');
 
+// `--test-isolation` was not available on older Node (e.g. v22), where it errors
+// with "bad option". Feature-detect so we can skip the isolation=none case there.
+const isolationFlagSupported = spawnSync(process.execPath, ['--help'], { encoding: 'utf8' })
+  .stdout.includes('--test-isolation');
+
 function captureEvents(files: string[], extraArgs: string[] = []): TestEvent[] {
   // Strip NODE_TEST_CONTEXT so the spawned runner does not think it is a child
   // of this test process (which would make it serialize to a fd, not stdout).
@@ -64,7 +69,9 @@ test('isolation: a shared helper test invoked from two files stays distinct per 
   );
 });
 
-test('isolation=none: shared helper tests group under the definition file, all distinct', () => {
+test('isolation=none: shared helper tests group under the definition file, all distinct', {
+  skip: isolationFlagSupported ? false : 'this Node build does not support --test-isolation',
+}, () => {
   const events = captureEvents(['fixtures/entry-a.mjs', 'fixtures/entry-b.mjs'], ['--test-isolation=none']);
   const { root } = build(events);
 
