@@ -1,0 +1,123 @@
+import { test } from 'node:test';
+import assert from 'node:assert';
+import { createTreeStore } from '../src/store.ts';
+import type { TestEvent } from '../src/types.ts';
+
+function apply(store: ReturnType<typeof createTreeStore>, events: TestEvent[]) {
+  for (const event of events) store.apply(event);
+}
+
+test('a single passing top-level test builds root > file > test', () => {
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:start', data: { name: 'adds', nesting: 0, file: '/a.test.js', testId: 1 } },
+    { type: 'test:pass', data: { name: 'adds', nesting: 0, file: '/a.test.js', testId: 1, details: { duration_ms: 5 } } },
+  ]);
+
+  const { root } = store.getSnapshot();
+  assert.strictEqual(root.children.length, 1);
+
+  const fileNode = root.children[0];
+  assert.strictEqual(fileNode.type, 'file');
+  assert.strictEqual(fileNode.file, '/a.test.js');
+  assert.strictEqual(fileNode.children.length, 1);
+
+  const testNode = fileNode.children[0];
+  assert.strictEqual(testNode.type, 'test');
+  assert.strictEqual(testNode.name, 'adds');
+  assert.strictEqual(testNode.status, 'passed');
+  assert.strictEqual(testNode.durationMs, 5);
+});
+
+test('nested suite with subtests aggregates counts on the suite, not double-counting', () => {
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:start', data: { name: 'math', nesting: 0, file: '/a.test.js', testId: 1 } },
+    { type: 'test:start', data: { name: 'adds', nesting: 1, file: '/a.test.js', testId: 2, parentId: 1 } },
+    { type: 'test:pass', data: { name: 'adds', nesting: 1, file: '/a.test.js', testId: 2, parentId: 1, details: { duration_ms: 1 } } },
+    { type: 'test:start', data: { name: 'subtracts', nesting: 1, file: '/a.test.js', testId: 3, parentId: 1 } },
+    { type: 'test:fail', data: { name: 'subtracts', nesting: 1, file: '/a.test.js', testId: 3, parentId: 1, details: { duration_ms: 1, error: new Error('boom') } } },
+    { type: 'test:fail', data: { name: 'math', nesting: 0, file: '/a.test.js', testId: 1, parentId: undefined, details: { duration_ms: 3, type: 'suite' } } },
+  ]);
+
+  const { root, counts } = store.getSnapshot();
+  const suite = root.children[0].children[0];
+  assert.strictEqual(suite.type, 'suite');
+  assert.strictEqual(suite.children.length, 2);
+  assert.deepStrictEqual(
+    { passed: suite.counts.passed, failed: suite.counts.failed, total: suite.counts.total },
+    { passed: 1, failed: 1, total: 2 },
+  );
+  // overall counts the two leaves, not the suite itself
+  assert.deepStrictEqual({ passed: counts.passed, failed: counts.failed, total: counts.total }, { passed: 1, failed: 1, total: 2 });
+});
+
+test('failed test carries the unwrapped cause error', () => {
+  const store = createTreeStore();
+  const cause = new Error('actual failure');
+  const wrapper = new Error('wrapper');
+  // @ts-expect-error test cause shape
+  wrapper.cause = cause;
+  apply(store, [
+    { type: 'test:start', data: { name: 't', nesting: 0, file: '/a.test.js', testId: 1 } },
+    { type: 'test:fail', data: { name: 't', nesting: 0, file: '/a.test.js', testId: 1, details: { error: wrapper } } },
+  ]);
+  const node = store.getSnapshot().root.children[0].children[0];
+  assert.strictEqual(node.status, 'failed');
+  assert.strictEqual(node.error?.message, 'actual failure');
+});
+
+test('skip and todo map to their own statuses', () => {
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:pass', data: { name: 's', nesting: 0, file: '/a.test.js', testId: 1, skip: true } },
+    { type: 'test:pass', data: { name: 'd', nesting: 0, file: '/a.test.js', testId: 2, todo: true } },
+  ]);
+  const [s, d] = store.getSnapshot().root.children[0].children;
+  assert.strictEqual(s.status, 'skipped');
+  assert.strictEqual(d.status, 'todo');
+});
+
+test('diagnostics attach to the last started test at that file+nesting', () => {
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:start', data: { name: 't', nesting: 0, file: '/a.test.js', testId: 1 } },
+    { type: 'test:diagnostic', data: { message: 'hello', nesting: 0, file: '/a.test.js', level: 'info' } },
+    { type: 'test:pass', data: { name: 't', nesting: 0, file: '/a.test.js', testId: 1 } },
+  ]);
+  const node = store.getSnapshot().root.children[0].children[0];
+  assert.deepStrictEqual(node.diagnostics, [{ message: 'hello', level: 'info' }]);
+});
+
+test('stdout and stderr attach to the file node', () => {
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:start', data: { name: 't', nesting: 0, file: '/a.test.js', testId: 1 } },
+    { type: 'test:stdout', data: { file: '/a.test.js', message: 'out\n' } },
+    { type: 'test:stderr', data: { file: '/a.test.js', message: 'err\n' } },
+    { type: 'test:pass', data: { name: 't', nesting: 0, file: '/a.test.js', testId: 1 } },
+  ]);
+  const fileNode = store.getSnapshot().root.children[0];
+  assert.deepStrictEqual(fileNode.stdout, ['out\n']);
+  assert.deepStrictEqual(fileNode.stderr, ['err\n']);
+});
+
+test('overall summary is captured from the root test:summary', () => {
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:pass', data: { name: 't', nesting: 0, file: '/a.test.js', testId: 1 } },
+    { type: 'test:summary', data: { file: undefined, success: true, duration_ms: 12, counts: { passed: 1, failed: 0, tests: 1 } } },
+  ]);
+  const { summary } = store.getSnapshot();
+  assert.strictEqual(summary?.success, true);
+  assert.strictEqual(summary?.durationMs, 12);
+  assert.strictEqual(summary?.counts.passed, 1);
+});
+
+test('per-file summary does not overwrite the overall summary', () => {
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:summary', data: { file: '/a.test.js', success: false, duration_ms: 1, counts: {} } },
+  ]);
+  assert.strictEqual(store.getSnapshot().summary, undefined);
+});

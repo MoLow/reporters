@@ -12,8 +12,13 @@ export default [
       '**/node_modules/**',
       '**/.snapshots/**',
       '**/coverage/**',
+      '**/dist/**',
       '.yarn/**',
       'tests/snap.mjs',
+      // TypeScript packages are type-checked via their tsup build (tsc dts).
+      'packages/tree-core/**',
+      'packages/live/**',
+      'packages/web/**',
     ],
   },
   ...compat.extends('airbnb-base'),

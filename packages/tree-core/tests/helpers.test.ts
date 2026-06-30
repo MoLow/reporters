@@ -1,0 +1,64 @@
+import { test } from 'node:test';
+import assert from 'node:assert';
+import { formatDuration } from '../src/format.ts';
+import { toWireEvent } from '../src/wire.ts';
+import { defaultExpanded } from '../src/expand.ts';
+import type { TestNode } from '../src/types.ts';
+
+test('formatDuration renders ms, seconds and minutes', () => {
+  assert.strictEqual(formatDuration(0), '0ms');
+  assert.strictEqual(formatDuration(5), '5ms');
+  assert.strictEqual(formatDuration(999), '999ms');
+  assert.strictEqual(formatDuration(1000), '1s');
+  assert.strictEqual(formatDuration(1500), '1.5s');
+  assert.strictEqual(formatDuration(65000), '1m 5s');
+  assert.strictEqual(formatDuration(undefined), '');
+});
+
+test('toWireEvent keeps only known fields and is JSON-safe', () => {
+  const wire = toWireEvent({
+    type: 'test:pass',
+    // @ts-expect-error extraneous field should be dropped
+    data: {
+      name: 't', nesting: 0, file: '/f.js', testId: 1, junk: 'drop', details: { duration_ms: 5, error: new Error('boom') },
+    },
+  });
+  assert.strictEqual(wire.type, 'test:pass');
+  assert.strictEqual(wire.data.name, 't');
+  assert.ok(!('junk' in wire.data));
+  // The error has been flattened into a JSON-serializable shape.
+  assert.doesNotThrow(() => JSON.stringify(wire));
+  const reparsed = JSON.parse(JSON.stringify(wire));
+  assert.strictEqual(reparsed.data.details.error.message, 'boom');
+});
+
+function node(partial: Partial<TestNode>): TestNode {
+  return {
+    key: 'k',
+    testId: 1,
+    parentKey: null,
+    file: undefined,
+    name: 'n',
+    nesting: 0,
+    type: 'suite',
+    status: 'passed',
+    diagnostics: [],
+    stdout: [],
+    stderr: [],
+    children: [],
+    counts: {
+      passed: 0, failed: 0, skipped: 0, todo: 0, running: 0, queued: 0, total: 0,
+    },
+    ...partial,
+  };
+}
+
+test('defaultExpanded expands files, failures and running; collapses passed suites', () => {
+  const kids = [node({ type: 'test' })];
+  assert.strictEqual(defaultExpanded(node({ type: 'file' })), true);
+  assert.strictEqual(defaultExpanded(node({ type: 'suite', status: 'passed', children: kids, counts: { passed: 3, failed: 0, skipped: 0, todo: 0, running: 0, queued: 0, total: 3 } })), false);
+  assert.strictEqual(defaultExpanded(node({ type: 'suite', status: 'failed', children: kids, counts: { passed: 1, failed: 1, skipped: 0, todo: 0, running: 0, queued: 0, total: 2 } })), true);
+  assert.strictEqual(defaultExpanded(node({ type: 'suite', status: 'running', children: kids, counts: { passed: 0, failed: 0, skipped: 0, todo: 0, running: 1, queued: 0, total: 1 } })), true);
+  // a childless leaf has nothing to expand
+  assert.strictEqual(defaultExpanded(node({ type: 'test', status: 'failed' })), false);
+});

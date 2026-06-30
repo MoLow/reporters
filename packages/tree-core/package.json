@@ -1,0 +1,36 @@
+{
+  "name": "@reporters/tree-core",
+  "version": "0.0.0",
+  "description": "Shared tree-state model for @reporters/live and @reporters/web",
+  "type": "module",
+  "private": true,
+  "keywords": [
+    "node:test",
+    "test",
+    "reporter",
+    "reporters",
+    "tree"
+  ],
+  "files": [
+    "./dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsup",
+    "test": "node --test"
+  },
+  "bugs": {
+    "url": "https://github.com/MoLow/reporters/issues"
+  },
+  "homepage": "https://github.com/MoLow/reporters/tree/main/packages/tree-core",
+  "repository": "https://github.com/MoLow/reporters.git",
+  "author": "Moshe Atlow",
+  "license": "MIT"
+}
