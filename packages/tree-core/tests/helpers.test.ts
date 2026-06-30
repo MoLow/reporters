@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
 import { formatDuration } from '../src/format.ts';
-import { toWireEvent } from '../src/wire.ts';
+import { toWireEvent, serializeWireLine, parseWireLines } from '../src/wire.ts';
 import { defaultExpanded } from '../src/expand.ts';
 import type { TestNode } from '../src/types.ts';
 
@@ -30,6 +30,34 @@ test('toWireEvent keeps only known fields and is JSON-safe', () => {
   assert.doesNotThrow(() => JSON.stringify(wire));
   const reparsed = JSON.parse(JSON.stringify(wire));
   assert.strictEqual(reparsed.data.details.error.message, 'boom');
+});
+
+test('serializeWireLine produces one parseable JSON line per event', () => {
+  const line = serializeWireLine({ type: 'test:pass', data: { name: 't', testId: 1, nesting: 0 } });
+  assert.ok(line.endsWith('\n'));
+  assert.strictEqual(JSON.parse(line).type, 'test:pass');
+});
+
+test('parseWireLines parses NDJSON and skips blank or truncated lines', () => {
+  const text = [
+    '{"type":"test:start","data":{"name":"a"}}',
+    '',
+    '   ',
+    '{"type":"test:pass","data":{"name":"a"}}',
+    '{"type":"test:fail","data":{"name":"b"', // truncated trailing line
+  ].join('\n');
+  const events = parseWireLines(text);
+  assert.deepStrictEqual(events.map((e) => e.type), ['test:start', 'test:pass']);
+});
+
+test('toWireEvent + parseWireLines round-trips an event', () => {
+  const [event] = parseWireLines(serializeWireLine(toWireEvent({
+    type: 'test:fail',
+    data: { name: 't', testId: 2, nesting: 1, details: { duration_ms: 4, error: new Error('boom') } },
+  })));
+  assert.strictEqual(event.type, 'test:fail');
+  assert.strictEqual(event.data.testId, 2);
+  assert.strictEqual((event.data.details?.error as { message: string }).message, 'boom');
 });
 
 function node(partial: Partial<TestNode>): TestNode {
