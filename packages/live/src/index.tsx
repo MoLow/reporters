@@ -7,10 +7,15 @@ import { renderTreeText } from './text.ts';
 /**
  * A live, React-powered tree reporter for `node:test`.
  *
- * In a TTY it renders an Ink tree that updates in place as tests run, then stays
- * open so you can browse results — arrow keys move, space toggles a test's
- * diagnostics, q or Ctrl+C closes. Outside a TTY (CI, pipes) it prints a
- * plain-text tree at the end. Set REPORTERS_LIVE_PLAIN=1 to force plain text.
+ * Two independent levers decide how it behaves:
+ *   - Output (stdout is a TTY): render the live Ink tree, else print a fully
+ *     expanded plain-text tree once at the end.
+ *   - Input (stdin is a TTY): after the run, keep the view open so you can
+ *     browse — arrow keys move, space toggles a test's diagnostics, q / Ctrl+C
+ *     closes — else exit as soon as the run ends.
+ * So `npm run test` (stdout is a TTY, stdin isn't) shows the live tree and then
+ * exits, while a plain pipe / CI prints text and exits. REPORTERS_LIVE_PLAIN=1
+ * forces both levers off (plain text, exit when done).
  *
  * Note: under the default process isolation Node buffers each file's events
  * until that file's turn to report, so files fill in as they complete. For true
@@ -18,22 +23,28 @@ import { renderTreeText } from './text.ts';
  */
 export default async function* live(source: AsyncIterable<TestEvent>): AsyncGenerator<string> {
   const store = createTreeStore();
-  const interactive = Boolean(process.stdout.isTTY) && process.env.REPORTERS_LIVE_PLAIN !== '1';
+  const plain = process.env.REPORTERS_LIVE_PLAIN === '1';
+  const renderApp = Boolean(process.stdout.isTTY) && !plain;
+  const waitForInput = Boolean(process.stdin.isTTY) && !plain;
 
-  if (!interactive) {
+  if (!renderApp) {
     for await (const event of source) store.apply(toWireEvent(event));
     yield `${renderTreeText(store.getSnapshot())}\n`;
     return;
   }
 
   // We own the terminal. Ctrl+C / q exit the process from within <App/>.
-  render(<App store={store} />, { patchConsole: false, exitOnCtrlC: false });
+  const app = render(<App store={store} interactive={waitForInput} />, { patchConsole: false, exitOnCtrlC: false });
   // Consume the whole stream (breaking early would destroy Node's reporter
   // pipeline and raise ABORT_ERR).
   for await (const event of source) store.apply(toWireEvent(event));
-  // The run has finished. Keep the interactive view open for review — the user
-  // browses results and quits with q / Ctrl+C (handled in <App/> via
-  // process.exit). Block so the process doesn't exit and close the window.
-  // (In CI / non-TTY we took the plain-text path above and never get here.)
-  await new Promise<never>(() => {});
+
+  if (waitForInput) {
+    // Keep the view open for review; the user quits with q / Ctrl+C (handled in
+    // <App/> via process.exit). Block so the process doesn't close the window.
+    await new Promise<never>(() => {});
+  }
+  // No stdin to drive navigation: leave the final frame on screen and let the
+  // generator return so Node finishes the run and sets the exit code.
+  app.unmount();
 }
