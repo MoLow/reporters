@@ -107,8 +107,9 @@ export function buildRows(files: TestNode[], opts: BuildOptions): FlatRow[] {
     const expanded = container && isExpanded(node, opts);
     // A container (a file or suite) can still carry its own output — e.g.
     // top-level stdout/stderr on the file node — so it gets a diagnostics
-    // affordance too, independent of expanding its children.
-    const diag = hasDiagnostics(node);
+    // affordance too. But collapsing a container hides its output along with
+    // its children, so it only surfaces diagnostics while expanded.
+    const diag = hasDiagnostics(node) && (!container || expanded);
     rows.push({
       node,
       depth,

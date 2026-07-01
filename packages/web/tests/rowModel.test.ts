@@ -31,9 +31,19 @@ test('a file node with its own stdout/stderr reports diagnostics', () => {
   assert.strictEqual(hasDiagnostics(fileNode()), true);
 });
 
-test('buildRows surfaces a diagnostics affordance on a container file with output', () => {
+test('buildRows surfaces a diagnostics affordance on an expanded container file with output', () => {
   const rows = buildRows([fileNode()], noQuery);
   const fileRow = rows.find((r) => r.node.type === 'file')!;
   assert.strictEqual(fileRow.container, true, 'file has test children, so it is a container');
-  assert.strictEqual(fileRow.hasDiag, true, 'a container must still expose its own stdout/stderr');
+  assert.strictEqual(fileRow.expanded, true, 'a file defaults to expanded');
+  assert.strictEqual(fileRow.hasDiag, true, 'an expanded container must expose its own stdout/stderr');
+});
+
+test('a collapsed container hides its own stdout/stderr along with its children', () => {
+  const file = fileNode();
+  const rows = buildRows([file], { overrides: new Map([[file.key, false]]), query: '', matches: null });
+  const fileRow = rows.find((r) => r.node.type === 'file')!;
+  assert.strictEqual(fileRow.expanded, false, 'the file is collapsed');
+  assert.strictEqual(fileRow.hasDiag, false, 'a collapsed container must not surface its output');
+  assert.strictEqual(fileRow.diagOpen, false);
 });
