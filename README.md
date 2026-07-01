@@ -16,6 +16,7 @@ node --test \
 Available reporters:
 
 - [bail](https://www.npmjs.com/package/@reporters/bail) - bail on first failure
+- [mux](https://www.npmjs.com/package/@reporters/mux) - route/combine reporters per environment (e.g. `live` locally, `gh` on CI) and send each to its own sink
 - [gh](https://www.npmjs.com/package/@reporters/gh) - all-in-one GitHub Actions reporter (readable log + annotations + summary in one)
 - [github](https://www.npmjs.com/package/@reporters/github) - GitHub Actions annotations + job summary only (pair with another reporter for the log)
 - [jUnit](https://www.npmjs.com/package/@reporters/junit) - report to jUnit 
@@ -24,7 +25,7 @@ Available reporters:
 - [silent](https://www.npmjs.com/package/@reporters/silent) - a silent reporter
 - [slow](https://www.npmjs.com/package/@reporters/slow) - report slow tests
 - [testwatch](https://www.npmjs.com/package/@reporters/testwatch) - An interactive REPL for `node:test` watch mode.
-- [web](https://www.npmjs.com/package/@reporters/web) - a self-contained, interactive HTML tree report (with an optional hosted live viewer)
+- [web](https://www.npmjs.com/package/@reporters/web) - an NDJSON reporter with an interactive HTML tree viewer (served locally via `@reporters/mux` or through the hosted viewer)
 
 The `live` and `web` reporters render the run as an interactive **tree** and share a common core — see their package READMEs ([live](packages/live/README.md), [web](packages/web/README.md)) for details.
 

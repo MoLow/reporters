@@ -1,43 +1,44 @@
 # @reporters/web
 
-A self-contained, interactive **HTML** tree reporter for `node:test`. It renders
-the whole run as a collapsible tree on a single, offline HTML page (React,
-inlined — no CDN, no network), with a summary, search/filter, per-test
-diagnostics, and light/dark themes.
+An **NDJSON** event-log reporter for `node:test`, with an interactive tree
+**viewer** (React) for reading the run in a browser. It streams the run as NDJSON
+to whatever `--test-reporter-destination` points at:
 
 ```bash
-node --test --test-reporter=@reporters/web --test-reporter-destination=report.html
+node --test --test-reporter=@reporters/web --test-reporter-destination=run.ndjson
 ```
 
-It streams like every other reporter — it yields to whatever
-`--test-reporter-destination` points at. On a dev machine it opens the report in
-your browser as the run streams (the page auto-refreshes while it's being
-written); it never opens in CI. Control this with `REPORTERS_WEB_OPEN=1|0`.
+## Viewing a run
 
-## Modes
+The NDJSON is rendered by the tree viewer, reached three ways:
 
-The reporter emits an NDJSON event log, consumed two ways via
-`REPORTERS_WEB_MODE`:
+- **Standalone** — on a dev machine, when given a file destination, the reporter
+  also starts a local server for the viewer and opens your browser to a
+  live-updating view (it polls the growing NDJSON over HTTP Range — no
+  `file://`/CORS limits). It never opens in CI. Force it on/off with the `open`
+  option (2nd reporter arg) or `REPORTERS_WEB_OPEN=1|0`:
 
-- **`embedded`** (default) — a single, self-contained `.html` file with the React
-  app and the event log inlined. Works offline, as a CI artifact, or attached to
-  a gist. Even a crashed/interrupted run leaves a renderable partial file.
-- **`ndjson`** — the raw NDJSON event log only. Host it anywhere and open it in
-  the hosted viewer at **https://molow.github.io/reporters/** with
-  `?src=<url-to-your-run.ndjson>` to watch it live (the viewer polls the file as
-  it grows, using HTTP Range for newly appended lines).
+  ```bash
+  # opens a live browser view by default on a TTY; never in CI
+  node --test --test-reporter=@reporters/web --test-reporter-destination=run.ndjson
+  ```
 
-```bash
-# raw NDJSON for the hosted viewer
-REPORTERS_WEB_MODE=ndjson node --test \
-  --test-reporter=@reporters/web --test-reporter-destination=run.ndjson
-# then host run.ndjson and open: https://molow.github.io/reporters/?src=<its-url>
-```
+- **Through [`@reporters/mux`](https://www.npmjs.com/package/@reporters/mux)**
+  with the `httpServer()` sink — the reporter stays a pure emitter and the sink
+  serves the viewer + growing NDJSON over HTTP Range, opening your browser:
 
-`embedded` is the default because it needs no hosting; `ndjson` is opt-in for the
-live hosted viewer. (The mode isn't inferred from TTY/CI: the reporter writes to
-a destination, not the terminal, so those signals don't say which format you
-want.) The reporter also prints a hint to stderr with the report path / viewer URL.
+  ```js
+  // mux.config.js
+  import { httpServer } from '@reporters/web/sink';
+  export default {
+    // pass `options: { open: false }` on the route if it shouldn't open a browser
+    local: [{ reporter: '@reporters/web', sink: httpServer() }],
+  };
+  ```
+
+- **Hosted viewer** — host the NDJSON anywhere and open
+  `https://molow.github.io/reporters/?src=<url-to-your-run.ndjson>`. The viewer
+  polls the file as it grows using HTTP Range.
 
 Built on the shared `@reporters/tree-core` model (also used by
 [`@reporters/live`](https://www.npmjs.com/package/@reporters/live)).
