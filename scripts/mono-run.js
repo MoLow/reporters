@@ -12,7 +12,12 @@ function runCommand(dir) {
   }
   try {
     // eslint-disable-next-line import/no-dynamic-require, global-require
-    const { name } = require(`../packages/${dir.name}/package.json`);
+    const { name, scripts } = require(`../packages/${dir.name}/package.json`);
+    // Skip packages that don't define the requested script (e.g. `build` only
+    // exists in the TypeScript packages), so `yarn mono build` just works.
+    if (!scripts || !scripts[cmd[0]]) {
+      return;
+    }
     const args = ['workspace', name, ...cmd];
     console.log(`Running "yarn ${args.join(' ')}" in ${name}`);
     const child = spawnSync('yarn', args, { stdio: 'inherit' });

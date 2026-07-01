@@ -26,34 +26,7 @@ Available reporters:
 - [testwatch](https://www.npmjs.com/package/@reporters/testwatch) - An interactive REPL for `node:test` watch mode.
 - [web](https://www.npmjs.com/package/@reporters/web) - a self-contained, interactive HTML tree report (with an optional hosted live viewer)
 
-## Tree reporters: `live` and `web`
-
-[`@reporters/live`](https://www.npmjs.com/package/@reporters/live) and [`@reporters/web`](https://www.npmjs.com/package/@reporters/web) render the whole run as a collapsible **tree** built from the `node:test` event stream (powered by React). They share a common core that keeps the tree state; `live` renders it to the terminal with [Ink](https://github.com/vadimdemedes/ink), `web` renders it as an interactive HTML page. Both auto-expand failures, collapse passed suites to a count, and let you expand/collapse each test's diagnostics.
-
-```bash
-# live — a tree that updates in place as tests run (TTY); plain text in CI
-node --test --test-reporter=@reporters/live
-
-# web — write a single, self-contained, interactive HTML file
-node --test --test-reporter=@reporters/web --test-reporter-destination=report.html
-```
-
-> [!NOTE]
-> Under the default process isolation, Node buffers each test file's events until that file's turn to report, so files appear as they complete. For true real-time, per-test streaming in `live`, run with `--test-isolation=none`.
-
-### `web` modes
-
-`@reporters/web` emits an NDJSON event log, consumed two ways via `REPORTERS_WEB_MODE`:
-
-- **`embedded`** (default) — a single, offline, self-contained `.html` file with the React app and the event log inlined. Even a crashed/interrupted run leaves a renderable partial file.
-- **`ndjson`** — the raw NDJSON event log only. Host it anywhere and open it in the hosted viewer at **https://molow.github.io/reporters/** with `?src=<url-to-your-run.ndjson>` to watch it live (the viewer polls the file as it grows).
-
-```bash
-# raw NDJSON for the hosted viewer
-REPORTERS_WEB_MODE=ndjson node --test \
-  --test-reporter=@reporters/web --test-reporter-destination=run.ndjson
-# then open: https://molow.github.io/reporters/?src=<url-to-run.ndjson>
-```
+The `live` and `web` reporters render the run as an interactive **tree** and share a common core — see their package READMEs ([live](packages/live/README.md), [web](packages/web/README.md)) for details.
 
 ## GitHub Actions: `gh` vs `github`
 

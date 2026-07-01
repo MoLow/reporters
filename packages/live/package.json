@@ -35,7 +35,9 @@
     "react": "^19.0.0"
   },
   "devDependencies": {
-    "@reporters/tree-core": "workspace:^"
+    "@reporters/tree-core": "workspace:^",
+    "tsup": "^8.5.0",
+    "typescript": "^5.7.0"
   },
   "bugs": {
     "url": "https://github.com/MoLow/reporters/issues"

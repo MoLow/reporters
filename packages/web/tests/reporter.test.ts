@@ -55,3 +55,24 @@ test('safeEventLine neutralizes a literal closing script tag', () => {
   const escaped = safeEventLine('{"m":"</script>"}');
   assert.doesNotMatch(escaped, /<\/script>/);
 });
+
+async function collectStderr(mode: string): Promise<string> {
+  const original = process.stderr.write.bind(process.stderr);
+  let captured = '';
+  // @ts-expect-error test spy
+  process.stderr.write = (chunk: string) => { captured += chunk; return true; };
+  try {
+    await collect(mode);
+  } finally {
+    process.stderr.write = original;
+  }
+  return captured;
+}
+
+test('ndjson mode logs a viewer hint to stderr', async () => {
+  assert.match(await collectStderr('ndjson'), /molow\.github\.io\/reporters\/\?src=/);
+});
+
+test('embedded mode logs a hint to stderr', async () => {
+  assert.match(await collectStderr('embedded'), /report/i);
+});
