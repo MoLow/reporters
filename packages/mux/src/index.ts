@@ -43,9 +43,10 @@ export async function runRoutes(
     const reporter = await resolveReporter(route.reporter);
     const sink = resolveSink(route.sink);
     if (sink.start) await sink.start();
-    if (sink.viewerUrl && shouldOpen(route.open, env)) {
-      const url = sink.viewerUrl();
-      if (url) open(url);
+    const url = sink.viewerUrl?.();
+    if (url) {
+      internals.announce(url, env);
+      if (shouldOpen(route.open, env)) open(url);
     }
     // `Readable#compose` drives both a generator-function reporter and a
     // Transform-stream reporter uniformly — the same primitive node:test uses
