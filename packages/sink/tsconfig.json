@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "paths": {
+      "@reporters/mux": ["../mux/src/index.ts"],
+      "@reporters/tree-core": ["../tree-core/src/index.ts"]
+    }
+  },
+  "include": ["src"]
+}
