@@ -1,0 +1,47 @@
+{
+  "name": "@reporters/live",
+  "version": "1.0.0",
+  "description": "A live, React-powered tree reporter for `node:test`",
+  "type": "module",
+  "keywords": [
+    "node:test",
+    "test",
+    "reporter",
+    "reporters",
+    "tree",
+    "live",
+    "ink",
+    "react"
+  ],
+  "files": [
+    "./dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsup",
+    "prepack": "tsup",
+    "pretest": "tsup",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "ink": "^6.0.0",
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@reporters/tree-core": "workspace:^"
+  },
+  "bugs": {
+    "url": "https://github.com/MoLow/reporters/issues"
+  },
+  "homepage": "https://github.com/MoLow/reporters/tree/main/packages/live",
+  "repository": "https://github.com/MoLow/reporters.git",
+  "author": "Moshe Atlow",
+  "license": "MIT"
+}

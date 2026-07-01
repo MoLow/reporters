@@ -1,0 +1,44 @@
+{
+  "name": "@reporters/web",
+  "version": "1.0.0",
+  "description": "A self-contained, interactive HTML tree reporter for `node:test`",
+  "type": "module",
+  "keywords": [
+    "node:test",
+    "test",
+    "reporter",
+    "reporters",
+    "tree",
+    "html",
+    "react"
+  ],
+  "files": [
+    "./dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "rm -rf dist && tsup",
+    "prepack": "rm -rf dist && tsup",
+    "pretest": "rm -rf dist && tsup",
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "@reporters/tree-core": "workspace:^",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "bugs": {
+    "url": "https://github.com/MoLow/reporters/issues"
+  },
+  "homepage": "https://github.com/MoLow/reporters/tree/main/packages/web",
+  "repository": "https://github.com/MoLow/reporters.git",
+  "author": "Moshe Atlow",
+  "license": "MIT"
+}
