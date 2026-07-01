@@ -492,7 +492,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@reporters/mux@workspace:packages/mux":
+"@reporters/mux@workspace:^, @reporters/mux@workspace:packages/mux":
   version: 0.0.0-use.local
   resolution: "@reporters/mux@workspace:packages/mux"
   dependencies:
@@ -540,6 +540,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@reporters/web@workspace:packages/web"
   dependencies:
+    "@reporters/mux": "workspace:^"
     "@reporters/tree-core": "workspace:^"
     react: "npm:^19.0.0"
     react-dom: "npm:^19.0.0"

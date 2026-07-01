@@ -19,6 +19,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./sink": {
+      "types": "./dist/sink.d.ts",
+      "import": "./dist/sink.js"
     }
   },
   "main": "./dist/index.js",
@@ -30,6 +34,7 @@
     "test": "node --test-reporter=../gh/index.js --test"
   },
   "devDependencies": {
+    "@reporters/mux": "workspace:^",
     "@reporters/tree-core": "workspace:^",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
