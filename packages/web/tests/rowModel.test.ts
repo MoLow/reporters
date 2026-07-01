@@ -4,7 +4,7 @@ import { createTreeStore } from '@reporters/tree-core';
 import type { Counts, TestEvent, TestNode } from '@reporters/tree-core';
 import {
   buildRows, collectContainerKeys, computeMatches, displayName, hasDiagnostics,
-  isDiagOpen, isExpanded, reasonOf, rollup,
+  isDiagOpen, isExpanded, reasonOf, realError, rollup,
 } from '../src/client/rowModel.ts';
 
 const zeroCounts = (): Counts => ({
@@ -147,4 +147,37 @@ test('buildRows drops nodes filtered out by an active query', () => {
   const rows = buildRows([file], { overrides: new Map(), query: 'alpha', matches });
   assert.ok(rows.some((r) => r.node.key === 'l1'), 'the matching leaf is kept');
   assert.ok(!rows.some((r) => r.node.key === 'l2'), 'the non-matching sibling is filtered out');
+});
+
+test('realError shows a failed leaf error but suppresses synthetic and container rollups', () => {
+  // a real leaf error is returned as-is
+  const leaf = node({ error: { message: 'expected 3 to equal 4', stack: 'at x' } });
+  assert.deepStrictEqual(realError(leaf), { message: 'expected 3 to equal 4', stack: 'at x' });
+  // Node's synthetic "N subtests failed" rollup on a leaf is dropped
+  assert.strictEqual(realError(node({ error: { message: '1 subtest failed' } })), undefined);
+  assert.strictEqual(realError(node({ error: { message: '3 subtests failed' } })), undefined);
+  // a container never renders its own error, even a genuine-looking one
+  const container = node({
+    error: { message: 'boom' },
+    children: [node({ key: 'c' })],
+    counts: { ...zeroCounts(), failed: 1, total: 1 },
+  });
+  assert.strictEqual(realError(container), undefined);
+  // a leaf with no error has none
+  assert.strictEqual(realError(node()), undefined);
+  // a leaf error with no message isn't synthetic — it's shown as-is
+  const noMsg = { message: undefined as unknown as string };
+  assert.strictEqual(realError(node({ error: noMsg })), noMsg);
+});
+
+test('hasDiagnostics ignores a suppressed (synthetic/container) error', () => {
+  // a container whose only "diagnostic" is a synthetic rollup error has nothing to show
+  const container = node({
+    error: { message: '1 subtest failed' },
+    children: [node({ key: 'c' })],
+    counts: { ...zeroCounts(), failed: 1, total: 1 },
+  });
+  assert.strictEqual(hasDiagnostics(container), false);
+  // a failed leaf with a real error does have diagnostics
+  assert.strictEqual(hasDiagnostics(node({ error: { message: 'real' } })), true);
 });
