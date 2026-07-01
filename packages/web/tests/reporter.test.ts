@@ -11,7 +11,8 @@ const events: TestEvent[] = [
 
 async function collect(): Promise<string[]> {
   const out: string[] = [];
-  for await (const chunk of web(events)) out.push(chunk);
+  // open:false keeps it a pure emitter regardless of the ambient TTY.
+  for await (const chunk of web(events, { open: false })) out.push(chunk);
   return out;
 }
 
@@ -33,7 +34,7 @@ test('web emits no HTML and every line ends with a newline', async () => {
   }
 });
 
-test('web with open:true serves a live view, opens the browser, and still emits NDJSON', async () => {
+test('web with open:true and no file destination serves + opens, and keeps stdout quiet', async () => {
   const origOpen = internals.openInBrowser;
   let opened: string | undefined;
   internals.openInBrowser = (u) => { opened = u; };
@@ -41,10 +42,29 @@ test('web with open:true serves a live view, opens the browser, and still emits 
     const out: string[] = [];
     // stdin isn't a TTY under `node --test`, so the server shuts down at the end.
     for await (const chunk of web(events, { open: true })) out.push(chunk);
-    assert.strictEqual(out.length, 2); // NDJSON still yielded to the destination
+    // No file destination → the browser is the only view; nothing is written to stdout.
+    assert.strictEqual(out.length, 0);
     assert.match(opened!, /^http:\/\/127\.0\.0\.1:\d+\/\?src=\/run\.ndjson$/);
   } finally {
     internals.openInBrowser = origOpen;
+  }
+});
+
+test('web with open:true and a file destination serves + opens AND writes NDJSON to the file', async () => {
+  const origOpen = internals.openInBrowser;
+  const origArgv = process.execArgv;
+  let opened: string | undefined;
+  internals.openInBrowser = (u) => { opened = u; };
+  process.execArgv = [...origArgv, '--test-reporter-destination=run.ndjson'];
+  try {
+    const out: string[] = [];
+    for await (const chunk of web(events, { open: true })) out.push(chunk);
+    // A file destination exists → NDJSON is still emitted (to the file) while serving.
+    assert.strictEqual(out.length, 2);
+    assert.match(opened!, /\/\?src=\/run\.ndjson$/);
+  } finally {
+    internals.openInBrowser = origOpen;
+    process.execArgv = origArgv;
   }
 });
 
