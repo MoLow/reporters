@@ -1,24 +1,23 @@
 import React from 'react';
 import { Text, Box } from 'ink';
 import {
-  formatDuration, SPINNER_FRAMES, SYMBOLS, type Counts, type SummaryData,
+  formatDuration, SPINNER_FRAMES, SYMBOLS, type Counts,
 } from '@reporters/tree-core';
 
 interface HeaderProps {
   counts: Counts;
-  summary?: SummaryData;
-  elapsed: number;
+  done: boolean;
+  success: boolean;
+  duration: number;
   frame: number;
 }
 
 export function Header({
-  counts, summary, elapsed, frame,
+  counts, done, success, duration, frame,
 }: HeaderProps) {
-  const done = summary != null;
-  const duration = done ? summary.durationMs : elapsed;
   return (
     <Box>
-      <Text bold>{done ? (summary.success ? '✓ done' : '✗ failed') : `${SPINNER_FRAMES[frame % SPINNER_FRAMES.length]} running`}</Text>
+      <Text bold>{done ? (success ? '✓ done' : '✗ failed') : `${SPINNER_FRAMES[frame % SPINNER_FRAMES.length]} running`}</Text>
       <Text>{'  '}</Text>
       <Text color="green">{counts.passed} {SYMBOLS.passed}</Text>
       <Text>{'  '}</Text>

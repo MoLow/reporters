@@ -20,14 +20,24 @@ export function App({ store }: { store: TreeStore }) {
   const [elapsed, setElapsed] = useState(0);
   const start = useRef(Date.now());
 
+  // The run is done when nothing is pending. We derive this from the tree, not
+  // the summary event: without --test, Node emits the summary at process exit,
+  // which never fires while Ink holds the process open — so the header would be
+  // stuck on "running" forever. Every test is dequeued up front, so counts are
+  // complete throughout and this doesn't flip early.
+  const { counts } = snapshot;
+  const done = counts.total > 0 && counts.running === 0 && counts.queued === 0;
+  const duration = snapshot.summary?.durationMs ?? elapsed;
+  const success = snapshot.summary?.success ?? (counts.failed === 0);
+
   useEffect(() => {
-    if (snapshot.summary) return undefined;
+    if (done) return undefined;
     const timer = setInterval(() => {
       setFrame((f) => f + 1);
       setElapsed(Date.now() - start.current);
     }, 80);
     return () => clearInterval(timer);
-  }, [snapshot.summary]);
+  }, [done]);
 
   // Only rows with diagnostics are navigable — there's nothing to do on the rest.
   const flat = useMemo(() => flatten(snapshot.root, []).filter(nodeHasDiagnostics), [snapshot]);
@@ -62,7 +72,7 @@ export function App({ store }: { store: TreeStore }) {
         <TreeNode key={file.key} node={file} depth={0} frame={frame} selectedKey={selectedKey} overrides={overrides} />
       ))}
       <Box marginTop={1}>
-        <Header counts={snapshot.counts} summary={snapshot.summary} elapsed={elapsed} frame={frame} />
+        <Header counts={counts} done={done} success={success} duration={duration} frame={frame} />
       </Box>
       <Text dimColor>↑/↓ move · space toggle diagnostics · q or Ctrl+C to close</Text>
     </Box>
