@@ -10,7 +10,9 @@ node --test --test-reporter=@reporters/web --test-reporter-destination=report.ht
 ```
 
 It streams like every other reporter — it yields to whatever
-`--test-reporter-destination` points at.
+`--test-reporter-destination` points at. On a dev machine it opens the report in
+your browser as the run streams (the page auto-refreshes while it's being
+written); it never opens in CI. Control this with `REPORTERS_WEB_OPEN=1|0`.
 
 ## Modes
 
@@ -35,8 +37,7 @@ REPORTERS_WEB_MODE=ndjson node --test \
 `embedded` is the default because it needs no hosting; `ndjson` is opt-in for the
 live hosted viewer. (The mode isn't inferred from TTY/CI: the reporter writes to
 a destination, not the terminal, so those signals don't say which format you
-want.) On completion the reporter prints a hint to stderr with the report path /
-viewer URL.
+want.) The reporter also prints a hint to stderr with the report path / viewer URL.
 
 Built on the shared `@reporters/tree-core` model (also used by
 [`@reporters/live`](https://www.npmjs.com/package/@reporters/live)).

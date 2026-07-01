@@ -10,7 +10,8 @@ const reporter = join(here, '..', 'dist', 'index.js');
 const example = join(here, '..', '..', '..', 'tests', 'example.js');
 
 function runToFile(mode: string, out: string) {
-  const env = { ...process.env, REPORTERS_WEB_MODE: mode };
+  // REPORTERS_WEB_OPEN=0 so the spawned reporter doesn't launch a browser.
+  const env = { ...process.env, REPORTERS_WEB_MODE: mode, REPORTERS_WEB_OPEN: '0' };
   delete env.NODE_TEST_CONTEXT;
   spawnSync(
     process.execPath,
