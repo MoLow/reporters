@@ -24,6 +24,7 @@
     "packages/slow": {},
     "packages/mocha": {},
     "packages/live": {},
-    "packages/web": {}
+    "packages/web": {},
+    "packages/mux": {}
   }
 }
