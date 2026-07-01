@@ -8,11 +8,9 @@ import {
   buildRows, collectContainerKeys, computeMatches, displayName, isContainer, reasonOf, realError, type FlatRow,
 } from './rowModel.ts';
 
-// node:test captures colored output verbatim; strip ANSI SGR sequences so the
-// raw escape codes never leak into the report as visible garbage.
-// eslint-disable-next-line no-control-regex
-const ANSI_SGR = /\u001b\[[0-9;]*m/g;
-const stripAnsi = (text: string): string => text.replace(ANSI_SGR, '');
+// node:test captures colored output verbatim; render the ANSI SGR codes as real
+// colors (mapped to the theme's --ansi-* vars) rather than stripping them.
+import { AnsiHtml } from 'fancy-ansi/react';
 
 const GLYPH: Record<TestStatus, string> = {
   passed: '✓', failed: '✕', skipped: '⊘', todo: '◇', running: '◐', queued: '○',
@@ -65,12 +63,13 @@ interface DiagBlock {
   items?: { level: string; sev: TestStatus; text: string }[];
 }
 
-/** stdout + stderr merged into one line list, stream-tagged, ANSI stripped. */
+/** stdout + stderr merged into one line list, stream-tagged (ANSI kept — the
+ *  renderer colors it). */
 function outputLines(node: TestNode): OutLine[] {
   const lines: OutLine[] = [];
   const add = (chunks: string[], stream: 'out' | 'err'): void => {
     if (chunks.length === 0) return;
-    for (const line of stripAnsi(chunks.join('')).split('\n')) lines.push({ stream, text: line });
+    for (const line of chunks.join('').split('\n')) lines.push({ stream, text: line });
   };
   add(node.stdout, 'out');
   add(node.stderr, 'err');
@@ -79,15 +78,15 @@ function outputLines(node: TestNode): OutLine[] {
 }
 
 // At most three sections per test — Error, Output, Diagnostics (plus a reason
-// for skipped/todo). stdout+stderr collapse into one Output block; every text
-// is ANSI-stripped; synthetic container rollups never render an Error.
+// for skipped/todo). stdout+stderr collapse into one Output block; text keeps
+// its ANSI (colored at render); synthetic container rollups never render an Error.
 function diagBlocks(node: TestNode): DiagBlock[] {
   const blocks: DiagBlock[] = [];
   const error = realError(node);
   if (error) {
     blocks.push({
       key: 'error', title: 'Error', icon: '✕', sev: 'failed', kind: 'error',
-      message: stripAnsi(error.message), stack: stripAnsi(error.stack ?? error.message),
+      message: error.message, stack: error.stack ?? error.message,
     });
   }
   const lines = outputLines(node);
@@ -100,7 +99,7 @@ function diagBlocks(node: TestNode): DiagBlock[] {
       items: node.diagnostics.map((d) => ({
         level: d.level,
         sev: d.level === 'error' ? 'failed' : d.level === 'warn' ? 'running' : 'skipped',
-        text: stripAnsi(d.message),
+        text: d.message,
       })),
     });
   }
@@ -108,7 +107,7 @@ function diagBlocks(node: TestNode): DiagBlock[] {
   if (reason) {
     blocks.push({
       key: 'reason', title: node.status === 'skipped' ? 'why skipped' : 'why todo',
-      icon: '⊘', sev: 'skipped', kind: 'text', text: stripAnsi(reason),
+      icon: '⊘', sev: 'skipped', kind: 'text', text: reason,
     });
   }
   return blocks;
@@ -160,8 +159,8 @@ function Diagnostics({ node, indent }: { node: TestNode; indent: string }) {
             </div>
             {block.kind === 'error' ? (
               <>
-                <div className="diag-msg"><span data-stc="failed">{block.message}</span></div>
-                <pre className="stack">{block.stack}</pre>
+                <div className="diag-msg" data-stc="failed"><AnsiHtml text={block.message!} /></div>
+                <pre className="stack"><AnsiHtml text={block.stack!} /></pre>
               </>
             ) : null}
             {block.kind === 'output' ? (
@@ -169,20 +168,20 @@ function Diagnostics({ node, indent }: { node: TestNode; indent: string }) {
                 {block.lines!.map((line, i) => (
                   // eslint-disable-next-line react/no-array-index-key
                   <div className="out-line" data-err={line.stream === 'err' ? 'true' : undefined} key={i}>
-                    {line.text === '' ? ' ' : line.text}
+                    <AnsiHtml text={line.text === '' ? ' ' : line.text} />
                   </div>
                 ))}
               </div>
             ) : null}
             {block.kind === 'text' ? (
-              <pre className="text">{block.text}</pre>
+              <pre className="text"><AnsiHtml text={block.text!} /></pre>
             ) : null}
             {block.kind === 'list' ? (
               <div className="diag-list">
                 {block.items!.map((item, i) => (
                   <div className="diag-item" key={i}>
                     <span className="diag-level" data-soft={item.sev}>{item.level}</span>
-                    <span className="txt">{item.text}</span>
+                    <span className="txt"><AnsiHtml text={item.text} /></span>
                   </div>
                 ))}
               </div>
