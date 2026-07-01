@@ -64,4 +64,12 @@ export default [
       'max-classes-per-file': 'off',
     },
   },
+  {
+    // Routes import workspace reporters whose entry points are built dist output,
+    // absent at lint time (their source packages are ignored above).
+    files: ['mux.config.mjs'],
+    rules: {
+      'import/no-unresolved': 'off',
+    },
+  },
 ];

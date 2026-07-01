@@ -28,7 +28,7 @@
     "build": "tsup",
     "prepack": "tsup",
     "pretest": "tsup",
-    "test": "node --test-reporter=../gh/index.js --test"
+    "test": "node --test-reporter=@reporters/mux --test"
   },
   "dependencies": {
     "ink": "^6.0.0",

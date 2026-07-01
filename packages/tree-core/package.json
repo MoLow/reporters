@@ -24,7 +24,7 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsup",
-    "test": "node --test-reporter=../gh/index.js --test"
+    "test": "node --test-reporter=@reporters/mux --test"
   },
   "devDependencies": {
     "tsup": "^8.5.0",
