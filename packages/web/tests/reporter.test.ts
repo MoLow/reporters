@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
 import web from '../src/index.ts';
+import { internals } from '../src/open.ts';
 import type { TestEvent } from '@reporters/tree-core';
 
 const events: TestEvent[] = [
@@ -29,5 +30,34 @@ test('web emits no HTML and every line ends with a newline', async () => {
   for (const line of out) {
     assert.doesNotMatch(line, /<!doctype|<script/i);
     assert.match(line, /\n$/);
+  }
+});
+
+test('web with open:true serves a live view, opens the browser, and still emits NDJSON', async () => {
+  const origOpen = internals.openInBrowser;
+  let opened: string | undefined;
+  internals.openInBrowser = (u) => { opened = u; };
+  try {
+    const out: string[] = [];
+    // stdin isn't a TTY under `node --test`, so the server shuts down at the end.
+    for await (const chunk of web(events, { open: true })) out.push(chunk);
+    assert.strictEqual(out.length, 2); // NDJSON still yielded to the destination
+    assert.match(opened!, /^http:\/\/127\.0\.0\.1:\d+\/\?src=\/run\.ndjson$/);
+  } finally {
+    internals.openInBrowser = origOpen;
+  }
+});
+
+test('web with open:false stays a pure emitter and opens nothing', async () => {
+  const origOpen = internals.openInBrowser;
+  let opened = false;
+  internals.openInBrowser = () => { opened = true; };
+  try {
+    const out: string[] = [];
+    for await (const chunk of web(events, { open: false })) out.push(chunk);
+    assert.strictEqual(out.length, 2);
+    assert.strictEqual(opened, false);
+  } finally {
+    internals.openInBrowser = origOpen;
   }
 });
