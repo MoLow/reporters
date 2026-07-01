@@ -65,6 +65,18 @@ test('runRoutes flushes a sink that implements flush() after the reporter comple
   assert.deepStrictEqual(events2, ['w:F:test:pass', 'w:F:test:pass', 'flush', 'close']);
 });
 
+test('a sink start() failure still closes the sink (and rejects the run)', async () => {
+  let closed = false;
+  const sink: Sink = {
+    async start() { throw new Error('start boom'); },
+    write() {},
+    async close() { closed = true; },
+  };
+  const config: MuxConfig = { local: [{ reporter: tagReporter('S'), sink }] };
+  await assert.rejects(() => runRoutes(source(), config, { REPORTERS_OPEN: '0' }), /start boom/);
+  assert.strictEqual(closed, true);
+});
+
 test('runRoutes opens the sink viewer URL when the gate allows it', async (t) => {
   const { internals } = await import('../src/open.ts');
   const originalAnnounce = internals.announce;

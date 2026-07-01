@@ -42,20 +42,20 @@ export async function runRoutes(
   await Promise.all(routes.map(async (route, i) => {
     const reporter = await resolveReporter(route.reporter);
     const sink = resolveSink(route.sink);
-    if (sink.start) await sink.start();
-    const url = sink.viewerUrl?.();
-    if (url) {
-      internals.announce(url, env);
-      if (shouldOpen(route.open, env)) open(url);
-    }
     // `Readable#compose` drives both a generator-function reporter and a
     // Transform-stream reporter uniformly — the same primitive node:test uses
     // internally — handling backpressure and error propagation for us.
     const stage = typeof reporter === 'function'
       ? (src: AsyncIterable<TestEvent>) => reporter(src, route.options)
       : reporter;
-    const output = Readable.from(streams[i]).compose(stage) as unknown as AsyncIterable<string | Buffer>;
     try {
+      if (sink.start) await sink.start();
+      const url = sink.viewerUrl?.();
+      if (url) {
+        internals.announce(url, env);
+        if (shouldOpen(route.open, env)) open(url);
+      }
+      const output = Readable.from(streams[i]).compose(stage) as unknown as AsyncIterable<string | Buffer>;
       for await (const chunk of output) await sink.write(chunk);
       if (sink.flush) await sink.flush();
     } finally {
