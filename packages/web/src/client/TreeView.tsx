@@ -27,6 +27,22 @@ function sumDuration(node: TestNode): number {
   return node.children.reduce((total, child) => total + sumDuration(child), 0);
 }
 
+/**
+ * Like `sumDuration`, but a still-running leaf counts the time elapsed since the
+ * client first saw it running (`since`), so its counter ticks live between polls
+ * instead of sitting at 0 until the run settles.
+ */
+function liveDuration(node: TestNode, now: number, since: Map<string, number>): number {
+  if (!isContainer(node)) {
+    if (node.status === 'running') {
+      if (!since.has(node.key)) since.set(node.key, now); // first sight: start the clock
+      return Math.max(0, now - since.get(node.key)!);
+    }
+    return node.durationMs ?? 0;
+  }
+  return node.children.reduce((total, child) => total + liveDuration(child, now, since), 0);
+}
+
 /** Severity of a test's diagnostics, for the row badge tint. */
 function diagSeverity(node: TestNode): TestStatus {
   if (realError(node) || node.stderr.length > 0) return 'failed';
@@ -200,9 +216,14 @@ interface RowViewProps {
   toggle: (key: string, current: boolean) => void;
   /** Stagger index for the enter animation, or null when the row shouldn't animate in. */
   enter: number | null;
+  /** Shared clock (performance.now) + per-node running-start map, for live duration ticking. */
+  now: number;
+  since: Map<string, number>;
 }
 
-function RowView({ row, toggle, enter }: RowViewProps) {
+function RowView({
+  row, toggle, enter, now, since,
+}: RowViewProps) {
   const {
     node, depth, status, container, expanded, hasDiag, diagOpen,
   } = row;
@@ -287,7 +308,7 @@ function RowView({ row, toggle, enter }: RowViewProps) {
             ))}
           </span>
         ) : null}
-        <span className="dur">{formatDuration(sumDuration(node)) || '—'}</span>
+        <span className="dur">{formatDuration(liveDuration(node, now, since)) || '—'}</span>
       </div>
       {hasDiag ? (
         <div className={`collapsible${diagOpen ? ' open' : ''}`}>
@@ -349,6 +370,11 @@ export function TreeView({
   // Rows already painted at least once — so we only play the enter animation for
   // rows that newly arrive during a live run, never on every re-render.
   const seenRef = useRef<Set<string>>(new Set());
+  // Client clock (performance.now) at which each node was first seen running, so
+  // running durations tick live between polls.
+  const sinceRef = useRef<Map<string, number>>(new Map());
+  // A steadily-incrementing tick that drives live duration re-renders.
+  const [, setTick] = useState(0);
 
   const files = snapshot.root.children;
   const { counts } = snapshot;
@@ -363,20 +389,32 @@ export function TreeView({
   const toggle = (key: string, current: boolean) => {
     setOverrides((prev) => new Map(prev).set(key, !current));
   };
-  const collapseAll = () => {
+  const [allCollapsed, setAllCollapsed] = useState(false);
+  const toggleAll = () => {
     const keys: string[] = [];
     collectContainerKeys(files, keys);
+    const expand = allCollapsed; // currently collapsed -> expand; else collapse
     setOverrides((prev) => {
       const next = new Map(prev);
-      for (const key of keys) next.set(key, false);
+      for (const key of keys) next.set(key, expand);
       return next;
     });
+    setAllCollapsed(!allCollapsed);
   };
 
   const inProgress = !snapshot.summary && (streaming || counts.running > 0 || counts.queued > 0);
-  // Sum of descendant test durations, consistent with the per-file/suite rows
-  // (which also sum). Avoids the header showing wall-clock while rows show sums.
-  const duration = sumDuration(snapshot.root);
+  // Tick a few times a second while anything is running so running durations
+  // advance live instead of freezing between polls.
+  useEffect(() => {
+    if (!inProgress) return undefined;
+    const id = setInterval(() => setTick((n) => (n + 1) % 1e6), 250);
+    return () => clearInterval(id);
+  }, [inProgress]);
+  const now = performance.now();
+  const since = sinceRef.current;
+  // Sum of descendant durations (running leaves count live elapsed), consistent
+  // with the per-file/suite rows. Header ticks with the run.
+  const duration = liveDuration(snapshot.root, now, since);
 
   // Enter-animation bookkeeping: play only for rows first seen during a live run,
   // staggered within each file so a file "unfurls" rather than popping as a slab.
@@ -447,7 +485,14 @@ export function TreeView({
             >
               <ThemeIcon theme={theme} />
             </button>
-            <button type="button" className="btn" onClick={collapseAll} title="Collapse all">Collapse</button>
+            <button
+              type="button"
+              className="btn"
+              onClick={toggleAll}
+              title={allCollapsed ? 'Expand all' : 'Collapse all'}
+            >
+              {allCollapsed ? 'Expand' : 'Collapse'}
+            </button>
           </div>
         </div>
         <div className="hdr-bar-row">
@@ -472,6 +517,8 @@ export function TreeView({
               row={row}
               toggle={toggle}
               enter={enterMap.has(row.node.key) ? enterMap.get(row.node.key)! : null}
+              now={now}
+              since={since}
             />
           ))
         ) : q ? (
