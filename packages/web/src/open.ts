@@ -23,7 +23,7 @@ export function isCI(env: NodeJS.ProcessEnv = process.env): boolean {
 
 /**
  * Whether to open a live browser view. An explicit `open` option wins; then the
- * `REPORTERS_WEB_OPEN=1|0` env override; otherwise the default is to open on an
+ * `REPORTERS_OPEN=1|0` env override; otherwise the default is to open on an
  * interactive terminal (a TTY) and not in CI.
  */
 export function shouldOpen(
@@ -32,7 +32,7 @@ export function shouldOpen(
   isTTY: boolean = Boolean(process.stdout.isTTY),
 ): boolean {
   if (open !== undefined) return open;
-  const flag = env.REPORTERS_WEB_OPEN;
+  const flag = env.REPORTERS_OPEN;
   if (flag === '1' || flag === 'true') return true;
   if (flag === '0' || flag === 'false') return false;
   return isTTY && !isCI(env);

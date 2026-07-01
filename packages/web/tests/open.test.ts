@@ -23,8 +23,8 @@ test('shouldOpen: explicit option wins, then env, then TTY (off in CI)', () => {
   assert.strictEqual(shouldOpen(true, { CI: 'true' }, false), true);
   assert.strictEqual(shouldOpen(false, {}, true), false);
   // env override when no option
-  assert.strictEqual(shouldOpen(undefined, { REPORTERS_WEB_OPEN: '1' }, false), true);
-  assert.strictEqual(shouldOpen(undefined, { REPORTERS_WEB_OPEN: '0' }, true), false);
+  assert.strictEqual(shouldOpen(undefined, { REPORTERS_OPEN: '1' }, false), true);
+  assert.strictEqual(shouldOpen(undefined, { REPORTERS_OPEN: '0' }, true), false);
   // default: on for a TTY, off without one and off in CI
   assert.strictEqual(shouldOpen(undefined, {}, true), true);
   assert.strictEqual(shouldOpen(undefined, {}, false), false);
