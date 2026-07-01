@@ -777,7 +777,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@reporters/sink@workspace:packages/sink":
+"@reporters/sink@workspace:^, @reporters/sink@workspace:packages/sink":
   version: 0.0.0-use.local
   resolution: "@reporters/sink@workspace:packages/sink"
   dependencies:
@@ -3985,6 +3985,7 @@ __metadata:
     "@reporters/gh": "workspace:^"
     "@reporters/live": "workspace:^"
     "@reporters/mux": "workspace:^"
+    "@reporters/sink": "workspace:^"
     "@reporters/web": "workspace:^"
     "@types/node": "npm:^22.10.0"
     "@types/react": "npm:^19.0.0"

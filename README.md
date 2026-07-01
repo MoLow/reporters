@@ -17,6 +17,7 @@ Available reporters:
 
 - [bail](https://www.npmjs.com/package/@reporters/bail) - bail on first failure
 - [mux](https://www.npmjs.com/package/@reporters/mux) - route/combine reporters per environment (e.g. `live` locally, `gh` on CI) and send each to its own sink
+- [sink](https://www.npmjs.com/package/@reporters/sink) - delivery sinks for `mux`: upload a run's NDJSON to a GitHub gist or S3 for the hosted viewer
 - [gh](https://www.npmjs.com/package/@reporters/gh) - all-in-one GitHub Actions reporter (readable log + annotations + summary in one)
 - [github](https://www.npmjs.com/package/@reporters/github) - GitHub Actions annotations + job summary only (pair with another reporter for the log)
 - [jUnit](https://www.npmjs.com/package/@reporters/junit) - report to jUnit 

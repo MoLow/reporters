@@ -25,6 +25,7 @@
     "packages/mocha": {},
     "packages/live": {},
     "packages/web": {},
-    "packages/mux": {}
+    "packages/mux": {},
+    "packages/sink": {}
   }
 }
