@@ -115,9 +115,7 @@ test('concurrent factory subtests at one source location attribute completes cor
   assert.strictEqual(matches.filter(({ node }) => node.status === 'passed').length, 3);
 });
 
-test('a subtest defined in a helper file attaches under its parent from the entry file', {
-  todo: 'known failure: the store resolves parentId inside the helper file group, creating a phantom parent',
-}, () => {
+test('a subtest defined in a helper file attaches under its parent from the entry file', () => {
   const { root } = build(captureEvents(['fixtures/entry-with-helper-subtest.mjs']));
 
   // The subtest's events report file=subtest-helper.mjs while its parent
@@ -130,9 +128,77 @@ test('a subtest defined in a helper file attaches under its parent from the entr
   );
 });
 
-test('cross-process testId collision: helper subtest attaches to the still-open parent', {
-  todo: 'known failure: the store resolves parentId inside the helper file group, creating a phantom parent',
-}, () => {
+test('helper subtest attaches under its parent when events lack parentId (v24-shaped)', () => {
+  // v24 emits testId but no parentId; the exact event order of a captured
+  // v24 run of entry-with-helper-subtest.mjs.
+  const ENTRY = '/x/entry.mjs';
+  const HELPER = '/x/helper.mjs';
+  const { root } = build([
+    { type: 'test:enqueue', data: { name: 'has subtests in another file', nesting: 0, file: ENTRY, testId: 1 } },
+    { type: 'test:dequeue', data: { name: 'has subtests in another file', nesting: 0, file: ENTRY, testId: 1 } },
+    { type: 'test:enqueue', data: { name: 'subtest', nesting: 1, file: HELPER, testId: 2 } },
+    { type: 'test:dequeue', data: { name: 'subtest', nesting: 1, file: HELPER, testId: 2 } },
+    { type: 'test:complete', data: { name: 'subtest', nesting: 1, file: HELPER, testId: 2, details: { passed: false, error: new Error('boom') } } },
+    { type: 'test:start', data: { name: 'has subtests in another file', nesting: 0, file: ENTRY, testId: 1 } },
+    { type: 'test:start', data: { name: 'subtest', nesting: 1, file: HELPER, testId: 2 } },
+    { type: 'test:fail', data: { name: 'subtest', nesting: 1, file: HELPER, testId: 2, details: { error: new Error('boom') } } },
+    { type: 'test:complete', data: { name: 'has subtests in another file', nesting: 0, file: ENTRY, testId: 1, details: { passed: false } } },
+    // buffered fail for the parent lands after everything is terminal
+    { type: 'test:fail', data: { name: 'has subtests in another file', nesting: 0, file: ENTRY, testId: 1, details: { passed: false } } },
+  ]);
+
+  const { node, path } = findOne(root, 'subtest');
+  assert.strictEqual(node.status, 'failed');
+  assert.ok(
+    path.includes('has subtests in another file'),
+    `subtest should be a descendant of its parent test, got path: ${JSON.stringify(path)}`,
+  );
+});
+
+test('a late buffered event does not demote a subtest back to its group root', () => {
+  // The subtest's buffered test:fail arrives after its parent completed, when
+  // the still-open lookup can no longer find the parent.
+  const ENTRY = '/x/entry.mjs';
+  const HELPER = '/x/helper.mjs';
+  const { root } = build([
+    { type: 'test:start', data: { name: 'parent', nesting: 0, file: ENTRY, testId: 1 } },
+    { type: 'test:start', data: { name: 'subtest', nesting: 1, file: HELPER, testId: 2 } },
+    { type: 'test:complete', data: { name: 'subtest', nesting: 1, file: HELPER, testId: 2, details: { passed: false, error: new Error('boom') } } },
+    { type: 'test:complete', data: { name: 'parent', nesting: 0, file: ENTRY, testId: 1, details: { passed: false } } },
+    { type: 'test:fail', data: { name: 'subtest', nesting: 1, file: HELPER, testId: 2, details: { error: new Error('boom') } } },
+    { type: 'test:fail', data: { name: 'parent', nesting: 0, file: ENTRY, testId: 1, details: { passed: false } } },
+  ]);
+
+  const { path } = findOne(root, 'subtest');
+  assert.ok(
+    path.includes('parent'),
+    `subtest must stay under its parent, got path: ${JSON.stringify(path)}`,
+  );
+});
+
+test('helper subtest attaches under its parent when events lack testId (v22-shaped)', () => {
+  // v22 emits neither testId nor parentId; the tree is built from
+  // declaration-ordered start/pass/fail via the per-group stacks.
+  const ENTRY = '/x/entry.mjs';
+  const HELPER = '/x/helper.mjs';
+  const { root, counts } = build([
+    { type: 'test:start', data: { name: 'has subtests in another file', nesting: 0, file: ENTRY } },
+    { type: 'test:start', data: { name: 'subtest', nesting: 1, file: HELPER } },
+    { type: 'test:fail', data: { name: 'subtest', nesting: 1, file: HELPER, details: { error: new Error('boom') } } },
+    { type: 'test:fail', data: { name: 'has subtests in another file', nesting: 0, file: ENTRY, details: { passed: false } } },
+  ]);
+
+  const { node, path } = findOne(root, 'subtest');
+  assert.strictEqual(node.status, 'failed');
+  assert.ok(
+    path.includes('has subtests in another file'),
+    `subtest should be a descendant of its parent test, got path: ${JSON.stringify(path)}`,
+  );
+  // the parent aggregates its child rather than counting itself
+  assert.strictEqual(counts.failed, 1);
+});
+
+test('cross-process testId collision: helper subtest attaches to the still-open parent', () => {
   // Merged multi-process stream (can't be reproduced in-process): isolation
   // gives each file its own testId counter, so file 3's `it` and file 4's `it`
   // are both testId 2. `consistency check` is defined in a helper, so its
