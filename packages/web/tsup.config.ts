@@ -16,7 +16,7 @@ export default defineConfig([
   // inlined). `embedded` is inlined into the HTML by the reporter; `viewer` is
   // assembled into a standalone GitHub Pages page below.
   {
-    entry: { embedded: 'src/client/embedded.tsx', viewer: 'src/client/viewer.tsx' },
+    entry: { viewer: 'src/client/viewer.tsx' },
     format: ['iife'],
     platform: 'browser',
     target: 'es2020',
