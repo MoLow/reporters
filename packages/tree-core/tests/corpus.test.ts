@@ -135,6 +135,20 @@ test('concurrent sibling suites keep their own children (nesting-stack correctne
   assert.strictEqual(root.counts.failed, 0);
 });
 
+test('top-level stdout/stderr attach to the same file node as the tests', () => {
+  // Node reports test:stdout/test:stderr with the CLI-relative file path, while
+  // the test lifecycle events report the resolved absolute path. Both must land
+  // on a single file node — not split into a stdout-only node and a tests node.
+  const events = captureEvents(['fixtures/stdout-toplevel.mjs']);
+  const { root } = build(events);
+
+  const fileNodes = root.children.filter((n) => n.type === 'file');
+  assert.strictEqual(fileNodes.length, 1, 'stdout and tests must share one file node');
+  assert.ok(fileNodes[0].stdout.some((s) => s.includes('top-level stdout')));
+  assert.ok(fileNodes[0].stderr.some((s) => s.includes('top-level stderr')));
+  assert.strictEqual(leaf(fileNodes[0], 'a passing test')?.status, 'passed');
+});
+
 test('replaying the captured real stream into a fresh store is deterministic', () => {
   // This is how the web viewer rebuilds on a full refetch: a fresh store,
   // replayed from the start, must always yield the identical tree.
