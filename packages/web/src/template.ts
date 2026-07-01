@@ -7,6 +7,9 @@ const DARK = `
   --st-passed:#34d27b; --st-failed:#fb5a6a; --st-skipped:#8a93a1; --st-todo:#7c9cff; --st-running:#ffb13d; --st-queued:#5d6573;
   --soft-passed:rgba(52,210,123,.15); --soft-failed:rgba(251,90,106,.16); --soft-skipped:rgba(138,147,161,.16); --soft-todo:rgba(124,156,255,.16); --soft-running:rgba(255,177,61,.17); --soft-queued:rgba(93,101,115,.18);
   --fail-tint:rgba(251,90,106,.07);
+  --ansi-black:#5d6573; --ansi-red:#fb5a6a; --ansi-green:#34d27b; --ansi-yellow:#ffb13d; --ansi-blue:#7c9cff; --ansi-magenta:#c792ea; --ansi-cyan:#56d4dd; --ansi-white:#c4c9d4;
+  --ansi-bright-black:#8a93a1; --ansi-bright-red:#ff8087; --ansi-bright-green:#66e0a3; --ansi-bright-yellow:#ffca6a; --ansi-bright-blue:#a3b8ff; --ansi-bright-magenta:#e0aaff; --ansi-bright-cyan:#8be9fd; --ansi-bright-white:#ffffff;
+  --ansi-bold-font-weight:700; --ansi-dim-opacity:.6;
 `;
 
 const LIGHT = `
@@ -18,6 +21,9 @@ const LIGHT = `
   --st-passed:#16a34a; --st-failed:#e23744; --st-skipped:#697381; --st-todo:#3f63d6; --st-running:#bf7400; --st-queued:#97a0ad;
   --soft-passed:rgba(22,163,74,.12); --soft-failed:rgba(226,55,68,.10); --soft-skipped:rgba(105,115,129,.12); --soft-todo:rgba(63,99,214,.11); --soft-running:rgba(191,116,0,.13); --soft-queued:rgba(151,160,173,.14);
   --fail-tint:rgba(226,55,68,.05);
+  --ansi-black:#161b22; --ansi-red:#e23744; --ansi-green:#16a34a; --ansi-yellow:#bf7400; --ansi-blue:#3f63d6; --ansi-magenta:#9333ea; --ansi-cyan:#0e7490; --ansi-white:#5a636f;
+  --ansi-bright-black:#697381; --ansi-bright-red:#dc2626; --ansi-bright-green:#15803d; --ansi-bright-yellow:#a16207; --ansi-bright-blue:#2947c0; --ansi-bright-magenta:#7e22ce; --ansi-bright-cyan:#0891b2; --ansi-bright-white:#161b22;
+  --ansi-bold-font-weight:700; --ansi-dim-opacity:.6;
 `;
 
 export const STYLES = `
