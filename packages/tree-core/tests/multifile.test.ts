@@ -78,6 +78,47 @@ test('out-of-order: pass arriving before start still resolves correctly', () => 
   assert.deepStrictEqual(shape(reordered.root), shape(ordered.root));
 });
 
+test('eager cross-file dequeue events do not create phantom queued nodes', () => {
+  // Real Node emits enqueue/dequeue eagerly and out of block order: a file's
+  // children can be dequeued before that file's start/pass block runs, and
+  // testIds collide across files. Building nodes from those events mis-grouped
+  // tests and left orphan "queued" nodes. The tree must come only from the
+  // contiguous start/pass/fail blocks (delimited by per-file summaries).
+  const { root, counts } = run([
+    // file-level wrappers mark isolation
+    { type: 'test:dequeue', data: { name: 'a.test.js', nesting: 0, file: '/x/a.test.js', testId: 1 } },
+    { type: 'test:dequeue', data: { name: 'b.test.js', nesting: 0, file: '/x/b.test.js', testId: 2 } },
+    // eager dequeues for file B's children, BEFORE any block runs (colliding ids)
+    { type: 'test:dequeue', data: { name: 'b1', nesting: 0, file: '/x/b.test.js', testId: 1 } },
+    { type: 'test:dequeue', data: { name: 'b2', nesting: 0, file: '/x/b.test.js', testId: 2 } },
+    { type: 'test:dequeue', data: { name: 'b3', nesting: 0, file: '/x/b.test.js', testId: 3 } },
+    // file A block (2 tests) then its summary
+    { type: 'test:start', data: { name: 'a1', nesting: 0, file: '/x/a.test.js', testId: 1 } },
+    { type: 'test:pass', data: { name: 'a1', nesting: 0, file: '/x/a.test.js', testId: 1 } },
+    { type: 'test:start', data: { name: 'a2', nesting: 0, file: '/x/a.test.js', testId: 2 } },
+    { type: 'test:pass', data: { name: 'a2', nesting: 0, file: '/x/a.test.js', testId: 2 } },
+    { type: 'test:summary', data: { file: '/x/a.test.js', success: true, duration_ms: 1, counts: {} } },
+    // file B block (3 tests) then its summary
+    { type: 'test:start', data: { name: 'b1', nesting: 0, file: '/x/b.test.js', testId: 1 } },
+    { type: 'test:pass', data: { name: 'b1', nesting: 0, file: '/x/b.test.js', testId: 1 } },
+    { type: 'test:start', data: { name: 'b2', nesting: 0, file: '/x/b.test.js', testId: 2 } },
+    { type: 'test:pass', data: { name: 'b2', nesting: 0, file: '/x/b.test.js', testId: 2 } },
+    { type: 'test:start', data: { name: 'b3', nesting: 0, file: '/x/b.test.js', testId: 3 } },
+    { type: 'test:pass', data: { name: 'b3', nesting: 0, file: '/x/b.test.js', testId: 3 } },
+    { type: 'test:summary', data: { file: '/x/b.test.js', success: true, duration_ms: 1, counts: {} } },
+  ]);
+
+  assert.strictEqual(root.children.length, 2);
+  const [a, b] = root.children;
+  assert.deepStrictEqual(a.children.map((c) => c.name), ['a1', 'a2']);
+  assert.deepStrictEqual(b.children.map((c) => c.name), ['b1', 'b2', 'b3']);
+  const statuses = new Set<string>();
+  (function walk(n: TestNode) { statuses.add(n.status); n.children.forEach(walk); }(root));
+  assert.ok(!statuses.has('queued'), 'no phantom queued nodes');
+  assert.strictEqual(counts.queued, 0);
+  assert.strictEqual(counts.passed, 5);
+});
+
 test('isolation=none: globally-unique testIds still group by file', () => {
   // Single process: testIds are unique across files; file is still reported per test.
   const { root } = run([
