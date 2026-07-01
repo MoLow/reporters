@@ -2,9 +2,9 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { defineConfig } from 'tsup';
 
 export default defineConfig([
-  // The node reporter. Bundles tree-core; reads the embedded client at runtime.
+  // The node reporter and HTTP sink. Bundles tree-core; reads the viewer client at runtime.
   {
-    entry: { index: 'src/index.ts' },
+    entry: { index: 'src/index.ts', sink: 'src/sink.ts' },
     format: ['esm'],
     platform: 'node',
     target: 'node20',
@@ -13,10 +13,9 @@ export default defineConfig([
     noExternal: [/@reporters\/tree-core/],
   },
   // Browser clients: self-contained IIFE bundles (React + react-dom + tree-core
-  // inlined). `embedded` is inlined into the HTML by the reporter; `viewer` is
-  // assembled into a standalone GitHub Pages page below.
+  // inlined). `viewer` is assembled into a standalone page below.
   {
-    entry: { embedded: 'src/client/embedded.tsx', viewer: 'src/client/viewer.tsx' },
+    entry: { viewer: 'src/client/viewer.tsx' },
     format: ['iife'],
     platform: 'browser',
     target: 'es2020',

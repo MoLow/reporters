@@ -492,6 +492,16 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@reporters/mux@workspace:^, @reporters/mux@workspace:packages/mux":
+  version: 0.0.0-use.local
+  resolution: "@reporters/mux@workspace:packages/mux"
+  dependencies:
+    "@reporters/tree-core": "workspace:^"
+    tsup: "npm:^8.5.0"
+    typescript: "npm:^5.7.0"
+  languageName: unknown
+  linkType: soft
+
 "@reporters/silent@workspace:packages/silent":
   version: 0.0.0-use.local
   resolution: "@reporters/silent@workspace:packages/silent"
@@ -530,6 +540,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@reporters/web@workspace:packages/web"
   dependencies:
+    "@reporters/mux": "workspace:^"
     "@reporters/tree-core": "workspace:^"
     react: "npm:^19.0.0"
     react-dom: "npm:^19.0.0"
