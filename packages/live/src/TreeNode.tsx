@@ -1,8 +1,7 @@
 import React from 'react';
 import { Text, Box } from 'ink';
 import {
-  defaultExpanded, formatDuration, INK_COLOR, SPINNER_FRAMES, SYMBOLS,
-  type Counts, type TestNode,
+  formatDuration, INK_COLOR, SPINNER_FRAMES, SYMBOLS, type TestNode,
 } from '@reporters/tree-core';
 
 function basename(file: string | undefined): string {
@@ -11,49 +10,66 @@ function basename(file: string | undefined): string {
   return parts[parts.length - 1] || file;
 }
 
-function collapsedSummary(counts: Counts): string {
-  const bits: string[] = [`${counts.passed} ${SYMBOLS.passed}`];
-  if (counts.failed > 0) bits.push(`${counts.failed} ${SYMBOLS.failed}`);
-  if (counts.skipped > 0) bits.push(`${counts.skipped} ${SYMBOLS.skipped}`);
-  return `(${bits.join(' ')})`;
+export function nodeHasDiagnostics(node: TestNode): boolean {
+  return Boolean(node.error) || node.diagnostics.length > 0
+    || node.stdout.length > 0 || node.stderr.length > 0;
+}
+
+export function diagnosticsOpen(node: TestNode, overrides: Map<string, boolean>): boolean {
+  if (!nodeHasDiagnostics(node)) return false;
+  return overrides.has(node.key) ? overrides.get(node.key)! : node.status === 'failed';
+}
+
+function Diagnostics({ node, indent }: { node: TestNode; indent: string }) {
+  const lines: React.ReactNode[] = [];
+  const push = (label: string, text: string, color?: string) => {
+    lines.push(
+      // eslint-disable-next-line react/no-array-index-key
+      <Text key={`${label}-l`} dimColor>{indent}{label}</Text>,
+    );
+    text.split('\n').forEach((line, i) => lines.push(
+      // eslint-disable-next-line react/no-array-index-key
+      <Text key={`${label}-${i}`} color={color}>{indent}{line}</Text>,
+    ));
+  };
+  if (node.error) push('error', node.error.stack || node.error.message, 'red');
+  if (node.diagnostics.length) push('diagnostics', node.diagnostics.map((d) => d.message).join('\n'));
+  if (node.stdout.length) push('stdout', node.stdout.join('').replace(/\n$/, ''));
+  if (node.stderr.length) push('stderr', node.stderr.join('').replace(/\n$/, ''));
+  return <Box flexDirection="column">{lines}</Box>;
 }
 
 interface TreeNodeProps {
   node: TestNode;
   depth: number;
   frame: number;
+  selectedKey: string | undefined;
+  overrides: Map<string, boolean>;
 }
 
-export function TreeNode({ node, depth, frame }: TreeNodeProps) {
+export function TreeNode({
+  node, depth, frame, selectedKey, overrides,
+}: TreeNodeProps) {
   const running = node.status === 'running';
   const symbol = running ? SPINNER_FRAMES[frame % SPINNER_FRAMES.length] : SYMBOLS[node.status];
   const label = node.type === 'file' ? basename(node.file) : node.name;
-  const isContainer = node.children.length > 0;
-  const expanded = defaultExpanded(node);
-  const showError = node.children.length === 0 && node.status === 'failed' && node.error;
+  const selected = node.key === selectedKey;
+  const hasDiag = nodeHasDiagnostics(node);
+  const showDiag = diagnosticsOpen(node, overrides);
 
   return (
     <Box flexDirection="column">
       <Box>
         <Text>{'  '.repeat(depth)}</Text>
         <Text color={INK_COLOR[node.status]}>{symbol} </Text>
-        <Text bold={node.type === 'file'}>{label}</Text>
+        <Text bold={node.type === 'file'} inverse={selected}>{label}</Text>
         {node.durationMs != null ? <Text dimColor>{' '}{formatDuration(node.durationMs)}</Text> : null}
-        {isContainer && !expanded ? <Text dimColor>{' '}{collapsedSummary(node.counts)}</Text> : null}
+        {hasDiag ? <Text dimColor>{' '}{showDiag ? '▾' : '▸'}</Text> : null}
       </Box>
-
-      {showError ? (
-        <Box flexDirection="column">
-          {node.error!.message.split('\n').map((line, i) => (
-            // eslint-disable-next-line react/no-array-index-key
-            <Text key={i} color="red" dimColor>{'  '.repeat(depth + 2)}{line}</Text>
-          ))}
-        </Box>
-      ) : null}
-
-      {isContainer && expanded
-        ? node.children.map((child) => <TreeNode key={child.key} node={child} depth={depth + 1} frame={frame} />)
-        : null}
+      {showDiag ? <Diagnostics node={node} indent={'  '.repeat(depth + 2)} /> : null}
+      {node.children.map((child) => (
+        <TreeNode key={child.key} node={child} depth={depth + 1} frame={frame} selectedKey={selectedKey} overrides={overrides} />
+      ))}
     </Box>
   );
 }

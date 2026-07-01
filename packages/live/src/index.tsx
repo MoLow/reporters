@@ -7,12 +7,13 @@ import { renderTreeText } from './text.ts';
 /**
  * A live, React-powered tree reporter for `node:test`.
  *
- * In a TTY it renders an Ink tree that updates in place as tests run. Outside a
- * TTY (CI, pipes) it falls back to a plain-text tree printed at the end, so logs
- * stay clean. Set REPORTERS_LIVE_PLAIN=1 to force the plain-text path.
+ * In a TTY it renders an Ink tree that updates in place as tests run, then stays
+ * open so you can browse results — arrow keys move, space toggles a test's
+ * diagnostics, q or Ctrl+C closes. Outside a TTY (CI, pipes) it prints a
+ * plain-text tree at the end. Set REPORTERS_LIVE_PLAIN=1 to force plain text.
  *
- * Note: under the default process isolation, Node buffers each file's events
- * until that file's turn to report, so files appear as they complete. For true
+ * Note: under the default process isolation Node buffers each file's events
+ * until that file's turn to report, so files fill in as they complete. For true
  * real-time per-test streaming, run with `--test-isolation=none`.
  */
 export default async function* live(source: AsyncIterable<TestEvent>): AsyncGenerator<string> {
@@ -25,28 +26,14 @@ export default async function* live(source: AsyncIterable<TestEvent>): AsyncGene
     return;
   }
 
-  const app = render(<App store={store} />, {
-    stdout: process.stdout,
-    patchConsole: false,
-    // Don't let Ink hold stdin open for Ctrl+C handling — it would keep the
-    // process alive after the run finishes.
-    exitOnCtrlC: false,
-  });
-  try {
-    // Consume the whole stream — breaking early destroys Node's reporter
-    // pipeline (a compose Duplex) and raises ABORT_ERR. Under --test the source
-    // ends on its own when the run completes.
-    for await (const event of source) store.apply(toWireEvent(event));
-  } finally {
-    app.rerender(<App store={store} />);
-    app.unmount();
-    await app.waitUntilExit();
-    // Release stdin so the event loop can drain and the process can exit.
-    if (process.stdin.isTTY) {
-      try { process.stdin.setRawMode(false); } catch { /* not a raw-capable tty */ }
-    }
-    process.stdin.pause();
-    process.stdin.unref();
-  }
+  // We own the terminal. Ctrl+C / q exit the process from within <App/>.
+  render(<App store={store} />, { patchConsole: false, exitOnCtrlC: false });
+  // Consume the whole stream (breaking early would destroy Node's reporter
+  // pipeline and raise ABORT_ERR).
+  for await (const event of source) store.apply(toWireEvent(event));
+  // The run has finished. Keep the interactive view open for review — the user
+  // browses results and quits with q / Ctrl+C (handled in <App/> via
+  // process.exit). Block so the process doesn't exit and close the window.
+  // (In CI / non-TTY we took the plain-text path above and never get here.)
+  await new Promise<never>(() => {});
 }
-
