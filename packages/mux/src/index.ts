@@ -1,23 +1,29 @@
+import { Readable } from 'node:stream';
+import type { Duplex } from 'node:stream';
 import type { TestEvent } from '@reporters/tree-core';
 import type { MuxConfig, Reporter, Route } from './types.ts';
 import { loadConfig } from './config.ts';
 import { resolveProfile } from './profile.ts';
 import { broadcast } from './broadcast.ts';
 import { resolveSink } from './sink.ts';
+import type { Sink } from './sink.ts';
 import { shouldOpen, internals } from './open.ts';
 
 export type { Sink, SinkSpec } from './sink.ts';
 export type { Reporter, Route, MuxConfig } from './types.ts';
 
-/** A reporter function, or a module specifier to `import()`. */
-export async function resolveReporter(reporter: Reporter | string): Promise<Reporter> {
-  if (typeof reporter === 'function') return reporter;
+function isStreamReporter(value: unknown): value is Duplex {
+  return typeof value === 'object' && value !== null
+    && typeof (value as { pipe?: unknown }).pipe === 'function';
+}
+
+/** A reporter function, a stream instance, or a module specifier to `import()`. */
+export async function resolveReporter(reporter: Reporter | Duplex | string): Promise<Reporter | Duplex> {
+  if (typeof reporter === 'function' || isStreamReporter(reporter)) return reporter;
   const mod = await import(reporter);
-  const fn = (mod.default ?? mod) as unknown;
-  if (typeof fn !== 'function') {
-    throw new Error(`mux: reporter "${reporter}" has no default export function`);
-  }
-  return fn as Reporter;
+  const resolved = mod.default as unknown;
+  if (typeof resolved === 'function' || isStreamReporter(resolved)) return resolved as Reporter | Duplex;
+  throw new Error(`mux: reporter "${reporter}" must default-export a generator function or a stream`);
 }
 
 /**
@@ -41,8 +47,15 @@ export async function runRoutes(
       const url = sink.viewerUrl();
       if (url) open(url);
     }
+    // `Readable#compose` drives both a generator-function reporter and a
+    // Transform-stream reporter uniformly — the same primitive node:test uses
+    // internally — handling backpressure and error propagation for us.
+    const stage = typeof reporter === 'function'
+      ? (src: AsyncIterable<TestEvent>) => reporter(src, route.options)
+      : reporter;
+    const output = Readable.from(streams[i]).compose(stage) as unknown as AsyncIterable<string | Buffer>;
     try {
-      for await (const chunk of reporter(streams[i], route.options)) await sink.write(chunk);
+      for await (const chunk of output) await sink.write(chunk);
       if (sink.flush) await sink.flush();
     } finally {
       await sink.close();

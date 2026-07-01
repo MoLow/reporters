@@ -1,3 +1,4 @@
+import type { Duplex } from 'node:stream';
 import type { TestEvent } from '@reporters/tree-core';
 import type { Sink, SinkSpec } from './sink.ts';
 
@@ -10,8 +11,9 @@ export type Reporter = (
 ) => AsyncGenerator<string>;
 
 export interface Route {
-  /** A reporter function, or a module specifier `mux` will `import()`. */
-  reporter: Reporter | string;
+  /** A reporter: a generator function, a Duplex/Transform stream instance, or a
+   *  module specifier `mux` will `import()` to either shape. */
+  reporter: Reporter | Duplex | string;
   /** Optional 2nd-arg passed to the reporter (only for output-format variants). */
   options?: unknown;
   /** Where the reporter's bytes go: 'stdout' | 'stderr' | a file path | a Sink. */
