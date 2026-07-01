@@ -137,6 +137,17 @@ test('with testId but no parentId, hierarchy falls back to the nesting stack', (
   assert.strictEqual(suite.children[0].name, 'child');
 });
 
+test('tests appear as running from dequeue, before start/pass arrive', () => {
+  // Concurrent tests are all dequeued eagerly (before their reportOrder turn),
+  // so the live tree must show them running immediately from dequeue alone.
+  const store = createTreeStore();
+  store.apply({ type: 'test:dequeue', data: { name: 'slow', nesting: 0, file: '/t.test.js', testId: 1, parentId: 0 } });
+  store.apply({ type: 'test:dequeue', data: { name: 'fast', nesting: 0, file: '/t.test.js', testId: 2, parentId: 0 } });
+  const file = store.getSnapshot().root.children[0];
+  assert.strictEqual(file.children.length, 2);
+  assert.deepStrictEqual(file.children.map((c) => [c.name, c.status]), [['slow', 'running'], ['fast', 'running']]);
+});
+
 test('subscribe is notified on apply and stops after unsubscribe', () => {
   const store = createTreeStore();
   let calls = 0;

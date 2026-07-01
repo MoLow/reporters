@@ -109,9 +109,9 @@ test('eager cross-file dequeue events do not create phantom queued nodes', () =>
   ]);
 
   assert.strictEqual(root.children.length, 2);
-  const [a, b] = root.children;
-  assert.deepStrictEqual(a.children.map((c) => c.name), ['a1', 'a2']);
-  assert.deepStrictEqual(b.children.map((c) => c.name), ['b1', 'b2', 'b3']);
+  const byFile = Object.fromEntries(root.children.map((f) => [f.file?.split('/').pop(), f]));
+  assert.deepStrictEqual(byFile['a.test.js'].children.map((c: TestNode) => c.name), ['a1', 'a2']);
+  assert.deepStrictEqual(byFile['b.test.js'].children.map((c: TestNode) => c.name), ['b1', 'b2', 'b3']);
   const statuses = new Set<string>();
   (function walk(n: TestNode) { statuses.add(n.status); n.children.forEach(walk); }(root));
   assert.ok(!statuses.has('queued'), 'no phantom queued nodes');

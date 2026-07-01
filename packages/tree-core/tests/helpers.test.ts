@@ -144,12 +144,12 @@ function node(partial: Partial<TestNode>): TestNode {
   };
 }
 
-test('defaultExpanded expands files, failures and running; collapses passed suites', () => {
+test('defaultExpanded keeps every container expanded and leaves collapsed', () => {
   const kids = [node({ type: 'test' })];
-  assert.strictEqual(defaultExpanded(node({ type: 'file' })), true);
-  assert.strictEqual(defaultExpanded(node({ type: 'suite', status: 'passed', children: kids, counts: { passed: 3, failed: 0, skipped: 0, todo: 0, running: 0, queued: 0, total: 3 } })), false);
-  assert.strictEqual(defaultExpanded(node({ type: 'suite', status: 'failed', children: kids, counts: { passed: 1, failed: 1, skipped: 0, todo: 0, running: 0, queued: 0, total: 2 } })), true);
-  assert.strictEqual(defaultExpanded(node({ type: 'suite', status: 'running', children: kids, counts: { passed: 0, failed: 0, skipped: 0, todo: 0, running: 1, queued: 0, total: 1 } })), true);
+  assert.strictEqual(defaultExpanded(node({ type: 'file', children: kids })), true);
+  // passed suites stay expanded too — the tree does not auto-collapse
+  assert.strictEqual(defaultExpanded(node({ type: 'suite', status: 'passed', children: kids })), true);
+  assert.strictEqual(defaultExpanded(node({ type: 'suite', status: 'failed', children: kids })), true);
   // a childless leaf has nothing to expand
   assert.strictEqual(defaultExpanded(node({ type: 'test', status: 'failed' })), false);
 });

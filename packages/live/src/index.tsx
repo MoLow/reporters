@@ -25,12 +25,31 @@ export default async function* live(source: AsyncIterable<TestEvent>): AsyncGene
     return;
   }
 
-  const app = render(<App store={store} />, { stdout: process.stdout, patchConsole: false });
+  const app = render(<App store={store} />, {
+    stdout: process.stdout,
+    patchConsole: false,
+    // Don't let Ink hold stdin open for Ctrl+C handling — it would keep the
+    // process alive after the run finishes.
+    exitOnCtrlC: false,
+  });
   try {
-    for await (const event of source) store.apply(toWireEvent(event));
+    for await (const event of source) {
+      store.apply(toWireEvent(event));
+      // The cumulative summary (no file) marks the end of the run. Stop here so
+      // we unmount even if the event source itself is never closed (e.g. when
+      // run without --test), which would otherwise keep the process alive.
+      if (event.type === 'test:summary' && event.data?.file == null) break;
+    }
   } finally {
     app.rerender(<App store={store} />);
     app.unmount();
     await app.waitUntilExit();
+    // Release stdin so the event loop can drain and the process can exit.
+    if (process.stdin.isTTY) {
+      try { process.stdin.setRawMode(false); } catch { /* not a raw-capable tty */ }
+    }
+    process.stdin.pause();
+    process.stdin.unref();
   }
 }
+
