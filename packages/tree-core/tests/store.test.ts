@@ -149,6 +149,36 @@ test('with testId but no parentId, hierarchy falls back to the nesting stack', (
   assert.strictEqual(suite.children[0].name, 'child');
 });
 
+test('test:complete finalizes tests in execution order, before the buffered pass', () => {
+  // test:complete is execution-ordered; a later-declared test that finishes
+  // first must show done while the earlier one is still running (the live-order
+  // guarantee that test:pass — declaration-ordered — cannot provide).
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:dequeue', data: { name: 'slow', nesting: 0, file: '/t.test.js', testId: 1, parentId: 0 } },
+    { type: 'test:dequeue', data: { name: 'fast', nesting: 0, file: '/t.test.js', testId: 2, parentId: 0 } },
+    { type: 'test:complete', data: { name: 'fast', nesting: 0, file: '/t.test.js', testId: 2, parentId: 0, details: { passed: true, duration_ms: 5 } } },
+  ]);
+  const [slow, fast] = store.getSnapshot().root.children[0].children;
+  assert.strictEqual(slow.status, 'running');
+  assert.strictEqual(fast.status, 'passed');
+  assert.strictEqual(fast.durationMs, 5);
+});
+
+test('test:complete carries failure and skip/todo status', () => {
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:complete', data: { name: 'boom', nesting: 0, file: '/t.test.js', testId: 1, parentId: 0, details: { passed: false, error: new Error('nope') } } },
+    { type: 'test:complete', data: { name: 'skipped', nesting: 0, file: '/t.test.js', testId: 2, parentId: 0, skip: true, details: { passed: true } } },
+    { type: 'test:complete', data: { name: 'todo', nesting: 0, file: '/t.test.js', testId: 3, parentId: 0, todo: true, details: { passed: true } } },
+  ]);
+  const [boom, skipped, todo] = store.getSnapshot().root.children[0].children;
+  assert.strictEqual(boom.status, 'failed');
+  assert.strictEqual(boom.error?.message, 'nope');
+  assert.strictEqual(skipped.status, 'skipped');
+  assert.strictEqual(todo.status, 'todo');
+});
+
 test('tests appear as running from dequeue, before start/pass arrive', () => {
   // Concurrent tests are all dequeued eagerly (before their reportOrder turn),
   // so the live tree must show them running immediately from dequeue alone.
