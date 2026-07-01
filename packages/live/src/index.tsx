@@ -33,13 +33,10 @@ export default async function* live(source: AsyncIterable<TestEvent>): AsyncGene
     exitOnCtrlC: false,
   });
   try {
-    for await (const event of source) {
-      store.apply(toWireEvent(event));
-      // The cumulative summary (no file) marks the end of the run. Stop here so
-      // we unmount even if the event source itself is never closed (e.g. when
-      // run without --test), which would otherwise keep the process alive.
-      if (event.type === 'test:summary' && event.data?.file == null) break;
-    }
+    // Consume the whole stream — breaking early destroys Node's reporter
+    // pipeline (a compose Duplex) and raises ABORT_ERR. Under --test the source
+    // ends on its own when the run completes.
+    for await (const event of source) store.apply(toWireEvent(event));
   } finally {
     app.rerender(<App store={store} />);
     app.unmount();
