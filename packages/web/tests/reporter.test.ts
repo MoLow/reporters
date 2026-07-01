@@ -76,3 +76,27 @@ test('ndjson mode logs a viewer hint to stderr', async () => {
 test('embedded mode logs a hint to stderr', async () => {
   assert.match(await collectStderr('embedded'), /report/i);
 });
+
+async function collectStderrWithArgv(mode: string, extraArgv: string[]): Promise<string> {
+  const originalArgv = process.argv;
+  process.argv = [...originalArgv, ...extraArgv];
+  try {
+    return await collectStderr(mode);
+  } finally {
+    process.argv = originalArgv;
+  }
+}
+
+test('embedded hint includes the destination file path (ignoring stdout destinations)', async () => {
+  const err = await collectStderrWithArgv('embedded', [
+    '--test-reporter-destination', 'stdout',
+    '--test-reporter-destination=report.html',
+  ]);
+  assert.match(err, /report written to file:\/\/.*report\.html/);
+});
+
+test('ndjson hint includes the destination and the viewer URL', async () => {
+  const err = await collectStderrWithArgv('ndjson', ['--test-reporter-destination=run.ndjson']);
+  assert.match(err, /run\.ndjson/);
+  assert.match(err, /molow\.github\.io\/reporters\/\?src=/);
+});
