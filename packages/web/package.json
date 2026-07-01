@@ -32,7 +32,9 @@
   "devDependencies": {
     "@reporters/tree-core": "workspace:^",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "tsup": "^8.5.0",
+    "typescript": "^5.7.0"
   },
   "bugs": {
     "url": "https://github.com/MoLow/reporters/issues"

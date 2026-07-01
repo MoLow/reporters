@@ -479,6 +479,8 @@ __metadata:
     "@reporters/tree-core": "workspace:^"
     ink: "npm:^6.0.0"
     react: "npm:^19.0.0"
+    tsup: "npm:^8.5.0"
+    typescript: "npm:^5.7.0"
   languageName: unknown
   linkType: soft
 
@@ -518,6 +520,9 @@ __metadata:
 "@reporters/tree-core@workspace:^, @reporters/tree-core@workspace:packages/tree-core":
   version: 0.0.0-use.local
   resolution: "@reporters/tree-core@workspace:packages/tree-core"
+  dependencies:
+    tsup: "npm:^8.5.0"
+    typescript: "npm:^5.7.0"
   languageName: unknown
   linkType: soft
 
@@ -528,6 +533,8 @@ __metadata:
     "@reporters/tree-core": "workspace:^"
     react: "npm:^19.0.0"
     react-dom: "npm:^19.0.0"
+    tsup: "npm:^8.5.0"
+    typescript: "npm:^5.7.0"
   languageName: unknown
   linkType: soft
 

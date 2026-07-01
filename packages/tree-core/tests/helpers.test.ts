@@ -26,6 +26,9 @@ test('formatDuration renders ms, seconds and minutes', () => {
   assert.strictEqual(formatDuration(1000), '1s');
   assert.strictEqual(formatDuration(1500), '1.5s');
   assert.strictEqual(formatDuration(65000), '1m 5s');
+  assert.strictEqual(formatDuration(3600000), '1h 0m');
+  assert.strictEqual(formatDuration(3600000 + 125000), '1h 2m');
+  assert.strictEqual(formatDuration(9000000), '2h 30m');
   assert.strictEqual(formatDuration(undefined), '');
 });
 

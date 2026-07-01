@@ -26,6 +26,10 @@
     "build": "tsup",
     "test": "node --test"
   },
+  "devDependencies": {
+    "tsup": "^8.5.0",
+    "typescript": "^5.7.0"
+  },
   "bugs": {
     "url": "https://github.com/MoLow/reporters/issues"
   },
