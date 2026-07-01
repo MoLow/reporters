@@ -114,12 +114,24 @@ test('overall summary is captured from the root test:summary', () => {
   assert.strictEqual(summary?.counts.passed, 1);
 });
 
-test('per-file summary does not overwrite the overall summary', () => {
+test('under isolation, a per-file summary does not overwrite the overall summary', () => {
   const store = createTreeStore();
   apply(store, [
+    // a file-level wrapper marks the run as isolated (multi-process / --test)
+    { type: 'test:dequeue', data: { name: 'a.test.js', nesting: 0, file: '/a.test.js', testId: 1 } },
     { type: 'test:summary', data: { file: '/a.test.js', success: false, duration_ms: 1, counts: {} } },
   ]);
   assert.strictEqual(store.getSnapshot().summary, undefined);
+});
+
+test('without file wrappers (no --test), the single file summary is the overall summary', () => {
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:pass', data: { name: 't', nesting: 0, file: '/a.test.js', testId: 1 } },
+    { type: 'test:summary', data: { file: '/a.test.js', success: true, duration_ms: 9, counts: { passed: 1 } } },
+  ]);
+  assert.strictEqual(store.getSnapshot().summary?.success, true);
+  assert.strictEqual(store.getSnapshot().summary?.durationMs, 9);
 });
 
 test('with testId but no parentId, hierarchy falls back to the nesting stack', () => {

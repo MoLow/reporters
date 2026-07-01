@@ -61,10 +61,12 @@ export function TreeNode({
     <Box flexDirection="column">
       <Box>
         <Text>{'  '.repeat(depth)}</Text>
+        {/* Disclosure affordance: a caret marks rows whose diagnostics can be
+            toggled; others get a blank so columns stay aligned. */}
+        <Text color="yellow">{hasDiag ? (showDiag ? '▾ ' : '▸ ') : '  '}</Text>
         <Text color={INK_COLOR[node.status]}>{symbol} </Text>
-        <Text bold={node.type === 'file'} inverse={selected}>{label}</Text>
+        <Text bold={node.type === 'file'} inverse={selected} underline={selected}>{label}</Text>
         {node.durationMs != null ? <Text dimColor>{' '}{formatDuration(node.durationMs)}</Text> : null}
-        {hasDiag ? <Text dimColor>{' '}{showDiag ? '▾' : '▸'}</Text> : null}
       </Box>
       {showDiag ? <Diagnostics node={node} indent={'  '.repeat(depth + 2)} /> : null}
       {node.children.map((child) => (

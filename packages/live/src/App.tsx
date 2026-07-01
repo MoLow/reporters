@@ -29,7 +29,8 @@ export function App({ store }: { store: TreeStore }) {
     return () => clearInterval(timer);
   }, [snapshot.summary]);
 
-  const flat = useMemo(() => flatten(snapshot.root, []), [snapshot]);
+  // Only rows with diagnostics are navigable — there's nothing to do on the rest.
+  const flat = useMemo(() => flatten(snapshot.root, []).filter(nodeHasDiagnostics), [snapshot]);
   const [selected, setSelected] = useState(0);
   const [overrides, setOverrides] = useState<Map<string, boolean>>(new Map());
   const index = Math.min(selected, Math.max(flat.length - 1, 0));
@@ -63,9 +64,7 @@ export function App({ store }: { store: TreeStore }) {
       <Box marginTop={1}>
         <Header counts={snapshot.counts} summary={snapshot.summary} elapsed={elapsed} frame={frame} />
       </Box>
-      {snapshot.summary ? (
-        <Text dimColor>↑/↓ move · space toggle diagnostics · q or Ctrl+C to close</Text>
-      ) : null}
+      <Text dimColor>↑/↓ move · space toggle diagnostics · q or Ctrl+C to close</Text>
     </Box>
   );
 }
