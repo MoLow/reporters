@@ -313,7 +313,8 @@ export function TreeView({
             {' '}that points at a reachable test log. It’s missing or the URL didn’t respond.
           </div>
           <code className="state-cmd">
-            …/viewer.html<span data-stc="todo">?src=https://ci.example/run-8821.ndjson</span>
+            {window.location.origin + window.location.pathname}
+            <span data-stc="todo">?src=https://ci.example/run-8821.ndjson</span>
           </code>
           {onRetry ? <button type="button" className="btn-primary" onClick={onRetry}>Retry</button> : null}
         </CenteredState>
