@@ -1,0 +1,43 @@
+{
+  "name": "@reporters/mux",
+  "version": "0.0.0",
+  "description": "Environment-aware routing reporter for `node:test`: tee the event stream to multiple reporters and sinks",
+  "type": "module",
+  "keywords": [
+    "node:test",
+    "test",
+    "reporter",
+    "reporters",
+    "routing",
+    "multiplexer"
+  ],
+  "files": [
+    "./dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "rm -rf dist && tsup",
+    "prepack": "rm -rf dist && tsup",
+    "pretest": "rm -rf dist && tsup",
+    "test": "node --test-reporter=../live/dist/index.js --test"
+  },
+  "devDependencies": {
+    "@reporters/tree-core": "workspace:^",
+    "tsup": "^8.5.0",
+    "typescript": "^5.7.0"
+  },
+  "bugs": {
+    "url": "https://github.com/MoLow/reporters/issues"
+  },
+  "homepage": "https://github.com/MoLow/reporters/tree/main/packages/mux",
+  "repository": "https://github.com/MoLow/reporters.git",
+  "author": "Moshe Atlow",
+  "license": "MIT"
+}
