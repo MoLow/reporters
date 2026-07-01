@@ -57,9 +57,7 @@ button { font-family: inherit; } input { font-family: inherit; }
 @media (prefers-reduced-motion: reduce) { [data-spin="true"], [data-pulse="true"] { animation: none; } }
 
 /* app shell */
-.app { height: 100%; display: flex; flex-direction: column; }
-.app[data-dense="false"] { --rh: 34px; --fs: 13.5px; --ind: 20px; }
-.app[data-dense="true"]  { --rh: 26px; --fs: 12.5px; --ind: 15px; }
+.app { height: 100%; display: flex; flex-direction: column; --rh: 34px; --fs: 13.5px; --ind: 20px; }
 .loading { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--faint); font-size: 13px; }
 
 /* header */
@@ -78,7 +76,7 @@ button { font-family: inherit; } input { font-family: inherit; }
 .search { position: relative; display: flex; align-items: center; }
 .search svg { position: absolute; left: 11px; color: var(--faint); pointer-events: none; }
 .search input { background: var(--panel-2); border: 1px solid var(--line); color: var(--fg); font-size: 13px; padding: 8px 12px 8px 32px; border-radius: 10px; width: 188px; outline: none; }
-.btn { background: var(--panel-2); border: 1px solid var(--line); color: var(--dim); border-radius: 10px; padding: 8px 11px; font-size: 12px; cursor: pointer; transition: background .13s, color .13s; }
+.btn { display: inline-flex; align-items: center; gap: 6px; background: var(--panel-2); border: 1px solid var(--line); color: var(--dim); border-radius: 10px; padding: 8px 11px; font-size: 12px; cursor: pointer; transition: background .13s, color .13s; }
 .btn:hover { background: var(--raise); color: var(--fg); }
 .hdr-bar-row { padding: 0 18px 13px; display: flex; align-items: center; gap: 14px; }
 .bar { flex: 1; min-width: 220px; height: 9px; display: flex; gap: 2px; border-radius: 999px; overflow: hidden; background: var(--panel-2); }
