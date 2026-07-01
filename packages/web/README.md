@@ -10,9 +10,9 @@ updates, search, and inline failure diffs.
 suite tree with per-test durations, ANSI-colored error output, and failing
 tests auto-expanded with their assertion diff and stack trace.
 
-[![the @reporters/web viewer showing a run with an expanded failure](https://raw.githubusercontent.com/MoLow/reporters/d75babf46f9249c6f5bacdec077587e2a62339bd/packages/web/assets/viewer.png)](https://molow.github.io/reporters/?src=https://raw.githubusercontent.com/MoLow/reporters/d75babf46f9249c6f5bacdec077587e2a62339bd/packages/web/assets/demo-run.ndjson)
+[![the @reporters/web viewer showing a run with an expanded failure](https://raw.githubusercontent.com/MoLow/reporters/e950437dee2debf018d19a18abc9b951b056dd9b/packages/web/assets/viewer.png)](https://molow.github.io/reporters/?src=https://raw.githubusercontent.com/MoLow/reporters/e950437dee2debf018d19a18abc9b951b056dd9b/packages/web/assets/demo-run.ndjson)
 
-**[▶ Open the live demo](https://molow.github.io/reporters/?src=https://raw.githubusercontent.com/MoLow/reporters/d75babf46f9249c6f5bacdec077587e2a62339bd/packages/web/assets/demo-run.ndjson)** — the screenshot above, in the hosted viewer.
+**[▶ Open the live demo](https://molow.github.io/reporters/?src=https://raw.githubusercontent.com/MoLow/reporters/e950437dee2debf018d19a18abc9b951b056dd9b/packages/web/assets/demo-run.ndjson)** — the screenshot above, in the hosted viewer.
 
 ## Usage
 

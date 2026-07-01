@@ -10,7 +10,7 @@ tracking, failure history, and PR annotations. `@reporters/junit` maps the full
 `node:test` suite tree — nested suites included — onto `<testsuite>` /
 `<testcase>` elements, with timings, failures, errors, and skips.
 
-![@reporters/junit emitting JUnit XML for a node:test run](https://raw.githubusercontent.com/MoLow/reporters/d75babf46f9249c6f5bacdec077587e2a62339bd/packages/junit/assets/cli.gif)
+![@reporters/junit emitting JUnit XML for a node:test run](https://raw.githubusercontent.com/MoLow/reporters/e950437dee2debf018d19a18abc9b951b056dd9b/packages/junit/assets/cli.gif)
 
 ## Installation
 
