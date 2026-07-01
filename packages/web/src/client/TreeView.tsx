@@ -83,15 +83,23 @@ function computeTheme(): 'dark' | 'light' {
   return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
-function useTheme(): void {
-  useEffect(() => {
-    const apply = () => { document.documentElement.dataset.theme = computeTheme(); };
-    apply();
-    const mq = window.matchMedia?.('(prefers-color-scheme: dark)');
-    mq?.addEventListener('change', apply);
-    return () => mq?.removeEventListener('change', apply);
-  }, []);
+function useTheme(): ['dark' | 'light', () => void] {
+  const [theme, setTheme] = useState<'dark' | 'light'>(computeTheme);
+  useEffect(() => { document.documentElement.dataset.theme = theme; }, [theme]);
+  const toggle = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
+  return [theme, toggle];
 }
+
+const ThemeIcon = ({ theme }: { theme: 'dark' | 'light' }) => (theme === 'dark' ? (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
+  </svg>
+) : (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <circle cx="12" cy="12" r="4.5" />
+    <path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8l1.8-1.8M18 6l1.8-1.8" strokeLinecap="round" />
+  </svg>
+));
 
 const SearchIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
@@ -139,11 +147,10 @@ function Diagnostics({ node, indent }: { node: TestNode; indent: string }) {
 
 interface RowViewProps {
   row: FlatRow;
-  dense: boolean;
   toggle: (key: string, current: boolean) => void;
 }
 
-function RowView({ row, dense, toggle }: RowViewProps) {
+function RowView({ row, toggle }: RowViewProps) {
   const {
     node, depth, status, container, expanded, hasDiag, diagOpen,
   } = row;
@@ -165,8 +172,7 @@ function RowView({ row, dense, toggle }: RowViewProps) {
     : isTest && (status === 'skipped' || status === 'todo' || status === 'queued') ? 'var(--dim)'
       : 'var(--fg)';
   const ariaExpanded = container ? expanded : hasDiag ? diagOpen : undefined;
-  const step = dense ? 15 : 20;
-  const indent = `${depth * step + (dense ? 30 : 38)}px`;
+  const indent = `${depth * 20 + 38}px`;
 
   return (
     <div>
@@ -273,9 +279,8 @@ export interface TreeViewProps {
 export function TreeView({
   snapshot, streaming = false, loadError = false, onRetry,
 }: TreeViewProps) {
-  useTheme();
+  const [theme, toggleTheme] = useTheme();
   const [query, setQuery] = useState('');
-  const [dense, setDense] = useState(false);
   const [overrides, setOverrides] = useState<Map<string, boolean>>(new Map());
 
   const files = snapshot.root.children;
@@ -306,7 +311,7 @@ export function TreeView({
 
   if (loadError) {
     return (
-      <div className="app" data-dense={dense}>
+      <div className="app">
         <CenteredState icon="⚠" iconStatus="failed" title="Couldn’t load the live log">
           <div className="state-sub">
             The viewer needs a <code style={{ fontFamily: 'var(--mono)', color: 'var(--st-todo)' }}>?src=</code>
@@ -327,7 +332,7 @@ export function TreeView({
   const barSegments = STATUS_ORDER.filter((s) => counts[s] > 0);
 
   return (
-    <div className="app" data-dense={dense}>
+    <div className="app">
       <header className="hdr">
         <div className="hdr-row">
           <Verdict counts={counts} inProgress={inProgress} duration={duration} />
@@ -350,8 +355,14 @@ export function TreeView({
                 aria-label="Filter tests"
               />
             </div>
-            <button type="button" className="btn" onClick={() => setDense((d) => !d)} title="Toggle density">
-              {dense ? 'Compact' : 'Cozy'}
+            <button
+              type="button"
+              className="btn"
+              onClick={toggleTheme}
+              title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+              aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+            >
+              <ThemeIcon theme={theme} />
             </button>
             <button type="button" className="btn" onClick={collapseAll} title="Collapse all">Collapse</button>
           </div>
@@ -372,7 +383,7 @@ export function TreeView({
 
       <div className="tree" role="tree" aria-label="Test results">
         {rows.length > 0 ? (
-          rows.map((row) => <RowView key={row.node.key} row={row} dense={dense} toggle={toggle} />)
+          rows.map((row) => <RowView key={row.node.key} row={row} toggle={toggle} />)
         ) : q ? (
           <CenteredState icon="⌕" iconStatus="skipped" title={`No tests match “${query.trim()}”`}>
             <div className="state-sub">Try a shorter query, or search by file name.</div>
