@@ -14,7 +14,7 @@ function flatten(node: TestNode, out: TestNode[]): TestNode[] {
   return out;
 }
 
-export function App({ store }: { store: TreeStore }) {
+export function App({ store, interactive = true }: { store: TreeStore; interactive?: boolean }) {
   const snapshot = useSyncExternalStore(store.subscribe, store.getSnapshot);
   const [frame, setFrame] = useState(0);
   const [elapsed, setElapsed] = useState(0);
@@ -44,7 +44,7 @@ export function App({ store }: { store: TreeStore }) {
   const [selected, setSelected] = useState(0);
   const [overrides, setOverrides] = useState<Map<string, boolean>>(new Map());
   const index = Math.min(selected, Math.max(flat.length - 1, 0));
-  const selectedKey = flat[index]?.key;
+  const selectedKey = interactive ? flat[index]?.key : undefined;
 
   useInput((input, key) => {
     if ((key.ctrl && input === 'c') || input === 'q') {
@@ -64,17 +64,19 @@ export function App({ store }: { store: TreeStore }) {
         });
       }
     }
-  }, { isActive: Boolean(process.stdin.isTTY) });
+  }, { isActive: interactive });
 
   return (
     <Box flexDirection="column">
       {snapshot.root.children.map((file) => (
-        <TreeNode key={file.key} node={file} depth={0} frame={frame} selectedKey={selectedKey} overrides={overrides} />
+        <TreeNode key={file.key} node={file} depth={0} frame={frame} selectedKey={selectedKey} overrides={overrides} interactive={interactive} />
       ))}
       <Box marginTop={1}>
         <Header counts={counts} done={done} success={success} duration={duration} frame={frame} />
       </Box>
-      <Text dimColor>↑/↓ move · space toggle diagnostics · q or Ctrl+C to close</Text>
+      {interactive && (
+        <Text dimColor>↑/↓ move · space toggle diagnostics · q or Ctrl+C to close</Text>
+      )}
     </Box>
   );
 }

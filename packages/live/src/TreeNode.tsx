@@ -45,17 +45,18 @@ interface TreeNodeProps {
   frame: number;
   selectedKey: string | undefined;
   overrides: Map<string, boolean>;
+  interactive: boolean;
 }
 
 export function TreeNode({
-  node, depth, frame, selectedKey, overrides,
+  node, depth, frame, selectedKey, overrides, interactive,
 }: TreeNodeProps) {
   const running = node.status === 'running';
   const symbol = running ? SPINNER_FRAMES[frame % SPINNER_FRAMES.length] : SYMBOLS[node.status];
   const label = node.type === 'file' ? basename(node.file) : node.name;
   const selected = node.key === selectedKey;
   const hasDiag = nodeHasDiagnostics(node);
-  const showDiag = diagnosticsOpen(node, overrides);
+  const showDiag = interactive ? diagnosticsOpen(node, overrides) : hasDiag;
 
   return (
     <Box flexDirection="column">
@@ -70,7 +71,7 @@ export function TreeNode({
       </Box>
       {showDiag ? <Diagnostics node={node} indent={'  '.repeat(depth + 2)} /> : null}
       {node.children.map((child) => (
-        <TreeNode key={child.key} node={child} depth={depth + 1} frame={frame} selectedKey={selectedKey} overrides={overrides} />
+        <TreeNode key={child.key} node={child} depth={depth + 1} frame={frame} selectedKey={selectedKey} overrides={overrides} interactive={interactive} />
       ))}
     </Box>
   );

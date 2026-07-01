@@ -12,12 +12,20 @@ node --test --test-reporter=@reporters/live --test
 - **Live** — tests appear as they start and complete in real execution order.
 - **Full tree, always expanded** — you always see every test; only per-test
   diagnostics (errors, stdout/stderr, `diagnostic()` messages) collapse.
-- **Interactive review** — after the run it stays open so you can browse:
+- **Interactive review** — when stdin is a TTY it stays open after the run so
+  you can browse:
   - `↑`/`↓` (or `k`/`j`) — move between tests that have diagnostics
   - `space` / `enter` — toggle the selected test's diagnostics
   - `q` / `Ctrl+C` — close
-- **CI-friendly** — outside a TTY it prints a plain-text tree at the end instead
-  of ANSI. Force that anywhere with `REPORTERS_LIVE_PLAIN=1`.
+- **CI-friendly** — output and input are decided independently:
+  - **stdout is a TTY** → live tree; otherwise a fully expanded plain-text tree
+    printed once at the end.
+  - **stdin is a TTY** → stays open for review; otherwise exits as soon as the
+    run ends.
+
+  So `npm run test` (TTY stdout, no interactive stdin) shows the live tree and
+  then exits, while a plain pipe or CI prints text and exits. Set
+  `REPORTERS_LIVE_PLAIN=1` to force plain text and exit-when-done everywhere.
 
 > [!NOTE]
 > Under the default process isolation, Node buffers each test file's events

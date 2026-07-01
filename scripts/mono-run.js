@@ -20,7 +20,9 @@ function runCommand(dir) {
     }
     const args = ['workspace', name, ...cmd];
     console.log(`Running "yarn ${args.join(' ')}" in ${name}`);
-    const child = spawnSync('yarn', args, { stdio: 'inherit' });
+    // Don't forward a TTY stdin: it would make interactive reporters (e.g.
+    // @reporters/live) hold the terminal open waiting for keystrokes.
+    const child = spawnSync('yarn', args, { stdio: ['ignore', 'inherit', 'inherit'] });
     if (child.status !== 0) {
       process.exitCode = 1;
     }
