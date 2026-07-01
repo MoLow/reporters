@@ -1,8 +1,16 @@
 [![npm version](https://img.shields.io/npm/v/@reporters/junit)](https://www.npmjs.com/package/@reporters/junit) ![tests](https://github.com/MoLow/reporters/actions/workflows/test.yaml/badge.svg?branch=main) [![codecov](https://codecov.io/gh/MoLow/reporters/branch/main/graph/badge.svg?token=0LFVC8SCQV)](https://codecov.io/gh/MoLow/reporters)
 
-# Junit Reporter
-A Junit reporter for `node:test`.
-intended for use with major CI tools like Jenkins, CircleCI, etc that consume Junit reports.
+# JUnit XML Reporter
+
+Turn `node:test` runs into JUnit XML — the lingua franca of CI test reporting.
+
+Jenkins, GitLab, CircleCI, Buildkite, Azure Pipelines, and just about every
+other CI system can ingest JUnit reports to give you test dashboards, flaky-test
+tracking, failure history, and PR annotations. `@reporters/junit` maps the full
+`node:test` suite tree — nested suites included — onto `<testsuite>` /
+`<testcase>` elements, with timings, failures, errors, and skips.
+
+![@reporters/junit emitting JUnit XML for a node:test run](https://raw.githubusercontent.com/MoLow/reporters/d75babf46f9249c6f5bacdec077587e2a62339bd/packages/junit/assets/cli.gif)
 
 ## Installation
 
@@ -16,49 +24,35 @@ yarn add --dev @reporters/junit
 
 ## Usage
 
+Write the XML to a file for your CI system to pick up, and keep a human-readable
+reporter on stdout:
+
 ```bash
 node --test \
-  --test-reporter=@reporters/junit --test-reporter-destination=stdout \
+  --test-reporter=@reporters/junit --test-reporter-destination=report.xml \
   --test-reporter=spec --test-reporter-destination=stdout
 ```
 
-## Example 
+Then point your CI at the report — e.g. in GitLab:
 
-Output of the following test file:
-
-```js
-const { describe, it } = require('node:test');
-
-describe('tests', () => {
-  it('is ok', () => {});
-  it('fails', () => {
-    throw new Error('this is an error');
-  });
-});
+```yaml
+artifacts:
+  reports:
+    junit: report.xml
 ```
+
+## Failure output
+
+Failed tests carry the failure message and full error detail, so CI dashboards
+can show you exactly what broke:
 
 ```xml
-  <testsuite name="tests" time="0.00239" disabled="0" errors="0" tests="2" failures="1" skipped="0" hostname="PC.localdomain">
-    <testcase name="is ok" time="0.00057" classname="test"></testcase>
-    <testcase name="fails" time="0.00017" classname="test" failure="this is an error">
-      <failure message="this is an error" type="testCodeFailure">
-[Error [ERR_TEST_FAILURE]: this is an error] {
-  failureType: 'testCodeFailure',
-  cause: Error: this is an error
-      at Object.&lt;anonymous&gt; (/Users/test/reporters/tests/example.js:6:11)
-      at ItTest.runInAsyncScope (node:async_hooks:204:9)
-      at ItTest.run (node:internal/test_runner/test:547:25)
-      at Suite.processPendingSubtests (node:internal/test_runner/test:302:27)
-      at ItTest.postRun (node:internal/test_runner/test:632:19)
-      at ItTest.run (node:internal/test_runner/test:575:10)
-      at async Promise.all (index 0)
-      at async Suite.run (node:internal/test_runner/test:798:7),
-  code: 'ERR_TEST_FAILURE'
-}
-      </failure>
-    </testcase>
-  </testsuite>
-</testsuites>
+<testsuite name="totals" time="0.04376" disabled="0" errors="0" tests="3" failures="1" skipped="0">
+  <testcase name="computes the subtotal across line items" time="0.00637" classname="test"/>
+  <testcase name="applies the loyalty discount for gold members" time="0.01467" classname="test" failure="Expected values to be strictly deep-equal">
+    <failure message="Expected values to be strictly deep-equal" type="testCodeFailure">
+      ...full assertion diff and stack trace...
+    </failure>
+  </testcase>
+</testsuite>
 ```
-
-

@@ -1,13 +1,36 @@
-# @reporters/live
+![tests](https://github.com/MoLow/reporters/actions/workflows/test.yaml/badge.svg?branch=main) [![codecov](https://codecov.io/gh/MoLow/reporters/branch/main/graph/badge.svg?token=0LFVC8SCQV)](https://codecov.io/gh/MoLow/reporters)
 
-A live, React-powered **tree** reporter for `node:test`. It renders the whole
-run as a collapsible tree in your terminal (via [Ink](https://github.com/vadimdemedes/ink)),
-updating in place as tests run — each test flips to ✓/✗ the moment it actually
-finishes, not when the reporter gets around to it.
+# Live Tree Reporter
+
+Watch your `node:test` run unfold as a live, collapsible tree — right in the
+terminal.
+
+`@reporters/live` renders the whole run as a tree (via
+[Ink](https://github.com/vadimdemedes/ink) + React), updating in place as tests
+execute: each test appears when it starts and flips to ✓/✗ the moment it
+actually finishes. When the run ends, the tree stays open so you can browse
+failures interactively — expand a failing test and its assertion diff, stack
+trace, stdout/stderr and diagnostics unfold inline.
+
+![@reporters/live rendering a run as a live tree, then expanding a failure's diagnostics](https://raw.githubusercontent.com/MoLow/reporters/d75babf46f9249c6f5bacdec077587e2a62339bd/packages/live/assets/cli.gif)
+
+## Installation
 
 ```bash
-node --test --test-reporter=@reporters/live --test
+npm install --save-dev @reporters/live
 ```
+or
+```bash
+yarn add --dev @reporters/live
+```
+
+## Usage
+
+```bash
+node --test --test-reporter=@reporters/live
+```
+
+## What you get
 
 - **Live** — tests appear as they start and complete in real execution order.
 - **Full tree, always expanded** — you always see every test; only per-test
@@ -32,5 +55,6 @@ node --test --test-reporter=@reporters/live --test
 > until that file's turn to report, so files fill in as they complete. For true
 > real-time, per-test streaming across files, run with `--test-isolation=none`.
 
-Built on the shared `@reporters/tree-core` model (also used by
-[`@reporters/web`](https://www.npmjs.com/package/@reporters/web)).
+Built on the shared [`@reporters/tree-core`](https://github.com/MoLow/reporters/tree/main/packages/tree-core)
+model (also used by [`@reporters/web`](https://github.com/MoLow/reporters/tree/main/packages/web)) —
+the same run state, rendered in the terminal instead of the browser.

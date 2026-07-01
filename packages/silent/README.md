@@ -1,7 +1,22 @@
 [![npm version](https://img.shields.io/npm/v/@reporters/silent)](https://www.npmjs.com/package/@reporters/silent) ![tests](https://github.com/MoLow/reporters/actions/workflows/test.yaml/badge.svg?branch=main) [![codecov](https://codecov.io/gh/MoLow/reporters/branch/main/graph/badge.svg?token=0LFVC8SCQV)](https://codecov.io/gh/MoLow/reporters)
 
 # Silent Reporter
-A Silent reporter for `node:test`, in case you don't want to see any output.
+
+Run the tests, print nothing, let the exit code do the talking.
+
+`@reporters/silent` swallows every test event and produces zero output. The
+suite still runs in full — the process exits `0` when everything passes and
+`1` when anything fails.
+
+![@reporters/silent producing no output, only an exit code](https://raw.githubusercontent.com/MoLow/reporters/d75babf46f9249c6f5bacdec077587e2a62339bd/packages/silent/assets/cli.gif)
+
+Handy whenever output is noise:
+
+- **Shell scripting** — `node --test --test-reporter=@reporters/silent && deploy.sh`
+- **Git hooks** — gate a commit or push on the suite without flooding the terminal.
+- **Benchmarking** — measure the suite itself, not the cost of rendering output.
+- **Muting one destination** — combine it with another reporter to keep a
+  machine-readable report while silencing the console.
 
 ## Installation
 
@@ -18,7 +33,3 @@ yarn add --dev @reporters/silent
 ```bash
 node --test --test-reporter=@reporters/silent
 ```
-
-the output will be empty, but the tests will still run,
-and the exit code will be 0 if all tests pass, and 1 if any test fails.
-

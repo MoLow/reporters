@@ -1,25 +1,51 @@
 [![npm version](https://img.shields.io/npm/v/@reporters/testwatch)](https://www.npmjs.com/package/@reporters/testwatch) ![tests](https://github.com/MoLow/reporters/actions/workflows/test.yaml/badge.svg?branch=main) [![codecov](https://codecov.io/gh/MoLow/reporters/branch/main/graph/badge.svg?token=0LFVC8SCQV)](https://codecov.io/gh/MoLow/reporters)
 
-# Interactive Test Runner
-An interactive REPL for `node:test` watch mode.
+# Interactive Watch Mode for `node:test`
 
-![cli](https://raw.githubusercontent.com/MoLow/reporters/77f69c450ab0cb204fa8b81caf12516df03cdc13/packages/testwatch/assets/cli.gif)
+A jest-style interactive watch REPL for the built-in Node.js test runner.
+
+`testwatch` runs your suite, stays open, and reruns on demand — and you can
+narrow the run from the keyboard without ever restarting: filter by file name
+pattern, filter by test name pattern, stack the two, clear them, run again.
+The tight feedback loop you're used to from `jest --watch`, for `node:test`.
+
+![testwatch running a suite, then filtering by file and by test name](https://raw.githubusercontent.com/MoLow/reporters/d75babf46f9249c6f5bacdec077587e2a62339bd/packages/testwatch/assets/cli.gif)
 
 ## Installation
 
 ```bash
 npm install -g @reporters/testwatch
 ```
-or
+or run it without installing:
 ```bash
-yarn global add @reporters/testwatch
+npx @reporters/testwatch
 ```
 
 ## Usage
 
-Run `testwatch` in the root of your project.
+Run `testwatch` in the root of your project:
 
 ```bash
 testwatch
 ```
 
+You can also seed the file filter from the command line:
+
+```bash
+testwatch "integration/**"
+```
+
+## Keyboard commands
+
+| Key | Action |
+| --- | --- |
+| `a` | run all tests |
+| `p` | filter by a file name pattern |
+| `t` | filter by a test name pattern |
+| `c` | clear the active filters |
+| `Enter` | trigger a test run |
+| `w` | show the full menu |
+| `q` / `Ctrl+C` | quit |
+
+File and test filters compose: filter files to `cart`, then tests to `total`,
+and only tests matching both run — everything else is reported as skipped.
