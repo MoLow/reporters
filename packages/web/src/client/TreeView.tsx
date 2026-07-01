@@ -4,54 +4,21 @@ import React, {
 import {
   formatDuration, type Counts, type TestNode, type TestStatus, type TreeSnapshot,
 } from '@reporters/tree-core';
+import {
+  buildRows, collectContainerKeys, computeMatches, displayName, isContainer, reasonOf, type FlatRow,
+} from './rowModel.ts';
 
 const GLYPH: Record<TestStatus, string> = {
   passed: '✓', failed: '✕', skipped: '⊘', todo: '◇', running: '◐', queued: '○',
 };
 const STATUS_ORDER: TestStatus[] = ['passed', 'failed', 'skipped', 'todo', 'running', 'queued'];
-const SEVERITY: TestStatus[] = ['failed', 'running', 'queued', 'todo', 'skipped', 'passed'];
 const STATUS_LABEL: Record<TestStatus, string> = {
   passed: 'passed', failed: 'failed', skipped: 'skipped', todo: 'todo', running: 'running', queued: 'queued',
 };
 
-function basename(file: string | undefined): string {
-  if (!file) return '<unknown>';
-  const parts = file.replace(/\\/g, '/').split('/');
-  return parts[parts.length - 1] || file;
-}
-
-function displayName(node: TestNode): string {
-  return node.type === 'file' ? basename(node.file) : node.name;
-}
-
-function isContainer(node: TestNode): boolean {
-  return node.children.length > 0;
-}
-
-/** Container status = the worst status among descendants (severity order). */
-function rollup(node: TestNode): TestStatus {
-  if (!isContainer(node)) return node.status;
-  for (const s of SEVERITY) if (node.counts[s] > 0) return s;
-  return 'passed';
-}
-
 function sumDuration(node: TestNode): number {
   if (!isContainer(node)) return node.durationMs ?? 0;
   return node.children.reduce((total, child) => total + sumDuration(child), 0);
-}
-
-function reasonOf(node: TestNode): string | undefined {
-  if (typeof node.skip === 'string') return node.skip;
-  if (typeof node.todo === 'string') return node.todo;
-  return undefined;
-}
-
-function hasDiagnostics(node: TestNode): boolean {
-  return Boolean(node.error)
-    || node.diagnostics.length > 0
-    || node.stdout.length > 0
-    || node.stderr.length > 0
-    || Boolean(reasonOf(node));
 }
 
 /** Severity of a test's diagnostics, for the row badge tint. */
@@ -59,13 +26,6 @@ function diagSeverity(node: TestNode): TestStatus {
   if (node.error || node.stderr.length > 0) return 'failed';
   if (node.diagnostics.some((d) => d.level === 'warn')) return 'running';
   return 'skipped';
-}
-
-function defaultExpanded(node: TestNode): boolean {
-  const { counts } = node;
-  if (node.type === 'file') return !(counts.total > 0 && counts.queued === counts.total);
-  if (node.type === 'suite') return counts.failed > 0 || counts.running > 0;
-  return false;
 }
 
 interface DiagBlock {
@@ -113,91 +73,6 @@ function diagBlocks(node: TestNode): DiagBlock[] {
     });
   }
   return blocks;
-}
-
-interface FlatRow {
-  node: TestNode;
-  depth: number;
-  status: TestStatus;
-  container: boolean;
-  expanded: boolean;
-  hasDiag: boolean;
-  diagOpen: boolean;
-}
-
-interface Matches {
-  visible: Set<string>;
-  force: Set<string>;
-}
-
-function computeMatches(files: TestNode[], query: string): Matches {
-  const visible = new Set<string>();
-  const force = new Set<string>();
-  const addSubtree = (node: TestNode): void => {
-    for (const child of node.children) { visible.add(child.key); addSubtree(child); }
-  };
-  const walk = (node: TestNode, ancestors: string[]): boolean => {
-    const self = displayName(node).toLowerCase().includes(query);
-    let desc = false;
-    for (const child of node.children) if (walk(child, [...ancestors, node.key])) desc = true;
-    if (self || desc) {
-      visible.add(node.key);
-      for (const a of ancestors) visible.add(a);
-      if (desc) { force.add(node.key); for (const a of ancestors) force.add(a); }
-      if (self && node.children.length > 0) addSubtree(node);
-      return true;
-    }
-    return false;
-  };
-  for (const file of files) walk(file, []);
-  return { visible, force };
-}
-
-interface BuildOptions {
-  overrides: Map<string, boolean>;
-  query: string;
-  matches: Matches | null;
-}
-
-function isExpanded(node: TestNode, opts: BuildOptions): boolean {
-  if (opts.query && opts.matches?.force.has(node.key)) return true;
-  const { overrides } = opts;
-  return overrides.has(node.key) ? overrides.get(node.key)! : defaultExpanded(node);
-}
-
-function isDiagOpen(node: TestNode, overrides: Map<string, boolean>): boolean {
-  const key = `${node.key}::diag`;
-  return overrides.has(key) ? overrides.get(key)! : node.status === 'failed';
-}
-
-function buildRows(files: TestNode[], opts: BuildOptions): FlatRow[] {
-  const rows: FlatRow[] = [];
-  const push = (node: TestNode, depth: number): void => {
-    if (opts.query && !opts.matches!.visible.has(node.key)) return;
-    const container = isContainer(node);
-    const expanded = container && isExpanded(node, opts);
-    const diag = !container && hasDiagnostics(node);
-    rows.push({
-      node,
-      depth,
-      status: rollup(node),
-      container,
-      expanded,
-      hasDiag: diag,
-      diagOpen: diag && isDiagOpen(node, opts.overrides),
-    });
-    if (container && expanded) {
-      for (const child of node.children) push(child, depth + 1);
-    }
-  };
-  for (const file of files) push(file, 0);
-  return rows;
-}
-
-function collectContainerKeys(nodes: TestNode[], into: string[]): void {
-  for (const node of nodes) {
-    if (isContainer(node)) { into.push(node.key); collectContainerKeys(node.children, into); }
-  }
 }
 
 function computeTheme(): 'dark' | 'light' {
@@ -273,9 +148,10 @@ function RowView({ row, dense, toggle }: RowViewProps) {
     node, depth, status, container, expanded, hasDiag, diagOpen,
   } = row;
   const clickable = container || hasDiag;
+  const toggleDiag = () => toggle(`${node.key}::diag`, diagOpen);
   const activate = () => {
     if (container) toggle(node.key, expanded);
-    else if (hasDiag) toggle(`${node.key}::diag`, diagOpen);
+    else if (hasDiag) toggleDiag();
   };
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); }
@@ -316,7 +192,26 @@ function RowView({ row, dense, toggle }: RowViewProps) {
         )}
         <span className="name" data-kind={node.type} style={{ color: nameColor }}>{displayName(node)}</span>
         {hasDiag ? (
-          <span className="diagbadge" data-soft={diagSeverity(node)}>{diagOpen ? 'Hide' : 'Details'}</span>
+          // On a container the row click expands children, so the badge is its
+          // own control for the node's own output; on a leaf the row already
+          // toggles diagnostics, so the badge is just a label.
+          container ? (
+            <span
+              className="diagbadge"
+              role="button"
+              tabIndex={0}
+              aria-expanded={diagOpen}
+              data-soft={diagSeverity(node)}
+              onClick={(e) => { e.stopPropagation(); toggleDiag(); }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); toggleDiag(); }
+              }}
+            >
+              {diagOpen ? 'Hide' : 'Details'}
+            </span>
+          ) : (
+            <span className="diagbadge" data-soft={diagSeverity(node)}>{diagOpen ? 'Hide' : 'Details'}</span>
+          )
         ) : null}
         <span className="spacer" />
         {container && !expanded ? (
