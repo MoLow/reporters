@@ -115,9 +115,7 @@ test('concurrent factory subtests at one source location attribute completes cor
   assert.strictEqual(matches.filter(({ node }) => node.status === 'passed').length, 3);
 });
 
-test('a subtest defined in a helper file attaches under its parent from the entry file', {
-  todo: 'known failure: the store resolves parentId inside the helper file group, creating a phantom parent',
-}, () => {
+test('a subtest defined in a helper file attaches under its parent from the entry file', () => {
   const { root } = build(captureEvents(['fixtures/entry-with-helper-subtest.mjs']));
 
   // The subtest's events report file=subtest-helper.mjs while its parent
@@ -130,9 +128,7 @@ test('a subtest defined in a helper file attaches under its parent from the entr
   );
 });
 
-test('cross-process testId collision: helper subtest attaches to the still-open parent', {
-  todo: 'known failure: the store resolves parentId inside the helper file group, creating a phantom parent',
-}, () => {
+test('cross-process testId collision: helper subtest attaches to the still-open parent', () => {
   // Merged multi-process stream (can't be reproduced in-process): isolation
   // gives each file its own testId counter, so file 3's `it` and file 4's `it`
   // are both testId 2. `consistency check` is defined in a helper, so its
