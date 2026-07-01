@@ -13,11 +13,12 @@ declare global {
 const SCROLL_KEY = 'reporters:scroll';
 const SIG_KEY = 'reporters:sig';
 const STALL_KEY = 'reporters:stall';
-const POLL_MS = 1500;
-// Give up after this many consecutive no-growth polls — a safety valve so a
-// crashed/abandoned partial file doesn't reload forever. High enough to sit
-// through a genuinely slow test that emits no events while it runs.
-const MAX_STALL = 20;
+const POLL_MS = 300;
+// Give up after this long without any growth — a safety valve so a crashed or
+// abandoned partial file doesn't reload forever. Generous enough to sit through
+// a genuinely slow test that emits no events while it runs.
+const STALL_TIMEOUT_MS = 120000;
+const MAX_STALL = Math.ceil(STALL_TIMEOUT_MS / POLL_MS);
 
 function isComplete(store: TreeStore): boolean {
   const snap = store.getSnapshot();
