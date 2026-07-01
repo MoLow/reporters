@@ -22,15 +22,23 @@ async function main(): Promise<void> {
   if (!mount) return;
   const root = createRoot(mount);
 
+  let store: TreeStore = createTreeStore();
+  let streaming = true;
+  let loadError = false;
+  const retry = () => window.location.reload();
+  const draw = () => root.render(
+    <TreeView snapshot={store.getSnapshot()} streaming={streaming} loadError={loadError} onRetry={retry} />,
+  );
+
   const src = new URLSearchParams(window.location.search).get('src');
   if (!src) {
-    mount.innerHTML = '<div class="empty">Add <code>?src=&lt;url-to-your-run.ndjson&gt;</code> to view a report.</div>';
+    streaming = false;
+    loadError = true;
+    draw();
     return;
   }
 
-  let store: TreeStore = createTreeStore();
   const reader = createNdjsonReader(src);
-  const draw = () => root.render(<TreeView snapshot={store.getSnapshot()} />);
   draw();
 
   // Poll until the run reports a final summary, then stop.
@@ -39,10 +47,13 @@ async function main(): Promise<void> {
       const { events, reset } = await reader.pull();
       if (reset) store = createTreeStore();
       for (const event of events) store.apply(event);
+      loadError = false;
+      if (store.getSnapshot().summary) { streaming = false; draw(); break; }
       if (events.length || reset) draw();
-      if (store.getSnapshot().summary) { draw(); break; }
     } catch (err) {
-      // Transient fetch/CORS error: keep trying.
+      // Never received any data yet: the source is missing/unreachable — surface
+      // the error screen. Once data has arrived, treat failures as transient.
+      if (store.getSnapshot().root.children.length === 0) { loadError = true; draw(); }
       console.error(err);
     }
     await delay(POLL_MS);
