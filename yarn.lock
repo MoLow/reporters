@@ -448,7 +448,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@reporters/gh@workspace:packages/gh":
+"@reporters/gh@workspace:^, @reporters/gh@workspace:packages/gh":
   version: 0.0.0-use.local
   resolution: "@reporters/gh@workspace:packages/gh"
   dependencies:
@@ -472,7 +472,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@reporters/live@workspace:packages/live":
+"@reporters/live@workspace:^, @reporters/live@workspace:packages/live":
   version: 0.0.0-use.local
   resolution: "@reporters/live@workspace:packages/live"
   dependencies:
@@ -536,7 +536,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@reporters/web@workspace:packages/web":
+"@reporters/web@workspace:^, @reporters/web@workspace:packages/web":
   version: 0.0.0-use.local
   resolution: "@reporters/web@workspace:packages/web"
   dependencies:
@@ -3623,6 +3623,10 @@ __metadata:
   resolution: "reporters@workspace:."
   dependencies:
     "@eslint/eslintrc": "npm:^3.3.5"
+    "@reporters/gh": "workspace:^"
+    "@reporters/live": "workspace:^"
+    "@reporters/mux": "workspace:^"
+    "@reporters/web": "workspace:^"
     "@types/node": "npm:^22.10.0"
     "@types/react": "npm:^19.0.0"
     "@types/react-dom": "npm:^19.0.0"

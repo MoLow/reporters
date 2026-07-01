@@ -8,7 +8,7 @@
   "scripts": {
     "mono": "c8 node scripts/mono-run.js",
     "build": "yarn mono build",
-    "test": "yarn mono build && yarn mono test",
+    "test": "yarn mono build && REPORTERS_OPEN=0 yarn mono test",
     "test:clean-snapshots": "rm -rf packages/**/.snapshots",
     "test:update-snapshots": "SNAP_UPDATE=1 yarn test",
     "lint": "eslint ."
@@ -28,6 +28,10 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.5",
+    "@reporters/gh": "workspace:^",
+    "@reporters/live": "workspace:^",
+    "@reporters/mux": "workspace:^",
+    "@reporters/web": "workspace:^",
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

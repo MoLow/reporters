@@ -31,7 +31,7 @@
     "build": "rm -rf dist && tsup",
     "prepack": "rm -rf dist && tsup",
     "pretest": "rm -rf dist && tsup",
-    "test": "node --test-reporter=../gh/index.js --test"
+    "test": "node --test-reporter=@reporters/mux --test"
   },
   "devDependencies": {
     "@reporters/mux": "workspace:^",
