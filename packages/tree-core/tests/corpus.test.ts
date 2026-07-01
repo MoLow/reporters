@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { createTreeStore } from '../src/store.ts';
+import { parseWireLines, serializeWireLine } from '../src/wire.ts';
 import type { TestEvent, TestNode } from '../src/types.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -146,6 +147,20 @@ test('top-level stdout/stderr attach to the same file node as the tests', () => 
   assert.strictEqual(fileNodes.length, 1, 'stdout and tests must share one file node');
   assert.ok(fileNodes[0].stdout.some((s) => s.includes('top-level stdout')));
   assert.ok(fileNodes[0].stderr.some((s) => s.includes('top-level stderr')));
+  assert.strictEqual(leaf(fileNodes[0], 'a passing test')?.status, 'passed');
+});
+
+test('stdout/stderr stay grouped after a wire round-trip (web/embedded path)', () => {
+  // The web viewer and embedded HTML rebuild the tree from serialized wire
+  // lines, not the raw events. Guard that the file-path canonicalization holds
+  // across serialize -> parse, since that is what those clients actually run.
+  const events = captureEvents(['fixtures/stdout-toplevel.mjs']);
+  const roundTripped = parseWireLines(events.map(serializeWireLine).join(''));
+  const { root } = build(roundTripped);
+
+  const fileNodes = root.children.filter((n) => n.type === 'file');
+  assert.strictEqual(fileNodes.length, 1, 'stdout and tests must share one file node');
+  assert.ok(fileNodes[0].stdout.some((s) => s.includes('top-level stdout')));
   assert.strictEqual(leaf(fileNodes[0], 'a passing test')?.status, 'passed');
 });
 
