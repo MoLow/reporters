@@ -16,7 +16,7 @@ The NDJSON is rendered by the tree viewer, reached three ways:
   also starts a local server for the viewer and opens your browser to a
   live-updating view (it polls the growing NDJSON over HTTP Range — no
   `file://`/CORS limits). It never opens in CI. Force it on/off with the `open`
-  option (2nd reporter arg) or `REPORTERS_WEB_OPEN=1|0`:
+  option (2nd reporter arg) or `REPORTERS_OPEN=1|0`:
 
   ```bash
   # opens a live browser view by default on a TTY; never in CI

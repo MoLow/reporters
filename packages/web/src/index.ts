@@ -4,7 +4,7 @@ import { soleFileDestination, shouldOpen, internals } from './open.ts';
 
 export interface WebOptions {
   /** Serve a live browser view of the run and open it. Defaults to detecting an
-   *  interactive terminal (a TTY, not CI); `REPORTERS_WEB_OPEN=1|0` also overrides. */
+   *  interactive terminal (a TTY, not CI); `REPORTERS_OPEN=1|0` also overrides. */
   open?: boolean;
 }
 
@@ -19,7 +19,7 @@ function hint(message: string): void {
  *
  * Run standalone on a dev machine it also serves a live browser view and opens
  * it, the same way it behaves through `@reporters/mux`'s `httpServer()` sink.
- * Control this with the `open` option or `REPORTERS_WEB_OPEN=1|0`; it never opens
+ * Control this with the `open` option or `REPORTERS_OPEN=1|0`; it never opens
  * in CI by default. Through mux the reporter is a pure emitter and the sink owns
  * viewing.
  */
