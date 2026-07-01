@@ -1,12 +1,18 @@
 import React, {
-  useEffect, useMemo, useState,
+  useEffect, useMemo, useRef, useState,
 } from 'react';
 import {
   formatDuration, type Counts, type TestNode, type TestStatus, type TreeSnapshot,
 } from '@reporters/tree-core';
 import {
-  buildRows, collectContainerKeys, computeMatches, displayName, isContainer, reasonOf, type FlatRow,
+  buildRows, collectContainerKeys, computeMatches, displayName, isContainer, reasonOf, realError, type FlatRow,
 } from './rowModel.ts';
+
+// node:test captures colored output verbatim; strip ANSI SGR sequences so the
+// raw escape codes never leak into the report as visible garbage.
+// eslint-disable-next-line no-control-regex
+const ANSI_SGR = /\u001b\[[0-9;]*m/g;
+const stripAnsi = (text: string): string => text.replace(ANSI_SGR, '');
 
 const GLYPH: Record<TestStatus, string> = {
   passed: '✓', failed: '✕', skipped: '⊘', todo: '◇', running: '◐', queued: '○',
@@ -21,47 +27,80 @@ function sumDuration(node: TestNode): number {
   return node.children.reduce((total, child) => total + sumDuration(child), 0);
 }
 
+/**
+ * Like `sumDuration`, but a still-running leaf counts the time elapsed since the
+ * client first saw it running (`since`), so its counter ticks live between polls
+ * instead of sitting at 0 until the run settles.
+ */
+function liveDuration(node: TestNode, now: number, since: Map<string, number>): number {
+  if (!isContainer(node)) {
+    if (node.status === 'running') {
+      if (!since.has(node.key)) since.set(node.key, now); // first sight: start the clock
+      return Math.max(0, now - since.get(node.key)!);
+    }
+    return node.durationMs ?? 0;
+  }
+  return node.children.reduce((total, child) => total + liveDuration(child, now, since), 0);
+}
+
 /** Severity of a test's diagnostics, for the row badge tint. */
 function diagSeverity(node: TestNode): TestStatus {
-  if (node.error || node.stderr.length > 0) return 'failed';
+  if (realError(node) || node.stderr.length > 0) return 'failed';
   if (node.diagnostics.some((d) => d.level === 'warn')) return 'running';
   return 'skipped';
 }
+
+interface OutLine { stream: 'out' | 'err'; text: string; }
 
 interface DiagBlock {
   key: string;
   title: string;
   icon: string;
   sev: TestStatus;
-  kind: 'error' | 'text' | 'list';
+  kind: 'error' | 'output' | 'list' | 'text';
   message?: string;
   stack?: string;
   text?: string;
-  err?: boolean;
+  lines?: OutLine[];
   items?: { level: string; sev: TestStatus; text: string }[];
 }
 
+/** stdout + stderr merged into one line list, stream-tagged, ANSI stripped. */
+function outputLines(node: TestNode): OutLine[] {
+  const lines: OutLine[] = [];
+  const add = (chunks: string[], stream: 'out' | 'err'): void => {
+    if (chunks.length === 0) return;
+    for (const line of stripAnsi(chunks.join('')).split('\n')) lines.push({ stream, text: line });
+  };
+  add(node.stdout, 'out');
+  add(node.stderr, 'err');
+  while (lines.length > 0 && lines[lines.length - 1].text === '') lines.pop();
+  return lines;
+}
+
+// At most three sections per test — Error, Output, Diagnostics (plus a reason
+// for skipped/todo). stdout+stderr collapse into one Output block; every text
+// is ANSI-stripped; synthetic container rollups never render an Error.
 function diagBlocks(node: TestNode): DiagBlock[] {
   const blocks: DiagBlock[] = [];
-  if (node.error) {
+  const error = realError(node);
+  if (error) {
     blocks.push({
       key: 'error', title: 'Error', icon: '✕', sev: 'failed', kind: 'error',
-      message: node.error.message, stack: node.error.stack ?? node.error.message,
+      message: stripAnsi(error.message), stack: stripAnsi(error.stack ?? error.message),
     });
   }
-  if (node.stdout.length > 0) {
-    blocks.push({ key: 'stdout', title: 'stdout', icon: '›', sev: 'skipped', kind: 'text', text: node.stdout.join('') });
-  }
-  if (node.stderr.length > 0) {
-    blocks.push({ key: 'stderr', title: 'stderr', icon: '›', sev: 'failed', kind: 'text', text: node.stderr.join(''), err: true });
+  const lines = outputLines(node);
+  if (lines.length > 0) {
+    blocks.push({ key: 'output', title: 'Output', icon: '›', sev: 'skipped', kind: 'output', lines });
   }
   if (node.diagnostics.length > 0) {
     blocks.push({
-      key: 'diag', title: 'diagnostics', icon: '◇', sev: 'skipped', kind: 'list',
+      key: 'diag', title: 'Diagnostics', icon: '◇', sev: 'skipped', kind: 'list',
       items: node.diagnostics.map((d) => ({
         level: d.level,
         sev: d.level === 'error' ? 'failed' : d.level === 'warn' ? 'running' : 'skipped',
-        text: d.message,
+        text: stripAnsi(d.message),
       })),
     });
   }
@@ -69,7 +108,7 @@ function diagBlocks(node: TestNode): DiagBlock[] {
   if (reason) {
     blocks.push({
       key: 'reason', title: node.status === 'skipped' ? 'why skipped' : 'why todo',
-      icon: '⊘', sev: 'skipped', kind: 'text', text: reason,
+      icon: '⊘', sev: 'skipped', kind: 'text', text: stripAnsi(reason),
     });
   }
   return blocks;
@@ -125,8 +164,18 @@ function Diagnostics({ node, indent }: { node: TestNode; indent: string }) {
                 <pre className="stack">{block.stack}</pre>
               </>
             ) : null}
+            {block.kind === 'output' ? (
+              <div className="out">
+                {block.lines!.map((line, i) => (
+                  // eslint-disable-next-line react/no-array-index-key
+                  <div className="out-line" data-err={line.stream === 'err' ? 'true' : undefined} key={i}>
+                    {line.text === '' ? ' ' : line.text}
+                  </div>
+                ))}
+              </div>
+            ) : null}
             {block.kind === 'text' ? (
-              <pre className={`text${block.err ? ' err' : ''}`}>{block.text}</pre>
+              <pre className="text">{block.text}</pre>
             ) : null}
             {block.kind === 'list' ? (
               <div className="diag-list">
@@ -145,15 +194,40 @@ function Diagnostics({ node, indent }: { node: TestNode; indent: string }) {
   );
 }
 
+/** True for a beat after a node settles out of `running`, to fire a settle pop. */
+function useSettle(status: TestStatus): boolean {
+  const prev = useRef(status);
+  const [settled, setSettled] = useState(false);
+  useEffect(() => {
+    if (prev.current === 'running' && status !== 'running') {
+      setSettled(true);
+      const timer = setTimeout(() => setSettled(false), 500);
+      prev.current = status;
+      return () => clearTimeout(timer);
+    }
+    prev.current = status;
+    return undefined;
+  }, [status]);
+  return settled;
+}
+
 interface RowViewProps {
   row: FlatRow;
   toggle: (key: string, current: boolean) => void;
+  /** Stagger index for the enter animation, or null when the row shouldn't animate in. */
+  enter: number | null;
+  /** Shared clock (performance.now) + per-node running-start map, for live duration ticking. */
+  now: number;
+  since: Map<string, number>;
 }
 
-function RowView({ row, toggle }: RowViewProps) {
+function RowView({
+  row, toggle, enter, now, since,
+}: RowViewProps) {
   const {
     node, depth, status, container, expanded, hasDiag, diagOpen,
   } = row;
+  const settled = useSettle(status);
   const clickable = container || hasDiag;
   const toggleDiag = () => toggle(`${node.key}::diag`, diagOpen);
   const activate = () => {
@@ -174,27 +248,34 @@ function RowView({ row, toggle }: RowViewProps) {
   const ariaExpanded = container ? expanded : hasDiag ? diagOpen : undefined;
   const indent = `${depth * 20 + 38}px`;
 
+  const rowClass = `row${enter !== null ? ' row-enter' : ''}${settled ? ` settle-${status}` : ''}`;
+  const rowStyle = enter !== null ? { animationDelay: `${Math.min(enter, 8) * 18}ms` } : undefined;
+
   return (
     <div>
       <div
-        className="row"
+        className={rowClass}
+        style={rowStyle}
         role="treeitem"
         aria-expanded={ariaExpanded}
         aria-label={`${displayName(node)}, ${status}${container ? `, ${counts.total} tests` : ''}`}
         tabIndex={0}
         data-clickable={clickable}
         data-fail={isTest && status === 'failed'}
+        data-running={status === 'running' ? 'true' : undefined}
         onClick={clickable ? activate : undefined}
         onKeyDown={onKeyDown}
       >
         <span className="guides">
           {Array.from({ length: depth }, (_, i) => <span className="guide" key={i} />)}
         </span>
-        <span className="caret">{container ? (expanded ? '▾' : '▸') : ''}</span>
+        <span className="caret" data-open={container && expanded ? 'true' : undefined}>{container ? '▸' : ''}</span>
         {isTest ? (
-          <span className="dot" data-stf={status} data-spin={status === 'running' ? 'true' : undefined} />
+          status === 'running'
+            ? <span className="spinner indicator" />
+            : <span className="dot indicator" data-stf={status} />
         ) : (
-          <span className="cglyph" data-stc={status}>{GLYPH[status]}</span>
+          <span className="cglyph indicator" data-stc={status} data-spin={status === 'running' ? 'true' : undefined}>{GLYPH[status]}</span>
         )}
         <span className="name" data-kind={node.type} style={{ color: nameColor }}>{displayName(node)}</span>
         {hasDiag ? (
@@ -227,9 +308,13 @@ function RowView({ row, toggle }: RowViewProps) {
             ))}
           </span>
         ) : null}
-        <span className="dur">{formatDuration(sumDuration(node)) || '—'}</span>
+        <span className="dur">{formatDuration(liveDuration(node, now, since)) || '—'}</span>
       </div>
-      {hasDiag && diagOpen ? <Diagnostics node={node} indent={indent} /> : null}
+      {hasDiag ? (
+        <div className={`collapsible${diagOpen ? ' open' : ''}`}>
+          <div className="inner"><Diagnostics node={node} indent={indent} /></div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -282,6 +367,14 @@ export function TreeView({
   const [theme, toggleTheme] = useTheme();
   const [query, setQuery] = useState('');
   const [overrides, setOverrides] = useState<Map<string, boolean>>(new Map());
+  // Rows already painted at least once — so we only play the enter animation for
+  // rows that newly arrive during a live run, never on every re-render.
+  const seenRef = useRef<Set<string>>(new Set());
+  // Client clock (performance.now) at which each node was first seen running, so
+  // running durations tick live between polls.
+  const sinceRef = useRef<Map<string, number>>(new Map());
+  // A steadily-incrementing tick that drives live duration re-renders.
+  const [, setTick] = useState(0);
 
   const files = snapshot.root.children;
   const { counts } = snapshot;
@@ -296,18 +389,46 @@ export function TreeView({
   const toggle = (key: string, current: boolean) => {
     setOverrides((prev) => new Map(prev).set(key, !current));
   };
-  const collapseAll = () => {
+  const [allCollapsed, setAllCollapsed] = useState(false);
+  const toggleAll = () => {
     const keys: string[] = [];
     collectContainerKeys(files, keys);
+    const expand = allCollapsed; // currently collapsed -> expand; else collapse
     setOverrides((prev) => {
       const next = new Map(prev);
-      for (const key of keys) next.set(key, false);
+      for (const key of keys) next.set(key, expand);
       return next;
     });
+    setAllCollapsed(!allCollapsed);
   };
 
   const inProgress = !snapshot.summary && (streaming || counts.running > 0 || counts.queued > 0);
-  const duration = snapshot.summary ? snapshot.summary.durationMs : sumDuration(snapshot.root);
+  // Tick a few times a second while anything is running so running durations
+  // advance live instead of freezing between polls.
+  useEffect(() => {
+    if (!inProgress) return undefined;
+    const id = setInterval(() => setTick((n) => (n + 1) % 1e6), 250);
+    return () => clearInterval(id);
+  }, [inProgress]);
+  const now = performance.now();
+  const since = sinceRef.current;
+  // Sum of descendant durations (running leaves count live elapsed), consistent
+  // with the per-file/suite rows. Header ticks with the run.
+  const duration = liveDuration(snapshot.root, now, since);
+
+  // Enter-animation bookkeeping: play only for rows first seen during a live run,
+  // staggered within each file so a file "unfurls" rather than popping as a slab.
+  const enterMap = new Map<string, number>();
+  {
+    const seen = seenRef.current;
+    let stagger = 0;
+    for (const row of rows) {
+      if (row.node.type === 'file') stagger = 0;
+      const firstSeen = !seen.has(row.node.key);
+      seen.add(row.node.key);
+      if (firstSeen && inProgress) { enterMap.set(row.node.key, stagger); stagger += 1; }
+    }
+  }
 
   if (loadError) {
     return (
@@ -364,7 +485,14 @@ export function TreeView({
             >
               <ThemeIcon theme={theme} />
             </button>
-            <button type="button" className="btn" onClick={collapseAll} title="Collapse all">Collapse</button>
+            <button
+              type="button"
+              className="btn"
+              onClick={toggleAll}
+              title={allCollapsed ? 'Expand all' : 'Collapse all'}
+            >
+              {allCollapsed ? 'Expand' : 'Collapse'}
+            </button>
           </div>
         </div>
         <div className="hdr-bar-row">
@@ -383,7 +511,16 @@ export function TreeView({
 
       <div className="tree" role="tree" aria-label="Test results">
         {rows.length > 0 ? (
-          rows.map((row) => <RowView key={row.node.key} row={row} toggle={toggle} />)
+          rows.map((row) => (
+            <RowView
+              key={row.node.key}
+              row={row}
+              toggle={toggle}
+              enter={enterMap.has(row.node.key) ? enterMap.get(row.node.key)! : null}
+              now={now}
+              since={since}
+            />
+          ))
         ) : q ? (
           <CenteredState icon="⌕" iconStatus="skipped" title={`No tests match “${query.trim()}”`}>
             <div className="state-sub">Try a shorter query, or search by file name.</div>

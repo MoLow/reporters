@@ -24,6 +24,7 @@ export const STYLES = `
 :root {
   --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
   --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --ease-out: cubic-bezier(.2,.6,.2,1);
 }
 :root[data-theme="dark"] {${DARK}}
 :root[data-theme="light"] {${LIGHT}}
@@ -54,7 +55,44 @@ button { font-family: inherit; } input { font-family: inherit; }
 @keyframes ppulse { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
 [data-spin="true"] { display: inline-block; animation: pspin 1s linear infinite; }
 [data-pulse="true"] { animation: ppulse 1.5s ease-in-out infinite; }
-@media (prefers-reduced-motion: reduce) { [data-spin="true"], [data-pulse="true"] { animation: none; } }
+
+/* expand/collapse: animate the disclosure to auto height via grid-rows 0fr->1fr */
+.collapsible { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 200ms var(--ease-out); }
+.collapsible.open { grid-template-rows: 1fr; }
+.collapsible > .inner { overflow: hidden; min-height: 0; }
+.collapsible > .inner > .diag { opacity: 0; transition: opacity 200ms var(--ease-out); }
+.collapsible.open > .inner > .diag { opacity: 1; }
+
+/* live viewer: rows arriving, running, and settling (§9) */
+@keyframes rowEnter { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes rowPulse { 0%,100% { background: transparent; } 50% { background: var(--row-hover); } }
+@keyframes settlePop { 0% { transform: scale(.6); opacity: .4; } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
+@keyframes failFlash { from { background: var(--soft-failed); } to { background: transparent; } }
+
+.row-enter { animation: rowEnter 220ms var(--ease-out) both; }
+/* a running row pulses faintly once it has settled onto the screen (not while entering) */
+.row[data-running="true"]:not(.row-enter) { animation: rowPulse 1.6s ease-in-out infinite; }
+/* a ring spinner in the status-dot slot for a running test */
+.spinner { width: 10px; height: 10px; flex: none; border-radius: 50%; border: 2px solid var(--soft-running); border-top-color: var(--st-running); animation: spin .8s linear infinite; }
+/* indicators cross-fade their color, so even a plain status swap eases */
+.indicator { transition: color 200ms var(--ease-out), background-color 200ms var(--ease-out); }
+.settle-passed .indicator, .settle-failed .indicator, .settle-todo .indicator, .settle-skipped .indicator { animation: settlePop 300ms var(--ease-out); }
+/* failures earn one extra beat: a single row tint flash, never a loop */
+.settle-failed { animation: failFlash 500ms var(--ease-out); }
+/* the summary bar slides as counts shift queued -> settled */
+.bar > span { transition: width 300ms var(--ease-out); }
+.verdict { transition: background-color 200ms var(--ease-out), color 200ms var(--ease-out); }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-spin="true"], [data-pulse="true"], .spinner,
+  .row-enter, .row[data-running="true"]:not(.row-enter),
+  .settle-passed .indicator, .settle-failed .indicator, .settle-todo .indicator, .settle-skipped .indicator,
+  .settle-failed { animation: none; }
+  .caret, .collapsible, .collapsible > .inner > .diag, .btn, .btn-primary, .indicator, .bar > span, .verdict { transition: none; }
+  /* keep a running test legible without motion: a static amber ring */
+  .spinner { border-color: var(--soft-running); border-top-color: var(--st-running); }
+}
 
 /* app shell */
 .app { height: 100%; display: flex; flex-direction: column; --rh: 34px; --fs: 13.5px; --ind: 20px; }
@@ -76,8 +114,9 @@ button { font-family: inherit; } input { font-family: inherit; }
 .search { position: relative; display: flex; align-items: center; }
 .search svg { position: absolute; left: 11px; color: var(--faint); pointer-events: none; }
 .search input { background: var(--panel-2); border: 1px solid var(--line); color: var(--fg); font-size: 13px; padding: 8px 12px 8px 32px; border-radius: 10px; width: 188px; outline: none; }
-.btn { display: inline-flex; align-items: center; gap: 6px; background: var(--panel-2); border: 1px solid var(--line); color: var(--dim); border-radius: 10px; padding: 8px 11px; font-size: 12px; cursor: pointer; transition: background .13s, color .13s; }
+.btn { display: inline-flex; align-items: center; gap: 6px; background: var(--panel-2); border: 1px solid var(--line); color: var(--dim); border-radius: 10px; padding: 8px 11px; font-size: 12px; cursor: pointer; transition: background .13s, color .13s, transform .13s; }
 .btn:hover { background: var(--raise); color: var(--fg); }
+.btn:active { transform: scale(.97); }
 .hdr-bar-row { padding: 0 18px 13px; display: flex; align-items: center; gap: 14px; }
 .bar { flex: 1; min-width: 220px; height: 9px; display: flex; gap: 2px; border-radius: 999px; overflow: hidden; background: var(--panel-2); }
 .bar > span { height: 100%; }
@@ -90,7 +129,8 @@ button { font-family: inherit; } input { font-family: inherit; }
 .row[data-fail="true"] { background: var(--fail-tint); }
 .guides { display: flex; flex: none; align-self: stretch; }
 .guide { width: var(--ind); align-self: stretch; border-left: 1px solid var(--line); }
-.caret { width: 16px; flex: none; display: flex; align-items: center; justify-content: center; color: var(--faint); font-size: 10px; }
+.caret { width: 16px; flex: none; display: flex; align-items: center; justify-content: center; color: var(--faint); font-size: 10px; transition: transform 160ms var(--ease-out); }
+.caret[data-open="true"] { transform: rotate(90deg); }
 .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
 .cglyph { font-size: 13px; font-weight: 700; width: 14px; flex: none; text-align: center; }
 .name { font-size: var(--fs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -117,7 +157,10 @@ button { font-family: inherit; } input { font-family: inherit; }
 .diag pre { margin: 0; font-family: var(--mono); font-size: 11.5px; line-height: 1.55; }
 .diag pre.stack { padding: 2px 14px 13px; color: var(--dim); overflow-x: auto; white-space: pre; }
 .diag pre.text { padding: 2px 14px 13px; color: var(--fg); overflow-x: auto; white-space: pre-wrap; word-break: break-word; }
-.diag pre.text.err { color: var(--fg); }
+/* merged stdout+stderr: one block, per-line stream tagging */
+.out { padding: 4px 14px 12px; }
+.out-line { position: relative; padding-left: 12px; font-family: var(--mono); font-size: 11.5px; line-height: 1.55; color: var(--fg); white-space: pre-wrap; word-break: break-word; }
+.out-line[data-err]::before { content: ""; position: absolute; left: 0; top: 3px; bottom: 3px; width: 2px; border-radius: 1px; background: var(--st-failed); }
 .diag-list { padding: 2px 14px 12px; display: flex; flex-direction: column; gap: 6px; }
 .diag-item { font-size: 12.5px; color: var(--fg); display: flex; gap: 9px; align-items: baseline; }
 .diag-level { font-size: 9.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; flex: none; border-radius: 5px; padding: 1px 6px; }
@@ -129,7 +172,9 @@ button { font-family: inherit; } input { font-family: inherit; }
 .state-title { font-size: 16px; color: var(--fg); font-weight: 600; }
 .state-sub { font-size: 13px; color: var(--faint); max-width: 380px; line-height: 1.6; }
 .state-cmd { background: var(--panel-2); border: 1px solid var(--line); color: var(--dim); padding: 9px 14px; border-radius: 10px; font-family: var(--mono); font-size: 12px; max-width: 92%; overflow-x: auto; }
-.btn-primary { background: var(--accent); border: none; color: var(--accent-ink); border-radius: 10px; padding: 9px 17px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.btn-primary { background: var(--accent); border: none; color: var(--accent-ink); border-radius: 10px; padding: 9px 17px; font-size: 13px; font-weight: 600; cursor: pointer; transition: filter .13s, transform .13s; }
+.btn-primary:hover { filter: brightness(1.06); }
+.btn-primary:active { transform: scale(.97); }
 
 /* footer */
 .footer { flex: none; border-top: 1px solid var(--line); background: var(--panel); padding: 8px 18px; display: flex; align-items: center; gap: 10px; color: var(--faint); font-size: 11px; }

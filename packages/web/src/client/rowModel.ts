@@ -29,8 +29,23 @@ export function reasonOf(node: TestNode): string | undefined {
   return undefined;
 }
 
+/** Node's aggregate "N subtests failed" error — redundant with the real error on
+ *  the failing leaf, so we never render it. */
+const SYNTHETIC_ROLLUP = /^\d+ subtests? failed$/i;
+
+/**
+ * The error worth showing: only a *leaf* test's own error, and never Node's
+ * synthetic container rollup. Containers communicate failure through their
+ * status glyph and the failed child inside them, not an error block.
+ */
+export function realError(node: TestNode): { message: string; stack?: string } | undefined {
+  if (isContainer(node) || !node.error) return undefined;
+  if (SYNTHETIC_ROLLUP.test((node.error.message ?? '').trim())) return undefined;
+  return node.error;
+}
+
 export function hasDiagnostics(node: TestNode): boolean {
-  return Boolean(node.error)
+  return Boolean(realError(node))
     || node.diagnostics.length > 0
     || node.stdout.length > 0
     || node.stderr.length > 0
