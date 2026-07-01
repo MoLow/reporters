@@ -42,6 +42,32 @@ function leaf(node: TestNode, name: string): TestNode | undefined {
   return undefined;
 }
 
+// A real concurrent run, captured once, for the live-ordering guard below.
+const concurrentStream = captureEvents(['fixtures/concurrent-suite.mjs']);
+const liveComplete = concurrentStream.some((e) => e.type === 'test:complete' && e.data.testId != null);
+
+test('a fast test finalizes before its slower, first-declared sibling (live order)', {
+  skip: liveComplete ? false : 'this Node build lacks testId on test:complete',
+}, () => {
+  // 'slow' (20ms) is declared before 'fast' (1ms). Replay the real stream only
+  // up to the moment 'fast' completes: 'fast' must already be done while 'slow'
+  // is still running — i.e. completion is driven by execution-ordered
+  // test:complete, not the declaration-ordered (buffered) test:pass.
+  const idx = concurrentStream.findIndex((e) => e.type === 'test:complete' && e.data.name === 'fast');
+  assert.ok(idx >= 0, 'expected a test:complete for "fast"');
+
+  const store = createTreeStore();
+  for (const event of concurrentStream.slice(0, idx + 1)) store.apply(event);
+
+  const status: Record<string, string> = {};
+  (function walk(node: TestNode) {
+    node.children.forEach((c) => { status[c.name] = c.status; walk(c); });
+  }(store.getSnapshot().root));
+
+  assert.strictEqual(status.fast, 'passed', 'fast should be done');
+  assert.strictEqual(status.slow, 'running', 'slow should still be running, not waiting on declaration order');
+});
+
 test('isolation: shared-helper tests from two files group under the definition file', () => {
   // KNOWN LIMITATION: tests defined in a shared, imported module report the
   // definition file (not the entry file) and, under process isolation, reset
