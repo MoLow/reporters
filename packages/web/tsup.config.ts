@@ -41,4 +41,15 @@ export default defineConfig([
       writeFileSync('dist/viewer/index.html', page);
     },
   },
+  // Browser library entry: startViewer for hosts composing their own viewer
+  // page with a custom source resolver. Self-contained (React inlined).
+  {
+    entry: { start: 'src/client/start.tsx' },
+    format: ['esm'],
+    platform: 'browser',
+    target: 'es2020',
+    dts: true,
+    clean: false,
+    noExternal: [/.*/],
+  },
 ]);

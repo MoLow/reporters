@@ -60,3 +60,29 @@ The NDJSON is rendered by the tree viewer, reached three ways:
 Built on the shared [`@reporters/tree-core`](https://github.com/MoLow/reporters/tree/main/packages/tree-core)
 model (also used by [`@reporters/live`](https://github.com/MoLow/reporters/tree/main/packages/live)) —
 the same run state, rendered in the browser instead of the terminal.
+
+## Custom report sources (`@reporters/web/viewer`)
+
+The hosted viewer reads `?src=<url>` with plain `fetch`. To serve reports that
+need authentication (private buckets, SSO), build your own viewer page on the
+same UI with a custom source resolver:
+
+```ts
+import { startViewer } from '@reporters/web/viewer';
+
+startViewer({
+  resolveSource: async (params) => {
+    if (params.get('src') || !params.get('key')) return null; // default handling
+    const credentials = await acquireCredentialsSomehow();
+    return { url: params.get('key')!, fetch: authenticatedFetch(credentials) };
+  },
+});
+```
+
+`resolveSource` runs before anything renders. Return `null`/`undefined` to fall
+through to the default `?src=` handling; return `{ url, fetch?, pollMs? }` to
+take over. The custom `fetch` receives the reader's `Range` header and must
+return a standard `Response`; a thrown error shows the viewer's load-error
+screen, and a promise that never resolves is fine while an auth redirect is in
+flight. The export is a self-contained browser ESM module (React inlined) —
+bundle it with your resolver into a static HTML page.
