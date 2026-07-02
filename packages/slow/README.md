@@ -9,7 +9,7 @@ that took longer than 250ms — grouped by file, sorted slowest-first, with the
 duration color-coded by severity and a clickable `file:line:column` location
 for each offender.
 
-![@reporters/slow listing the slowest tests grouped by file](https://raw.githubusercontent.com/MoLow/reporters/e950437dee2debf018d19a18abc9b951b056dd9b/packages/slow/assets/cli.gif)
+![@reporters/slow listing the slowest tests grouped by file](https://raw.githubusercontent.com/MoLow/reporters/88901486cc58a9c706d5de24b44c8dd0630bf369/packages/slow/assets/cli.gif)
 
 | Duration | Color |
 | --- | --- |
