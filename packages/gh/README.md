@@ -3,8 +3,9 @@
 # GitHub Actions Reporter (all-in-one)
 
 An all-in-one GitHub Actions reporter for `node:test`: it prints a readable,
-spec-style test log **and** emits GitHub Actions annotations and a job summary —
-from a single reporter.
+spec-style test log — with every test as a collapsible group in the Actions log
+viewer — **and** emits GitHub Actions annotations and a job summary, from a
+single reporter.
 
 Failures show up exactly where you want them: inline on the offending line in
 the PR diff, in the run's annotation list, and in a job summary table — no
@@ -45,6 +46,15 @@ node --test-reporter=@reporters/gh --test
 ```
 
 ## What it looks like
+
+#### Collapsible log — every test folds away
+
+In the Actions log viewer, each test renders as a collapsible group: collapsed
+it's a single `✔ name (duration)` line, expanded it reveals that test's
+diagnostics and output. A thousand-test run stays scannable, and the noisy test
+is one click away — from a [real run](https://github.com/MoLow/reporters/actions/runs/28571941004/job/84711479469):
+
+<img width="1200" alt="the Actions log with each test as a collapsible group, one expanded showing its diagnostics" src="https://raw.githubusercontent.com/MoLow/reporters/e3933cd24b37badf100cd3aa7c5179bd74d3ca63/packages/gh/assets/actions-log.png">
 
 When a test fails, annotations appear in the GitHub UI with the corresponding
 errors and diagnostics — see this [example run](https://github.com/MoLow/reporters/actions/runs/5607828636):
