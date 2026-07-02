@@ -68,6 +68,11 @@ test('web with open:true and a file destination serves + opens AND writes NDJSON
   }
 });
 
+test('web declares under-mux defaults so mux drives it as a pure emitter', () => {
+  const defaults = (web as unknown as Record<symbol, unknown>)[Symbol.for('reporters.mux.defaultOptions')];
+  assert.deepStrictEqual(defaults, { open: false });
+});
+
 test('web with open:false stays a pure emitter and opens nothing', async () => {
   const origOpen = internals.openInBrowser;
   let opened = false;

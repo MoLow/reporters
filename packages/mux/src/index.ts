@@ -12,6 +12,20 @@ import { shouldOpen, internals } from './open.ts';
 export type { Sink, SinkSpec } from './sink.ts';
 export type { Reporter, Route, MuxConfig } from './types.ts';
 
+/**
+ * Well-known key under which a reporter function declares the options it wants
+ * by default when driven through mux (a route's own `options` win key-by-key).
+ * Lets a reporter behave differently under mux without env coupling — e.g.
+ * `@reporters/web` declares `{ open: false }` so the sink owns viewing.
+ */
+export const MUX_DEFAULT_OPTIONS = Symbol.for('reporters.mux.defaultOptions');
+
+function routeOptions(reporter: Reporter | Duplex, route: Route): unknown {
+  const defaults = (reporter as { [MUX_DEFAULT_OPTIONS]?: object })[MUX_DEFAULT_OPTIONS];
+  if (!defaults) return route.options;
+  return { ...defaults, ...(route.options as object | undefined) };
+}
+
 function isStreamReporter(value: unknown): value is Duplex {
   return typeof value === 'object' && value !== null
     && typeof (value as { pipe?: unknown }).pipe === 'function';
@@ -46,7 +60,7 @@ export async function runRoutes(
     // Transform-stream reporter uniformly — the same primitive node:test uses
     // internally — handling backpressure and error propagation for us.
     const stage = typeof reporter === 'function'
-      ? (src: AsyncIterable<TestEvent>) => reporter(src, route.options)
+      ? (src: AsyncIterable<TestEvent>) => reporter(src, routeOptions(reporter, route))
       : reporter;
     try {
       if (sink.start) await sink.start();

@@ -41,7 +41,7 @@ The NDJSON is rendered by the tree viewer, reached three ways:
   // mux.config.js
   import { httpServer } from '@reporters/web/sink';
   export default {
-    // pass `options: { open: false }` on the route if it shouldn't open a browser
+    // pass `open: false` on the route if it shouldn't open a browser
     local: [{ reporter: '@reporters/web', sink: httpServer() }],
   };
   ```

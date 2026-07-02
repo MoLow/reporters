@@ -7,7 +7,7 @@
   "private": true,
   "scripts": {
     "build": "yarn workspaces foreach --all --exclude reporters --topological-dev --parallel run build",
-    "test": "yarn build && REPORTERS_OPEN=0 c8 node --test-reporter=@reporters/mux --test 'packages/*/tests/*.test.js' 'packages/*/tests/*.test.ts'",
+    "test": "yarn build && c8 node --test-reporter=@reporters/mux --test 'packages/*/tests/*.test.{js,ts}'",
     "test:clean-snapshots": "rm -rf packages/**/.snapshots",
     "test:update-snapshots": "SNAP_UPDATE=1 yarn test",
     "lint": "eslint ."
@@ -32,7 +32,7 @@
     "@reporters/mux": "workspace:^",
     "@reporters/sink": "workspace:^",
     "@reporters/web": "workspace:^",
-    "@types/node": "^22.10.0",
+    "@types/node": "^26.1.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "c8": "^11.0.0",
