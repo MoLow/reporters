@@ -50,6 +50,8 @@ export default defineConfig([
     target: 'es2020',
     dts: true,
     clean: false,
+    minify: true,
+    env: { NODE_ENV: 'production' },
     noExternal: [/.*/],
   },
 ]);
