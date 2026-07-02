@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.1.0](https://github.com/MoLow/reporters/compare/mux-v1.0.0...mux-v1.1.0) (2026-07-02)
+
+
+### Features
+
+* **mux:** start every sink before reporters consume events ([#221](https://github.com/MoLow/reporters/issues/221)) ([c5ef14f](https://github.com/MoLow/reporters/commit/c5ef14fbe0357a4f756fb170f69876396806abd6))
+
+
+### Bug Fixes
+
+* **web:** stay a pure emitter under mux via symbol-declared default options ([#217](https://github.com/MoLow/reporters/issues/217)) ([96a7d14](https://github.com/MoLow/reporters/commit/96a7d14e82f69c6dc6d8d363645f94c09733fbda))
+
 ## 1.0.0 (2026-07-02)
 
 

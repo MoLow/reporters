@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.0](https://github.com/MoLow/reporters/compare/web-v1.1.0...web-v1.2.0) (2026-07-02)
+
+
+### Features
+
+* **web:** let sinks set the viewer poll cadence via a poll query param ([#219](https://github.com/MoLow/reporters/issues/219)) ([a78404d](https://github.com/MoLow/reporters/commit/a78404d61cf924d0c8e221ee41b8b0337f3d1023))
+
+
+### Bug Fixes
+
+* **web:** stay a pure emitter under mux via symbol-declared default options ([#217](https://github.com/MoLow/reporters/issues/217)) ([96a7d14](https://github.com/MoLow/reporters/commit/96a7d14e82f69c6dc6d8d363645f94c09733fbda))
+
 ## [1.1.0](https://github.com/MoLow/reporters/compare/web-v1.0.0...web-v1.1.0) (2026-07-02)
 
 
