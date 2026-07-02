@@ -3,9 +3,10 @@
 # reporters
 
 Everything the built-in `node:test` reporters don't do: live interactive trees,
-browser-viewable runs, GitHub Actions annotations, JUnit XML, watch mode,
-bail-on-failure — and a multiplexer that picks the right ones per environment,
-so one `--test-reporter` flag covers your laptop and your CI.
+browser-viewable runs you can share by link, GitHub Actions annotations, an
+interactive watch REPL, bail-on-failure, the whole mocha reporter ecosystem —
+and a multiplexer that picks the right ones per environment, so one
+`--test-reporter` flag covers your laptop and your CI.
 
 ![the same mux command rendering a live tree locally and a CI log with a report link under REPORTERS_PROFILE=ci](https://raw.githubusercontent.com/MoLow/reporters/6f8d755a21c3cb627f65878de4d68fba1530d66b/packages/mux/assets/cli.gif)
 
