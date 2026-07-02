@@ -9,7 +9,7 @@ happily grinds through every remaining test while you wait for feedback you
 already have. `@reporters/bail` fixes that: the instant any test fails, it
 aborts the run and exits non-zero.
 
-![@reporters/bail aborting a run on the first failing test](https://raw.githubusercontent.com/MoLow/reporters/88901486cc58a9c706d5de24b44c8dd0630bf369/packages/bail/assets/cli.gif)
+![@reporters/bail aborting a run on the first failing test](https://raw.githubusercontent.com/MoLow/reporters/6f8d755a21c3cb627f65878de4d68fba1530d66b/packages/bail/assets/cli.gif)
 
 Perfect for:
 

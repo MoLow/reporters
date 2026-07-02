@@ -7,13 +7,13 @@ browser-viewable runs, GitHub Actions annotations, JUnit XML, watch mode,
 bail-on-failure — and a multiplexer that picks the right ones per environment,
 so one `--test-reporter` flag covers your laptop and your CI.
 
-![the same mux command rendering a live tree locally and a CI log with a report link under REPORTERS_PROFILE=ci](https://raw.githubusercontent.com/MoLow/reporters/c219a78309b01285a92c99518a7f7b25a09ad7e2/packages/mux/assets/cli.gif)
+![the same mux command rendering a live tree locally and a CI log with a report link under REPORTERS_PROFILE=ci](https://raw.githubusercontent.com/MoLow/reporters/6f8d755a21c3cb627f65878de4d68fba1530d66b/packages/mux/assets/cli.gif)
 
 That `report at` link is [`@reporters/web`](packages/web)'s run being delivered
 — it opens as an interactive tree in the browser
-(**[live demo](https://molow.github.io/reporters/?src=https://raw.githubusercontent.com/MoLow/reporters/88901486cc58a9c706d5de24b44c8dd0630bf369/packages/web/assets/demo-run.ndjson)**):
+(**[live demo](https://molow.github.io/reporters/?src=https://raw.githubusercontent.com/MoLow/reporters/6f8d755a21c3cb627f65878de4d68fba1530d66b/packages/web/assets/demo-run.ndjson)**):
 
-[![the browser viewer rendering the delivered run](https://raw.githubusercontent.com/MoLow/reporters/88901486cc58a9c706d5de24b44c8dd0630bf369/packages/web/assets/viewer.png)](https://molow.github.io/reporters/?src=https://raw.githubusercontent.com/MoLow/reporters/88901486cc58a9c706d5de24b44c8dd0630bf369/packages/web/assets/demo-run.ndjson)
+[![the browser viewer rendering the delivered run](https://raw.githubusercontent.com/MoLow/reporters/6f8d755a21c3cb627f65878de4d68fba1530d66b/packages/web/assets/viewer.png)](https://molow.github.io/reporters/?src=https://raw.githubusercontent.com/MoLow/reporters/6f8d755a21c3cb627f65878de4d68fba1530d66b/packages/web/assets/demo-run.ndjson)
 
 ## TL;DR — what you probably want
 

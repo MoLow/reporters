@@ -8,7 +8,7 @@ Run the tests, print nothing, let the exit code do the talking.
 suite still runs in full — the process exits `0` when everything passes and
 `1` when anything fails.
 
-![@reporters/silent producing no output, only an exit code](https://raw.githubusercontent.com/MoLow/reporters/88901486cc58a9c706d5de24b44c8dd0630bf369/packages/silent/assets/cli.gif)
+![@reporters/silent producing no output, only an exit code](https://raw.githubusercontent.com/MoLow/reporters/6f8d755a21c3cb627f65878de4d68fba1530d66b/packages/silent/assets/cli.gif)
 
 Handy whenever output is noise:
 

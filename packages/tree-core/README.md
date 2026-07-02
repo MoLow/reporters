@@ -16,7 +16,7 @@ One model, two renderers:
 
 | `@reporters/live` (terminal) | `@reporters/web` (browser) |
 | --- | --- |
-| ![the live terminal tree](https://raw.githubusercontent.com/MoLow/reporters/88901486cc58a9c706d5de24b44c8dd0630bf369/packages/live/assets/cli.gif) | ![the web viewer](https://raw.githubusercontent.com/MoLow/reporters/88901486cc58a9c706d5de24b44c8dd0630bf369/packages/web/assets/viewer.png) |
+| ![the live terminal tree](https://raw.githubusercontent.com/MoLow/reporters/6f8d755a21c3cb627f65878de4d68fba1530d66b/packages/live/assets/cli.gif) | ![the web viewer](https://raw.githubusercontent.com/MoLow/reporters/6f8d755a21c3cb627f65878de4d68fba1530d66b/packages/web/assets/viewer.png) |
 
 > [!NOTE]
 > This is an internal workspace package — it isn't published to npm. If you're
