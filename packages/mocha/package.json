@@ -1,6 +1,6 @@
 {
   "name": "@reporters/mocha",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "use any mocha reporter with `node:test`",
   "type": "module",
   "keywords": [
