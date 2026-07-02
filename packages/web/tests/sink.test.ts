@@ -3,16 +3,26 @@ import assert from 'node:assert';
 import { httpServer } from '../src/sink.ts';
 
 function baseOf(sink: ReturnType<typeof httpServer>) {
-  return sink.viewerUrl!()!.replace('/?src=/run.ndjson', '');
+  return sink.viewerUrl!()!.replace('/?src=/run.ndjson&poll=250', '');
 }
 
-test('viewerUrl points at the local server with the run.ndjson src', async () => {
+test('viewerUrl points at the local server with the run.ndjson src and a fast poll', async () => {
   const sink = httpServer({ host: '127.0.0.1' });
   await sink.start!();
   try {
-    assert.match(sink.viewerUrl!()!, /^http:\/\/127\.0\.0\.1:\d+\/\?src=\/run\.ndjson$/);
+    assert.match(sink.viewerUrl!()!, /^http:\/\/127\.0\.0\.1:\d+\/\?src=\/run\.ndjson&poll=250$/);
   } finally {
     // stdin isn't a TTY under `node --test`, so close() shuts the server.
+    await sink.close();
+  }
+});
+
+test('the pollMs option overrides the advertised poll cadence', async () => {
+  const sink = httpServer({ host: '127.0.0.1', pollMs: 1000 });
+  await sink.start!();
+  try {
+    assert.match(sink.viewerUrl!()!, /\?src=\/run\.ndjson&poll=1000$/);
+  } finally {
     await sink.close();
   }
 });

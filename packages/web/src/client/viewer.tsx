@@ -1,11 +1,10 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { createTreeStore, type TreeStore } from '@reporters/tree-core';
-import { createNdjsonReader } from '../poll.ts';
+import { createNdjsonReader, resolvePollMs } from '../poll.ts';
 import { STYLES } from '../template.ts';
 import { TreeView } from './TreeView.tsx';
 
-const POLL_MS = 1000;
 const delay = (ms: number) => new Promise((resolve) => { setTimeout(resolve, ms); });
 
 function injectStyles(): void {
@@ -30,7 +29,9 @@ async function main(): Promise<void> {
     <TreeView snapshot={store.getSnapshot()} streaming={streaming} loadError={loadError} onRetry={retry} />,
   );
 
-  const src = new URLSearchParams(window.location.search).get('src');
+  const params = new URLSearchParams(window.location.search);
+  const src = params.get('src');
+  const pollMs = resolvePollMs(params.get('poll'));
   if (!src) {
     streaming = false;
     loadError = true;
@@ -56,7 +57,7 @@ async function main(): Promise<void> {
       if (store.getSnapshot().root.children.length === 0) { loadError = true; draw(); }
       console.error(err);
     }
-    await delay(POLL_MS);
+    await delay(pollMs);
   }
 }
 

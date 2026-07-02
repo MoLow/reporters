@@ -3,6 +3,8 @@ import { startViewerServer, type ViewerServer } from './server.ts';
 
 export interface HttpServerOptions {
   host?: string;
+  /** Viewer polling cadence in ms (default 250; the viewer clamps to 100–10000). */
+  pollMs?: number;
 }
 
 /**
@@ -14,7 +16,7 @@ export interface HttpServerOptions {
 export function httpServer(opts: HttpServerOptions = {}): Sink {
   let server: ViewerServer | undefined;
   return {
-    async start() { server = await startViewerServer(opts.host); },
+    async start() { server = await startViewerServer(opts.host, opts.pollMs); },
     write(chunk) { server?.push(chunk); },
     viewerUrl() { return server?.url; },
     async close() {

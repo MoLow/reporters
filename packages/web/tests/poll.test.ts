@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
-import { createNdjsonReader } from '../src/poll.ts';
+import { createNdjsonReader, resolvePollMs, DEFAULT_POLL_MS } from '../src/poll.ts';
 
 interface MockResponse {
   status: number;
@@ -91,4 +91,18 @@ test('416 (nothing new) yields no events', async () => {
   const second = await reader.pull();
   assert.deepStrictEqual(second.events, []);
   assert.strictEqual(second.reset, false);
+});
+
+test('resolvePollMs defaults when the param is absent or invalid', () => {
+  assert.strictEqual(resolvePollMs(null), DEFAULT_POLL_MS);
+  assert.strictEqual(resolvePollMs(''), DEFAULT_POLL_MS);
+  assert.strictEqual(resolvePollMs('fast'), DEFAULT_POLL_MS);
+  assert.strictEqual(resolvePollMs('-5'), DEFAULT_POLL_MS);
+  assert.strictEqual(resolvePollMs('0'), DEFAULT_POLL_MS);
+});
+
+test('resolvePollMs honors and clamps explicit values', () => {
+  assert.strictEqual(resolvePollMs('250'), 250);
+  assert.strictEqual(resolvePollMs('1'), 100);
+  assert.strictEqual(resolvePollMs('999999'), 10_000);
 });

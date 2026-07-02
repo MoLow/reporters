@@ -30,7 +30,7 @@ export interface ViewerServer {
  * live-updates as bytes are appended — no `file://`/CORS limits. Shared by the
  * `httpServer()` sink and the standalone reporter.
  */
-export function startViewerServer(host = '127.0.0.1'): Promise<ViewerServer> {
+export function startViewerServer(host = '127.0.0.1', pollMs = 250): Promise<ViewerServer> {
   const page = viewerPage();
   let buffer = Buffer.alloc(0);
 
@@ -61,7 +61,9 @@ export function startViewerServer(host = '127.0.0.1'): Promise<ViewerServer> {
     server.listen(0, host, () => {
       const { port } = server.address() as AddressInfo;
       resolve({
-        url: `http://${host}:${port}/?src=/run.ndjson`,
+        // Serving from memory on localhost is cheap, so ask the viewer to poll
+        // fast; remote sinks (S3/gist) omit `poll` and get the slower default.
+        url: `http://${host}:${port}/?src=/run.ndjson&poll=${pollMs}`,
         push(chunk) {
           buffer = Buffer.concat([buffer, Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)]);
         },
