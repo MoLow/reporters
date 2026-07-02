@@ -7,9 +7,13 @@ const { format: prettyFormat } = require('pretty-format');
 
 const nodeMajor = process.versions.node.split('.')[0];
 
+// The repo root, derived from this file's location (tests/ sits at the root)
+// rather than process.cwd(), so tests behave the same run from any directory.
+const repoRoot = resolve(__dirname, '..');
+
 function sanitize(str) {
   return str
-    .replaceAll(resolve(process.cwd(), '../../'), 'CWD')
+    .replaceAll(repoRoot, 'CWD')
     .replaceAll(process.version, '*')
     .replaceAll(/[0-9.]+(ms| millisecond)s?/g, '*$1')
     .replaceAll(hostname(), 'HOSTNAME')

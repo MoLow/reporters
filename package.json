@@ -6,9 +6,8 @@
   "main": "index.js",
   "private": true,
   "scripts": {
-    "mono": "c8 node scripts/mono-run.js",
-    "build": "yarn mono build",
-    "test": "yarn mono build && REPORTERS_OPEN=0 yarn mono test",
+    "build": "yarn workspaces foreach --all --exclude reporters --topological-dev --parallel run build",
+    "test": "yarn build && REPORTERS_OPEN=0 c8 node --test-reporter=@reporters/mux --test 'packages/*/tests/*.test.js' 'packages/*/tests/*.test.ts'",
     "test:clean-snapshots": "rm -rf packages/**/.snapshots",
     "test:update-snapshots": "SNAP_UPDATE=1 yarn test",
     "lint": "eslint ."
