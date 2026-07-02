@@ -7,6 +7,7 @@ import { Snap, nodeMajor } from '../../../tests/utils.js';
 import reporter from '../index.js';
 
 const snapshot = Snap(`${import.meta.filename}.${nodeMajor}`);
+const pkgDir = resolve(import.meta.dirname, '..');
 
 function waitForStdoutMatch(child, matcher, timeoutMs = 2000) {
   let stdout = '';
@@ -67,27 +68,27 @@ function collectOutput(child) {
 }
 
 test('spawn with reporter', async () => {
-  const child = spawnSync(process.execPath, ['--test-reporter', './index.js', '../../tests/example'], { env: {} });
+  const child = spawnSync(process.execPath, ['--test-reporter', './index.js', '../../tests/example'], { env: {}, cwd: pkgDir });
   await snapshot(child);
 });
 
 test('spawn with reporter - esm', async () => {
-  const child = spawnSync(process.execPath, ['--test-reporter', './index.js', '../../tests/example.mjs'], { env: {} });
+  const child = spawnSync(process.execPath, ['--test-reporter', './index.js', '../../tests/example.mjs'], { env: {}, cwd: pkgDir });
   await snapshot(child);
 });
 
 test('custom reporter - file', async () => {
-  const child = spawnSync(process.execPath, ['--test-reporter', '../../index.js', '../../../../tests/example.js'], { env: {}, cwd: resolve('./tests/customReporter') });
+  const child = spawnSync(process.execPath, ['--test-reporter', '../../index.js', '../../../../tests/example.js'], { env: {}, cwd: resolve(pkgDir, './tests/customReporter') });
   await snapshot(child);
 });
 
 test('custom reporter - function', async () => {
-  const child = spawnSync(process.execPath, ['--test-reporter', '../../index.js', '../../../../tests/example.js'], { env: {}, cwd: resolve('./tests/importReporter') });
+  const child = spawnSync(process.execPath, ['--test-reporter', '../../index.js', '../../../../tests/example.js'], { env: {}, cwd: resolve(pkgDir, './tests/importReporter') });
   await snapshot(child);
 });
 
 test('reporter not found', async () => {
-  const child = spawnSync(process.execPath, ['--test-reporter', '../../index.js', '../../../../tests/example.js'], { env: {}, cwd: resolve('./tests/invalidReporter') });
+  const child = spawnSync(process.execPath, ['--test-reporter', '../../index.js', '../../../../tests/example.js'], { env: {}, cwd: resolve(pkgDir, './tests/invalidReporter') });
   await snapshot(child);
 });
 
@@ -100,12 +101,12 @@ test('single test', async () => {
 });
 
 test('emits root suite lifecycle for empty sources', async () => {
-  const child = spawnSync(process.execPath, ['--test', '--test-reporter', '../../index.js', './*.not-real.js'], { env: {}, cwd: resolve('./tests/emptySuiteReporter') });
+  const child = spawnSync(process.execPath, ['--test', '--test-reporter', '../../index.js', './*.not-real.js'], { env: {}, cwd: resolve(pkgDir, './tests/emptySuiteReporter') });
   await snapshot(child);
 });
 
 test('streams built-in reporter output before suite end', async () => {
-  const child = spawn(process.execPath, ['--test-reporter', './index.js', '../../tests/slow_tests.js'], { env: {} });
+  const child = spawn(process.execPath, ['--test-reporter', './index.js', '../../tests/slow_tests.js'], { env: {}, cwd: pkgDir });
   const output = collectOutput(child);
 
   const partialStdout = await waitForStdoutMatch(child, /is a little slow/);
@@ -120,7 +121,7 @@ test('streams built-in reporter output before suite end', async () => {
 });
 
 test('streams custom reporter callbacks before suite completion', async () => {
-  const child = spawn(process.execPath, ['--test-reporter', '../../index.js', '../../../../tests/slow_tests.js'], { env: {}, cwd: resolve('./tests/progressiveReporter') });
+  const child = spawn(process.execPath, ['--test-reporter', '../../index.js', '../../../../tests/slow_tests.js'], { env: {}, cwd: resolve(pkgDir, './tests/progressiveReporter') });
   const output = collectOutput(child);
 
   const partialStdout = await waitForStdoutMatch(child, /test end:/);
@@ -136,7 +137,7 @@ test('streams custom reporter callbacks before suite completion', async () => {
 
 test('preserves incoming completion order for concurrent children', async () => {
   const child = spawnSync(process.execPath, ['--test-reporter', '../../index.js', '../../../../tests/slow_tests.js'], {
-    cwd: resolve('./tests/customReporter'),
+    cwd: resolve(pkgDir, './tests/customReporter'),
     env: {},
   });
   await snapshot(child);
