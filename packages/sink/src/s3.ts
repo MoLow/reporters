@@ -55,7 +55,6 @@ export interface S3Options {
  */
 export function s3(opts: S3Options): Sink {
   const key = opts.key ?? `reporters/${process.env.GITHUB_RUN_ID ?? randomUUID()}.ndjson`;
-  let disabled = false;
   let getUrl: string | undefined;
   let putObject: ((body: Buffer) => Promise<void>) | undefined;
 
@@ -80,14 +79,7 @@ export function s3(opts: S3Options): Sink {
       );
     },
     async upload(body) {
-      if (disabled) return;
-      try {
-        await putObject!(body);
-      } catch (err) {
-        // Best-effort delivery: an upload failure must not fail the run.
-        disabled = true;
-        process.stderr.write(`\n@reporters/sink: uploading the report failed (${(err as Error).message}) — giving up\n`);
-      }
+      await putObject!(body);
     },
     viewerUrl() {
       if (!getUrl) return undefined;

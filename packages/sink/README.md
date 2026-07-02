@@ -105,5 +105,6 @@ remoteSink({
 })
 ```
 
-Uploads are coalesced (never overlapping, only when the buffer changed) and a
-final upload runs on close, so the last bytes always land.
+Uploads are coalesced — never overlapping, always the latest buffer — and a
+final upload runs on close, so the last bytes land. A failed upload never
+fails the run: the engine backs off (honoring `Retry-After`) and retries.
