@@ -34,14 +34,15 @@ yarn add --dev @reporters/slow
 ## Usage
 
 ```bash
-node --test --test-reporter=@reporters/slow
+node --test-reporter=@reporters/slow --test
 ```
 
 Or keep your usual reporter for results and add this one just for the timing
 report:
 
 ```bash
-node --test \
+node \
   --test-reporter=spec --test-reporter-destination=stdout \
-  --test-reporter=@reporters/slow --test-reporter-destination=stdout
+  --test-reporter=@reporters/slow --test-reporter-destination=stdout \
+  --test
 ```

@@ -34,9 +34,10 @@ yarn add --dev @reporters/bail
 failures — so run it alongside any reporter you like to read:
 
 ```bash
-node --test \
+node \
   --test-reporter=@reporters/bail --test-reporter-destination=stderr \
-  --test-reporter=spec --test-reporter-destination=stdout
+  --test-reporter=spec --test-reporter-destination=stdout \
+  --test
 ```
 
 When a test fails you'll see the log up to that point, then:

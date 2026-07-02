@@ -28,9 +28,10 @@ Write the XML to a file for your CI system to pick up, and keep a human-readable
 reporter on stdout:
 
 ```bash
-node --test \
+node \
   --test-reporter=@reporters/junit --test-reporter-destination=report.xml \
-  --test-reporter=spec --test-reporter-destination=stdout
+  --test-reporter=spec --test-reporter-destination=stdout \
+  --test
 ```
 
 Then point your CI at the report — e.g. in GitLab:
