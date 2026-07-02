@@ -44,7 +44,7 @@ test('web with open:true and no file destination serves + opens, and keeps stdou
     for await (const chunk of web(events, { open: true })) out.push(chunk);
     // No file destination → the browser is the only view; nothing is written to stdout.
     assert.strictEqual(out.length, 0);
-    assert.match(opened!, /^http:\/\/127\.0\.0\.1:\d+\/\?src=\/run\.ndjson$/);
+    assert.match(opened!, /^http:\/\/127\.0\.0\.1:\d+\/\?src=\/run\.ndjson&poll=250$/);
   } finally {
     internals.openInBrowser = origOpen;
   }
@@ -61,7 +61,7 @@ test('web with open:true and a file destination serves + opens AND writes NDJSON
     for await (const chunk of web(events, { open: true })) out.push(chunk);
     // A file destination exists → NDJSON is still emitted (to the file) while serving.
     assert.strictEqual(out.length, 2);
-    assert.match(opened!, /\/\?src=\/run\.ndjson$/);
+    assert.match(opened!, /\/\?src=\/run\.ndjson&poll=250$/);
   } finally {
     internals.openInBrowser = origOpen;
     process.execArgv = origArgv;

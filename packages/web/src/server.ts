@@ -61,7 +61,9 @@ export function startViewerServer(host = '127.0.0.1'): Promise<ViewerServer> {
     server.listen(0, host, () => {
       const { port } = server.address() as AddressInfo;
       resolve({
-        url: `http://${host}:${port}/?src=/run.ndjson`,
+        // Serving from memory on localhost is cheap, so ask the viewer to poll
+        // fast; remote sinks (S3/gist) omit `poll` and get the slower default.
+        url: `http://${host}:${port}/?src=/run.ndjson&poll=250`,
         push(chunk) {
           buffer = Buffer.concat([buffer, Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)]);
         },
