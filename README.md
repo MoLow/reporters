@@ -119,7 +119,7 @@ Both [`@reporters/gh`](https://www.npmjs.com/package/@reporters/gh) and [`@repor
 
 | | `@reporters/gh` | `@reporters/github` |
 |---|---|---|
-| Human-readable log | ✅ built in (spec-style) | ❌ none — pair with another reporter |
+| Human-readable log | ✅ built in (spec-style, collapsible per-test groups) | ❌ none — pair with another reporter |
 | Annotations + job summary | ✅ | ✅ |
 | Reporters needed | one | two (it + e.g. `spec`) |
 | Output outside GitHub Actions | spec-style log | nothing (no-op) |
