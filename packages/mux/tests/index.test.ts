@@ -8,7 +8,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import type { TestEvent } from '@reporters/tree-core';
 import type { Sink } from '../src/sink.ts';
 import type { MuxConfig } from '../src/types.ts';
-import mux, { resolveReporter, runRoutes } from '../src/index.ts';
+import mux, { resolveReporter, runRoutes, MUX_DEFAULT_OPTIONS } from '../src/index.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -103,6 +103,42 @@ test('runRoutes announces a sink viewer url even when the open gate is closed', 
   await runRoutes(source(), config, { REPORTERS_OPEN: '0' }, (url) => opened.push(url));
   assert.deepStrictEqual(announced, ['http://localhost:1/'], 'announced despite the closed gate');
   assert.deepStrictEqual(opened, [], 'not opened');
+});
+
+test("runRoutes merges a reporter's declared under-mux defaults beneath route options", async () => {
+  const seen: unknown[] = [];
+  async function* declaring(src: AsyncIterable<TestEvent>, options?: unknown): AsyncGenerator<string> {
+    seen.push(options);
+    // eslint-disable-next-line no-unused-vars
+    for await (const _e of src) { /* drain */ }
+    yield '';
+  }
+  Object.assign(declaring, { [MUX_DEFAULT_OPTIONS]: { open: false, style: 'default' } });
+  const config: MuxConfig = {
+    local: [
+      { reporter: declaring, sink: memorySink() },
+      { reporter: declaring, sink: memorySink(), options: { style: 'route' } },
+    ],
+  };
+  await runRoutes(source(), config, { REPORTERS_OPEN: '0' });
+  assert.deepStrictEqual(seen, [
+    { open: false, style: 'default' },
+    { open: false, style: 'route' },
+  ], 'defaults apply when the route has no options and lose to route options key-by-key');
+});
+
+test('runRoutes passes route options through untouched for a reporter with no declared defaults', async () => {
+  const seen: unknown[] = [];
+  async function* plain(src: AsyncIterable<TestEvent>, options?: unknown): AsyncGenerator<string> {
+    seen.push(options);
+    // eslint-disable-next-line no-unused-vars
+    for await (const _e of src) { /* drain */ }
+    yield '';
+  }
+  const options = { style: 'route' };
+  const config: MuxConfig = { local: [{ reporter: plain, sink: memorySink(), options }] };
+  await runRoutes(source(), config, { REPORTERS_OPEN: '0' });
+  assert.deepStrictEqual(seen, [options]);
 });
 
 // A Transform-based reporter (the shape @reporters/gh uses): objectMode in, string out.

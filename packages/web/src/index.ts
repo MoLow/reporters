@@ -20,8 +20,8 @@ function hint(message: string): void {
  * Run standalone on a dev machine it also serves a live browser view and opens
  * it, the same way it behaves through `@reporters/mux`'s `httpServer()` sink.
  * Control this with the `open` option or `REPORTERS_OPEN=1|0`; it never opens
- * in CI by default. Through mux the reporter is a pure emitter and the sink owns
- * viewing.
+ * in CI by default. Through mux the reporter is a pure emitter and the sink
+ * owns viewing — it declares `{ open: false }` as its under-mux default options.
  */
 export default async function* web(
   source: AsyncIterable<TestEvent>,
@@ -50,3 +50,7 @@ export default async function* web(
   if (process.stdin.isTTY) return; // keep serving for review; user quits with Ctrl+C
   await server.close();
 }
+
+// Under `@reporters/mux` the sink owns viewing, so declare a pure-emitter
+// default; a route's explicit `options: { open: true }` still wins.
+Object.assign(web, { [Symbol.for('reporters.mux.defaultOptions')]: { open: false } satisfies WebOptions });

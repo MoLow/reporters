@@ -60,7 +60,12 @@ Transform-stream reporters (like `@reporters/gh`) are supported as route reporte
   `@reporters/web` accepts `{ open: boolean }`); most reporters need none.
 - `sink` — `'stdout'`, `'stderr'`, a file path, or a `Sink` object.
 - `open` — open the sink's viewer URL in a browser. Defaults to on locally, off
-  in CI. `open: false` opts out; `REPORTERS_OPEN=1|0` forces it.
+  in CI. `open: false` opts out; `REPORTERS_OPEN=1|0` forces it. This is the
+  only open gate: a reporter can declare default options for when it runs under
+  mux — attached to the reporter function under
+  `Symbol.for('reporters.mux.defaultOptions')`, merged beneath the route's
+  `options` — which is how reporters that self-open standalone (like
+  `@reporters/web`, declaring `{ open: false }`) stay pure emitters here.
 
 ### Profile resolution
 

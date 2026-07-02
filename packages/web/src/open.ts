@@ -22,9 +22,11 @@ export function isCI(env: NodeJS.ProcessEnv = process.env): boolean {
 }
 
 /**
- * Whether to open a live browser view. An explicit `open` option wins; then the
- * `REPORTERS_OPEN=1|0` env override; otherwise the default is to open on an
- * interactive terminal (a TTY) and not in CI.
+ * Whether to open a live browser view. An explicit `open` option wins (mux
+ * passes `open: false` via the reporter's declared under-mux defaults — the
+ * sink owns viewing there); then the `REPORTERS_OPEN=1|0` env override;
+ * otherwise the default is to open on an interactive terminal (a TTY) and not
+ * in CI.
  */
 export function shouldOpen(
   open: boolean | undefined,
