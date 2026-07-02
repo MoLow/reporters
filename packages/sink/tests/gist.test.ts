@@ -135,3 +135,26 @@ test('viewerUrl is undefined before start', () => {
   const sink = gist({ token: 't0k' });
   assert.strictEqual(sink.viewerUrl!(), undefined);
 });
+
+test('a failed upload gives up quietly instead of failing the run', async () => {
+  const requests: { method: string }[] = [];
+  const fetchImpl = (async (_url: unknown, init: any) => {
+    requests.push({ method: init.method });
+    if (init.method === 'POST') {
+      return { ok: true, status: 201, json: async () => ({ id: 'g1', owner: { login: 'molow' } }) };
+    }
+    return { ok: false, status: 403, json: async () => ({}) };
+  }) as unknown as typeof fetch;
+  const sink = gist({ token: 't0k', fetchImpl });
+  await sink.start!();
+  sink.write('{"a":1}\n');
+  const err = await captureStderr(async () => {
+    await sink.flush!();
+    await sink.close();
+  });
+  assert.match(err, /uploading the report failed/);
+  assert.match(err, /403/);
+  sink.write('{"b":2}\n');
+  await sink.flush!();
+  assert.strictEqual(requests.filter((r) => r.method === 'PATCH').length, 1, 'gives up after the first failure');
+});

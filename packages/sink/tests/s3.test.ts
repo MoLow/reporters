@@ -110,3 +110,30 @@ test('region, endpoint and credentials are passed through to the client', async 
   assert.deepStrictEqual(configs[0], { region: 'eu-west-1', endpoint: 'https://minio.example', credentials });
   await sink.close();
 });
+
+test('a failed upload gives up quietly instead of failing the run', async (t) => {
+  const fake = fakeSdk();
+  let attempts = 0;
+  fake.sdk.S3Client.prototype.send = async () => { attempts += 1; throw new Error('AccessDenied'); };
+  const original = internals.loadSdk;
+  internals.loadSdk = async () => fake.sdk;
+  t.after(() => { internals.loadSdk = original; });
+
+  const sink = s3({ bucket: 'b', key: 'k.ndjson' });
+  await sink.start!();
+  sink.write('{"a":1}\n');
+  const originalWrite = process.stderr.write.bind(process.stderr);
+  let captured = '';
+  process.stderr.write = ((chunk: string | Buffer) => { captured += String(chunk); return true; }) as typeof process.stderr.write;
+  try {
+    await sink.flush!();
+    sink.write('{"b":2}\n');
+    await sink.flush!();
+    await sink.close();
+  } finally {
+    process.stderr.write = originalWrite;
+  }
+  assert.match(captured, /uploading the report failed/);
+  assert.match(captured, /AccessDenied/);
+  assert.strictEqual(attempts, 1, 'gives up after the first failure');
+});

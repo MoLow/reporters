@@ -51,7 +51,9 @@ export function gist(opts: GistOptions = {}): Sink {
   }
 
   return remoteSink({
-    flushMs: opts.flushMs,
+    // Every upload is a gist revision (a git commit), so default to a gentler
+    // cadence than the engine's 2s — it also keeps secondary rate limits away.
+    flushMs: opts.flushMs ?? 10_000,
     async start() {
       if (!opts.token && process.env.GITHUB_ACTIONS !== 'true') {
         disabled = true;
@@ -85,7 +87,14 @@ export function gist(opts: GistOptions = {}): Sink {
     },
     async upload(body) {
       if (disabled) return;
-      await request('PATCH', `/gists/${id}`, { files: { [filename]: { content: body.toString('utf8') } } });
+      try {
+        await request('PATCH', `/gists/${id}`, { files: { [filename]: { content: body.toString('utf8') } } });
+      } catch (err) {
+        // Best-effort delivery: an upload failure (e.g. a secondary rate
+        // limit) must not fail the run — and retrying would make it worse.
+        disabled = true;
+        process.stderr.write(`\n@reporters/sink: uploading the report failed (${(err as Error).message}) — giving up\n`);
+      }
     },
     viewerUrl() {
       if (!rawUrl) return undefined;
