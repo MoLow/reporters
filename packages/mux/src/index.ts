@@ -53,22 +53,27 @@ export async function runRoutes(
 ): Promise<void> {
   const routes: Route[] = resolveProfile(config, env);
   const streams = broadcast(source, routes.length);
-  await Promise.all(routes.map(async (route, i) => {
-    const reporter = await resolveReporter(route.reporter);
-    const sink = resolveSink(route.sink);
-    // `Readable#compose` drives both a generator-function reporter and a
-    // Transform-stream reporter uniformly — the same primitive node:test uses
-    // internally — handling backpressure and error propagation for us.
-    const stage = typeof reporter === 'function'
-      ? (src: AsyncIterable<TestEvent>) => reporter(src, routeOptions(reporter, route))
-      : reporter;
+  const sinks = routes.map((route) => resolveSink(route.sink));
+  // Start every sink before any reporter consumes events, so a viewer-URL
+  // getter wired into another route's options is live from the first event.
+  const starts = sinks.map((sink) => sink.start?.());
+  await Promise.allSettled(starts);
+  const results = await Promise.allSettled(routes.map(async (route, i) => {
+    const sink = sinks[i];
     try {
-      if (sink.start) await sink.start();
+      await starts[i];
+      const reporter = await resolveReporter(route.reporter);
+      const stage = typeof reporter === 'function'
+        ? (src: AsyncIterable<TestEvent>) => reporter(src, routeOptions(reporter, route))
+        : reporter;
       const url = sink.viewerUrl?.();
       if (url) {
         internals.announce(url, env);
         if (shouldOpen(route.open, env)) open(url);
       }
+      // `Readable#compose` drives both a generator-function reporter and a
+      // Transform-stream reporter uniformly — the same primitive node:test uses
+      // internally — handling backpressure and error propagation for us.
       const output = Readable.from(streams[i]).compose(stage) as unknown as AsyncIterable<string | Buffer>;
       for await (const chunk of output) await sink.write(chunk);
       if (sink.flush) await sink.flush();
@@ -76,6 +81,8 @@ export async function runRoutes(
       await sink.close();
     }
   }));
+  const failure = results.find((r): r is PromiseRejectedResult => r.status === 'rejected');
+  if (failure) throw failure.reason;
 }
 
 /**
