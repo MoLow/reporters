@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/MoLow/reporters/compare/sink-v1.1.0...sink-v1.2.0) (2026-07-02)
+
+
+### Features
+
+* pluggable viewer report sources and custom s3 viewer links ([#222](https://github.com/MoLow/reporters/issues/222)) ([e553e89](https://github.com/MoLow/reporters/commit/e553e89a6e0c9ba9323483ca52a3142c8e70f8ce))
+
 ## [1.1.0](https://github.com/MoLow/reporters/compare/sink-v1.0.0...sink-v1.1.0) (2026-07-02)
 
 
