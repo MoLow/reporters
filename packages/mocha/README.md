@@ -10,7 +10,7 @@ plus community ones like [mochawesome](https://www.npmjs.com/package/mochawesome
 rich HTML reports. `@reporters/mocha` translates `node:test` events into
 mocha's reporter API, so all of them — built-in **and** custom — just work.
 
-![node:test rendered through mocha's nyan reporter](https://raw.githubusercontent.com/MoLow/reporters/6f8d755a21c3cb627f65878de4d68fba1530d66b/packages/mocha/assets/cli.gif)
+![node:test rendered through mocha's nyan reporter](https://raw.githubusercontent.com/MoLow/reporters/5393ed7b104f42d90bb930ad89854d8fdff6785b/packages/mocha/assets/cli.gif)
 
 Yes, that's `node:test` running under the nyan cat. Migration from mocha never
 looked so seamless — keep the reporting (and dashboards) you already have,

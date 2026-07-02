@@ -12,12 +12,12 @@ gist or an S3 bucket — so the hosted viewer at
 run streams (periodic re-upload), durable after. The report link lands right in
 your test output and, on GitHub Actions, in the job summary:
 
-![a mux run printing the shareable report URL, followed by the CI log](https://raw.githubusercontent.com/MoLow/reporters/6f8d755a21c3cb627f65878de4d68fba1530d66b/packages/sink/assets/cli.gif)
+![a mux run printing the shareable report URL, followed by the CI log](https://raw.githubusercontent.com/MoLow/reporters/5393ed7b104f42d90bb930ad89854d8fdff6785b/packages/sink/assets/cli.gif)
 
 …and opening that link shows the full interactive tree — failures expanded with
-their assertion diffs ([live example](https://molow.github.io/reporters/?src=https://raw.githubusercontent.com/MoLow/reporters/6f8d755a21c3cb627f65878de4d68fba1530d66b/packages/web/assets/demo-run.ndjson)):
+their assertion diffs ([live example](https://molow.github.io/reporters/?src=https://raw.githubusercontent.com/MoLow/reporters/5393ed7b104f42d90bb930ad89854d8fdff6785b/packages/web/assets/demo-run.ndjson)):
 
-[![the hosted viewer rendering the delivered run](https://raw.githubusercontent.com/MoLow/reporters/6f8d755a21c3cb627f65878de4d68fba1530d66b/packages/web/assets/viewer.png)](https://molow.github.io/reporters/?src=https://raw.githubusercontent.com/MoLow/reporters/6f8d755a21c3cb627f65878de4d68fba1530d66b/packages/web/assets/demo-run.ndjson)
+[![the hosted viewer rendering the delivered run](https://raw.githubusercontent.com/MoLow/reporters/5393ed7b104f42d90bb930ad89854d8fdff6785b/packages/web/assets/viewer.png)](https://molow.github.io/reporters/?src=https://raw.githubusercontent.com/MoLow/reporters/5393ed7b104f42d90bb930ad89854d8fdff6785b/packages/web/assets/demo-run.ndjson)
 
 ## Usage
 

@@ -12,7 +12,7 @@ actually finishes. When the run ends, the tree stays open so you can browse
 failures interactively — expand a failing test and its assertion diff, stack
 trace, stdout/stderr and diagnostics unfold inline.
 
-![@reporters/live rendering a run as a live tree, then expanding a failure's diagnostics](https://raw.githubusercontent.com/MoLow/reporters/6f8d755a21c3cb627f65878de4d68fba1530d66b/packages/live/assets/cli.gif)
+![@reporters/live rendering a run as a live tree, then expanding a failure's diagnostics](https://raw.githubusercontent.com/MoLow/reporters/5393ed7b104f42d90bb930ad89854d8fdff6785b/packages/live/assets/cli.gif)
 
 ## Installation
 

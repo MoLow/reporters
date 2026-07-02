@@ -9,7 +9,7 @@ narrow the run from the keyboard without ever restarting: filter by file name
 pattern, filter by test name pattern, stack the two, clear them, run again.
 The tight feedback loop you're used to from `jest --watch`, for `node:test`.
 
-![testwatch running a suite, then filtering by file and by test name](https://raw.githubusercontent.com/MoLow/reporters/6f8d755a21c3cb627f65878de4d68fba1530d66b/packages/testwatch/assets/cli.gif)
+![testwatch running a suite, then filtering by file and by test name](https://raw.githubusercontent.com/MoLow/reporters/5393ed7b104f42d90bb930ad89854d8fdff6785b/packages/testwatch/assets/cli.gif)
 
 ## Installation
 
