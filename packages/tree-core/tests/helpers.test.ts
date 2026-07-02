@@ -32,6 +32,14 @@ test('formatDuration renders ms, seconds and minutes', () => {
   assert.strictEqual(formatDuration(undefined), '');
 });
 
+test('formatDuration carries boundary rounding into the next unit', () => {
+  assert.strictEqual(formatDuration(59949), '59.9s');
+  assert.strictEqual(formatDuration(59950), '1m 0s'); // rounds to 60s → carried
+  assert.strictEqual(formatDuration(119700), '2m 0s'); // not "1m 60s"
+  assert.strictEqual(formatDuration(3599500), '1h 0m'); // not "59m 60s"
+  assert.strictEqual(formatDuration(7170000), '2h 0m'); // not "1h 60m"
+});
+
 test('toWireEvent keeps only known fields and is JSON-safe', () => {
   const wire = toWireEvent({
     type: 'test:pass',
