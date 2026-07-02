@@ -85,7 +85,19 @@ test('uploads never overlap; the final upload carries everything', async () => {
   assert.strictEqual(uploads[uploads.length - 1], 'onetwo');
 });
 
-test('a failed upload re-marks the buffer dirty so the next flush retries', async () => {
+async function captureStderr(fn: () => Promise<unknown> | unknown): Promise<string> {
+  const original = process.stderr.write.bind(process.stderr);
+  let captured = '';
+  process.stderr.write = ((chunk: string | Buffer) => { captured += String(chunk); return true; }) as typeof process.stderr.write;
+  try {
+    await fn();
+  } finally {
+    process.stderr.write = original;
+  }
+  return captured;
+}
+
+test('a failed upload backs off, then retries with the latest buffer', async () => {
   const uploads: string[] = [];
   let fail = true;
   const sink = remoteSink({
@@ -94,11 +106,71 @@ test('a failed upload re-marks the buffer dirty so the next flush retries', asyn
       uploads.push(body.toString());
     },
     viewerUrl: () => undefined,
+    flushMs: 60_000,
+    backoffMs: 40,
   });
-  sink.write('data');
-  await assert.rejects(() => sink.flush!(), /net down/);
+  sink.write('a');
+  const err = await captureStderr(() => sink.flush!());
+  assert.match(err, /upload failed \(net down\) — retrying in \d+s/);
   fail = false;
+  sink.write('b');
   await sink.flush!();
-  assert.deepStrictEqual(uploads, ['data']);
+  assert.deepStrictEqual(uploads, [], 'still inside the backoff window');
+  await tick(60);
+  await sink.flush!();
+  assert.deepStrictEqual(uploads, ['ab'], 'one retry, carrying the latest buffer');
   await sink.close();
+});
+
+test('a server retryAfterMs stretches the backoff beyond the computed wait', async () => {
+  let attempts = 0;
+  const sink = remoteSink({
+    upload: async () => {
+      attempts += 1;
+      const err: Error & { retryAfterMs?: number } = new Error('throttled');
+      err.retryAfterMs = 200;
+      throw err;
+    },
+    viewerUrl: () => undefined,
+    flushMs: 60_000,
+    backoffMs: 1,
+  });
+  sink.write('x');
+  await captureStderr(() => sink.flush!());
+  assert.strictEqual(attempts, 1);
+  await tick(60);
+  await sink.flush!();
+  assert.strictEqual(attempts, 1, 'computed backoff elapsed, but retry-after still holds');
+});
+
+test('close waits out the backoff so the final state still lands', async () => {
+  const uploads: string[] = [];
+  let fail = true;
+  const sink = remoteSink({
+    upload: async (body) => {
+      if (fail) throw new Error('blip');
+      uploads.push(body.toString());
+    },
+    viewerUrl: () => undefined,
+    flushMs: 60_000,
+    backoffMs: 50,
+  });
+  sink.write('head');
+  await captureStderr(() => sink.flush!());
+  fail = false;
+  sink.write('-tail');
+  await sink.close();
+  assert.deepStrictEqual(uploads, ['head-tail']);
+});
+
+test('a still-failing final upload leaves a missing-results notice', async () => {
+  const sink = remoteSink({
+    upload: async () => { throw new Error('down'); },
+    viewerUrl: () => undefined,
+    flushMs: 60_000,
+    backoffMs: 10,
+  });
+  sink.write('x');
+  const err = await captureStderr(async () => { await sink.flush!(); await sink.close(); });
+  assert.match(err, /may be missing its final results/);
 });

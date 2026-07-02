@@ -136,25 +136,36 @@ test('viewerUrl is undefined before start', () => {
   assert.strictEqual(sink.viewerUrl!(), undefined);
 });
 
-test('a failed upload gives up quietly instead of failing the run', async () => {
+test('a throttled upload backs off (honoring Retry-After) and then retries', async () => {
   const requests: { method: string }[] = [];
+  let throttle = true;
   const fetchImpl = (async (_url: unknown, init: any) => {
     requests.push({ method: init.method });
     if (init.method === 'POST') {
       return { ok: true, status: 201, json: async () => ({ id: 'g1', owner: { login: 'molow' } }) };
     }
-    return { ok: false, status: 403, json: async () => ({}) };
+    if (throttle) {
+      return {
+        ok: false,
+        status: 403,
+        headers: { get: (name: string) => (name === 'retry-after' ? '1' : null) },
+        json: async () => ({}),
+      };
+    }
+    return { ok: true, status: 200, json: async () => ({}) };
   }) as unknown as typeof fetch;
-  const sink = gist({ token: 't0k', fetchImpl });
+
+  const sink = gist({ token: 't0k', fetchImpl, flushMs: 30 });
   await sink.start!();
   sink.write('{"a":1}\n');
-  const err = await captureStderr(async () => {
-    await sink.flush!();
-    await sink.close();
-  });
-  assert.match(err, /uploading the report failed/);
-  assert.match(err, /403/);
+  const err = await captureStderr(() => sink.flush!());
+  assert.match(err, /upload failed .*403.* — retrying in 1s/, 'the Retry-After second is the announced wait');
   sink.write('{"b":2}\n');
   await sink.flush!();
-  assert.strictEqual(requests.filter((r) => r.method === 'PATCH').length, 1, 'gives up after the first failure');
+  assert.strictEqual(requests.filter((r) => r.method === 'PATCH').length, 1, 'held back while throttled');
+  throttle = false;
+  await new Promise((resolve) => { setTimeout(resolve, 1100); });
+  await sink.flush!();
+  assert.strictEqual(requests.filter((r) => r.method === 'PATCH').length, 2, 'retried after the server-instructed wait');
+  await sink.close();
 });

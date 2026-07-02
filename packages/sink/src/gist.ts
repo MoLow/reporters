@@ -1,5 +1,5 @@
 import type { Sink } from '@reporters/mux';
-import { remoteSink } from './remote.ts';
+import { remoteSink, type UploadError } from './remote.ts';
 
 const API = 'https://api.github.com';
 const DEFAULT_VIEWER = 'https://molow.github.io/reporters/';
@@ -46,7 +46,14 @@ export function gist(opts: GistOptions = {}): Sink {
       },
       body: JSON.stringify(body),
     });
-    if (!res.ok) throw new Error(`gist ${method} ${path} failed with ${res.status}`);
+    if (!res.ok) {
+      const err: UploadError = new Error(`gist ${method} ${path} failed with ${res.status}`);
+      // Secondary rate limits come with a Retry-After (seconds); pass it to
+      // the engine so retries pace themselves to the server's instruction.
+      const retryAfter = Number(res.headers?.get?.('retry-after'));
+      if (Number.isFinite(retryAfter) && retryAfter > 0) err.retryAfterMs = retryAfter * 1000;
+      throw err;
+    }
     return res.json() as Promise<{ id: string; owner: { login: string } }>;
   }
 
@@ -87,14 +94,7 @@ export function gist(opts: GistOptions = {}): Sink {
     },
     async upload(body) {
       if (disabled) return;
-      try {
-        await request('PATCH', `/gists/${id}`, { files: { [filename]: { content: body.toString('utf8') } } });
-      } catch (err) {
-        // Best-effort delivery: an upload failure (e.g. a secondary rate
-        // limit) must not fail the run — and retrying would make it worse.
-        disabled = true;
-        process.stderr.write(`\n@reporters/sink: uploading the report failed (${(err as Error).message}) — giving up\n`);
-      }
+      await request('PATCH', `/gists/${id}`, { files: { [filename]: { content: body.toString('utf8') } } });
     },
     viewerUrl() {
       if (!rawUrl) return undefined;
