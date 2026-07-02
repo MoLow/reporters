@@ -100,3 +100,22 @@ Built in: `'stdout'`, `'stderr'`, and file paths. Beyond those:
 
 When a sink exposes a `viewerUrl`, mux prints `report at <url>` to stderr and —
 on GitHub Actions — adds a **View report** link to the job summary.
+
+Reporters can consume a sink's viewer URL too: keep the sink instance and pass
+a lazy getter into another route's `options`. Every sink in the profile has
+started before any reporter receives events, so the getter is live from the
+first event on (note `options` reach function reporters only — stream
+reporters have no options channel):
+
+```js
+import { s3 } from '@reporters/sink';
+
+const upload = s3({ bucket: 'ci-runs' });
+
+export default {
+  ci: [
+    { reporter: '@reporters/web', sink: upload },
+    { reporter: './my-reporter.mjs', options: { viewerUrl: () => upload.viewerUrl() }, sink: 'stdout' },
+  ],
+};
+```
