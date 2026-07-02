@@ -79,6 +79,7 @@ npm i @aws-sdk/client-s3 @aws-sdk/s3-request-presigner
   provider chain (env, OIDC, instance role).
 - `expiresIn` — presigned GET expiry in seconds (default 7 days).
 - `viewerBase`, `flushMs` (2000).
+- `viewerUrl` — build the viewer link yourself from `{ key, bucket, presignedUrl, viewerBase, pollMs }`; return `undefined` for no link. Use with a custom-hosted viewer that resolves reports by key instead of a presigned URL, e.g. `viewerUrl: ({ viewerBase, key }) => viewerBase + '?key=' + encodeURIComponent(key)`. Omitted → the presigned `?src=` link.
 
 The hosted viewer fetches the presigned GET **cross-origin**, so the bucket
 needs a CORS rule for it:

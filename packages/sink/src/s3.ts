@@ -34,6 +34,14 @@ async function loadSdk(): Promise<Sdk> {
 /** Indirection so tests inject a fake SDK without network or the real client. */
 export const internals = { loadSdk };
 
+export interface S3ViewerUrlContext {
+  key: string;
+  bucket: string;
+  presignedUrl: string;
+  viewerBase: string;
+  pollMs?: number;
+}
+
 export interface S3Options {
   bucket: string;
   /** Object key; defaults to `reporters/${GITHUB_RUN_ID ?? randomUUID()}.ndjson`. */
@@ -49,6 +57,9 @@ export interface S3Options {
   flushMs?: number;
   /** Viewer polling cadence in ms (default 1000; the viewer clamps to 100–10000). */
   pollMs?: number;
+  /** Build the viewer link yourself (e.g. `${viewerBase}?key=${key}`); return
+   *  undefined for no link. Omitted → the presigned ?src= link, as today. */
+  viewerUrl?: (ctx: S3ViewerUrlContext) => string | undefined;
 }
 
 /**
@@ -85,7 +96,13 @@ export function s3(opts: S3Options): Sink {
     },
     viewerUrl() {
       if (!getUrl) return undefined;
-      return `${opts.viewerBase ?? DEFAULT_VIEWER}?src=${encodeURIComponent(getUrl)}${opts.pollMs ? `&poll=${opts.pollMs}` : ''}`;
+      const viewerBase = opts.viewerBase ?? DEFAULT_VIEWER;
+      if (opts.viewerUrl) {
+        return opts.viewerUrl({
+          key, bucket: opts.bucket, presignedUrl: getUrl, viewerBase, pollMs: opts.pollMs,
+        });
+      }
+      return `${viewerBase}?src=${encodeURIComponent(getUrl)}${opts.pollMs ? `&poll=${opts.pollMs}` : ''}`;
     },
   });
 }
