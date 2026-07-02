@@ -9,7 +9,12 @@ export interface Sink {
   flush?(): Promise<void>;
   /** The run ended; release resources. */
   close(): Promise<void>;
-  /** How a human views what was written, if anything. */
+  /**
+   * How a human views what was written, if anything. Valid once `start()` has
+   * resolved; under mux, every sink in the profile has started before any
+   * reporter receives events, so a getter wired into another route's
+   * `options` is live from the first event.
+   */
   viewerUrl?(): string | undefined;
 }
 

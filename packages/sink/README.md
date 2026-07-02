@@ -92,6 +92,26 @@ needs a CORS rule for it:
 }]
 ```
 
+## Passing the viewer URL to another reporter
+
+Sinks expose `viewerUrl()` — valid once the sink has started. Under
+`@reporters/mux`, every sink in the profile has started before any reporter
+receives events, so you can keep the sink instance and hand a lazy getter to
+another route's function reporter via `options`:
+
+```js
+import { s3 } from '@reporters/sink';
+
+const upload = s3({ bucket: 'ci-runs' });
+
+export default {
+  ci: [
+    { reporter: '@reporters/web', sink: upload },
+    { reporter: './my-reporter.mjs', options: { viewerUrl: () => upload.viewerUrl() }, sink: 'stdout' },
+  ],
+};
+```
+
 ## `remoteSink(options)`
 
 The engine both are built on — bring your own transport:

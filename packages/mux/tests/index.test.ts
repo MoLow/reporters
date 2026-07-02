@@ -209,3 +209,53 @@ test('mux (default export) loads config from cwd and drives its routes', async (
   rmSync(dir, { recursive: true, force: true });
   assert.match(written, /test:pass/);
 });
+
+test('every sink has started before any reporter receives its first event', async () => {
+  let started = false;
+  const slow: Sink = {
+    async start() {
+      await new Promise((resolve) => { setTimeout(resolve, 20); });
+      started = true;
+    },
+    write() {},
+    async close() {},
+    viewerUrl: () => (started ? 'https://viewer.example/' : undefined),
+  };
+  const seen: (string | undefined)[] = [];
+  const probe = async function* (
+    src: AsyncIterable<TestEvent>,
+    options?: unknown,
+  ): AsyncGenerator<string> {
+    const opts = options as { viewerUrl: () => string | undefined };
+    for await (const e of src) {
+      seen.push(opts.viewerUrl());
+      yield `${e.type}\n`;
+    }
+  };
+  const out = memorySink();
+  const config: MuxConfig = {
+    local: [
+      { reporter: probe, options: { viewerUrl: () => slow.viewerUrl?.() }, sink: out },
+      { reporter: tagReporter('B'), sink: slow },
+    ],
+  };
+  await runRoutes(source(), config, { REPORTERS_OPEN: '0' });
+  assert.deepStrictEqual(seen, ['https://viewer.example/', 'https://viewer.example/']);
+});
+
+test('one sink failing to start does not stop a sibling route from completing', async () => {
+  const failing: Sink = {
+    async start() { throw new Error('start boom'); },
+    write() {},
+    async close() {},
+  };
+  const ok = memorySink();
+  const config: MuxConfig = {
+    local: [
+      { reporter: tagReporter('X'), sink: failing },
+      { reporter: tagReporter('OK'), sink: ok },
+    ],
+  };
+  await assert.rejects(() => runRoutes(source(), config, { REPORTERS_OPEN: '0' }), /start boom/);
+  assert.strictEqual(ok.data, 'OK:test:pass\nOK:test:pass\n');
+});
