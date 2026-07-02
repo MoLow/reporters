@@ -64,6 +64,14 @@ test('an explicit token enables the sink anywhere: creates a secret gist, sha-le
   await sink.close();
 });
 
+test('pollMs appends a poll param to the viewer url', async () => {
+  const { fetchImpl } = fakeGithub();
+  const sink = gist({ token: 't0k', fetchImpl, pollMs: 500 });
+  await sink.start!();
+  assert.match(sink.viewerUrl!()!, /&poll=500$/);
+  await sink.close();
+});
+
 test('flush PATCHes the accumulated ndjson into the gist file', async () => {
   const { requests, fetchImpl } = fakeGithub();
   const sink = gist({ token: 't0k', fetchImpl, filename: 'r.ndjson' });

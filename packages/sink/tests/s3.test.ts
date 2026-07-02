@@ -92,6 +92,14 @@ test('expiresIn and viewerBase are honored', async (t) => {
   await sink.close();
 });
 
+test('pollMs appends a poll param to the viewer url', async (t) => {
+  withFakeSdk(t);
+  const sink = s3({ bucket: 'b', key: 'k.ndjson', pollMs: 500 });
+  await sink.start!();
+  assert.match(sink.viewerUrl!()!, /&poll=500$/);
+  await sink.close();
+});
+
 test('the default loadSdk resolves the real AWS SDK (installed as a dev dependency)', async () => {
   const sdk = await internals.loadSdk();
   assert.strictEqual(typeof sdk.S3Client, 'function');

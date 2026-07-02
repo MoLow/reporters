@@ -47,6 +47,8 @@ export interface S3Options {
   expiresIn?: number;
   viewerBase?: string;
   flushMs?: number;
+  /** Viewer polling cadence in ms (default 1000; the viewer clamps to 100–10000). */
+  pollMs?: number;
 }
 
 /**
@@ -83,7 +85,7 @@ export function s3(opts: S3Options): Sink {
     },
     viewerUrl() {
       if (!getUrl) return undefined;
-      return `${opts.viewerBase ?? DEFAULT_VIEWER}?src=${encodeURIComponent(getUrl)}`;
+      return `${opts.viewerBase ?? DEFAULT_VIEWER}?src=${encodeURIComponent(getUrl)}${opts.pollMs ? `&poll=${opts.pollMs}` : ''}`;
     },
   });
 }

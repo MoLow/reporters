@@ -14,6 +14,8 @@ export interface GistOptions {
   description?: string;
   viewerBase?: string;
   flushMs?: number;
+  /** Viewer polling cadence in ms (default 1000; the viewer clamps to 100–10000). */
+  pollMs?: number;
   /** Injectable for tests. */
   fetchImpl?: typeof fetch;
 }
@@ -101,7 +103,7 @@ export function gist(opts: GistOptions = {}): Sink {
     },
     viewerUrl() {
       if (!rawUrl) return undefined;
-      return `${opts.viewerBase ?? DEFAULT_VIEWER}?src=${encodeURIComponent(rawUrl)}`;
+      return `${opts.viewerBase ?? DEFAULT_VIEWER}?src=${encodeURIComponent(rawUrl)}${opts.pollMs ? `&poll=${opts.pollMs}` : ''}`;
     },
   });
 }

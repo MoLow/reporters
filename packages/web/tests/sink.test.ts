@@ -17,6 +17,16 @@ test('viewerUrl points at the local server with the run.ndjson src and a fast po
   }
 });
 
+test('the pollMs option overrides the advertised poll cadence', async () => {
+  const sink = httpServer({ host: '127.0.0.1', pollMs: 1000 });
+  await sink.start!();
+  try {
+    assert.match(sink.viewerUrl!()!, /\?src=\/run\.ndjson&poll=1000$/);
+  } finally {
+    await sink.close();
+  }
+});
+
 test('serves the viewer page at / and NDJSON at /run.ndjson', async () => {
   const sink = httpServer();
   await sink.start!();
