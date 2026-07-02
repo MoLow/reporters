@@ -9,6 +9,12 @@ so one `--test-reporter` flag covers your laptop and your CI.
 
 ![the same mux command rendering a live tree locally and a CI log with a report link under REPORTERS_PROFILE=ci](https://raw.githubusercontent.com/MoLow/reporters/c219a78309b01285a92c99518a7f7b25a09ad7e2/packages/mux/assets/cli.gif)
 
+That `report at` link is [`@reporters/web`](packages/web)'s run being delivered
+— it opens as an interactive tree in the browser
+(**[live demo](https://molow.github.io/reporters/?src=https://raw.githubusercontent.com/MoLow/reporters/88901486cc58a9c706d5de24b44c8dd0630bf369/packages/web/assets/demo-run.ndjson)**):
+
+[![the browser viewer rendering the delivered run](https://raw.githubusercontent.com/MoLow/reporters/88901486cc58a9c706d5de24b44c8dd0630bf369/packages/web/assets/viewer.png)](https://molow.github.io/reporters/?src=https://raw.githubusercontent.com/MoLow/reporters/88901486cc58a9c706d5de24b44c8dd0630bf369/packages/web/assets/demo-run.ndjson)
+
 ## TL;DR — what you probably want
 
 Register [`@reporters/mux`](packages/mux) once and let a config decide per
@@ -21,15 +27,17 @@ npm i -D @reporters/mux @reporters/live @reporters/gh @reporters/web @reporters/
 
 ```js
 // mux.config.mjs
+import { httpServer } from '@reporters/web/sink';
 import { gist } from '@reporters/sink';
 
 export default {
   local: [
-    { reporter: '@reporters/live', sink: 'stdout' },  // live tree, browse failures interactively
+    { reporter: '@reporters/live', sink: 'stdout' },      // live tree, browse failures interactively
+    { reporter: '@reporters/web',  sink: httpServer() },  // same run in the browser, on localhost
   ],
   ci: [
-    { reporter: '@reporters/gh',  sink: 'stdout' },   // readable log + PR annotations + job summary
-    { reporter: '@reporters/web', sink: gist() },     // uploads the run, links the hosted viewer
+    { reporter: '@reporters/gh',  sink: 'stdout' },       // readable log + PR annotations + job summary
+    { reporter: '@reporters/web', sink: gist() },         // uploads the run, links the hosted viewer
   ],
 };
 ```
