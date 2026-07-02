@@ -47,7 +47,10 @@ export function gist(opts: GistOptions = {}): Sink {
       body: JSON.stringify(body),
     });
     if (!res.ok) {
-      const err: UploadError = new Error(`gist ${method} ${path} failed with ${res.status}`);
+      // Surface the API's own explanation — a bare status can't distinguish a
+      // rate limit from a permissions or abuse-detection rejection.
+      const detail = await res.json().then((data: { message?: string }) => (data?.message ? `: ${data.message}` : ''), () => '');
+      const err: UploadError = new Error(`gist ${method} ${path} failed with ${res.status}${detail}`);
       // Secondary rate limits come with a Retry-After (seconds); pass it to
       // the engine so retries pace themselves to the server's instruction.
       const retryAfter = Number(res.headers?.get?.('retry-after'));
@@ -67,7 +70,7 @@ export function gist(opts: GistOptions = {}): Sink {
         process.stderr.write('\n@reporters/sink: the gist sink only works on GitHub Actions (pass a token to use it elsewhere) — skipping\n');
         return;
       }
-      token = opts.token ?? process.env.GITHUB_TOKEN ?? process.env.GH_TOKEN;
+      token = opts.token ?? process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN;
       if (!token) {
         disabled = true;
         process.stderr.write('\n@reporters/sink: gist sink needs a GitHub token (GITHUB_TOKEN / GH_TOKEN or the token option) — skipping\n');

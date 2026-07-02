@@ -169,3 +169,23 @@ test('a throttled upload backs off (honoring Retry-After) and then retries', asy
   assert.strictEqual(requests.filter((r) => r.method === 'PATCH').length, 2, 'retried after the server-instructed wait');
   await sink.close();
 });
+test('GH_TOKEN wins over GITHUB_TOKEN (Actions installs a useless GITHUB_TOKEN)', async (t) => {
+  withEnv(t, { GITHUB_ACTIONS: 'true', GITHUB_TOKEN: 'installation', GH_TOKEN: 'pat' });
+  const { requests, fetchImpl } = fakeGithub();
+  const sink = gist({ fetchImpl });
+  await sink.start!();
+  assert.strictEqual(requests[0].headers.authorization, 'Bearer pat');
+  await sink.close();
+});
+
+test('an API error surfaces the response body message', async () => {
+  const fetchImpl = (async () => ({
+    ok: false,
+    status: 403,
+    headers: { get: () => null },
+    json: async () => ({ message: 'Resource protected by organization policy' }),
+  })) as unknown as typeof fetch;
+  const sink = gist({ token: 't0k', fetchImpl });
+  const err = await captureStderr(() => sink.start!());
+  assert.match(err, /403: Resource protected by organization policy/);
+});
