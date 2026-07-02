@@ -1,10 +1,22 @@
-# @reporters/mux
+![tests](https://github.com/MoLow/reporters/actions/workflows/test.yaml/badge.svg?branch=main) [![codecov](https://codecov.io/gh/MoLow/reporters/branch/main/graph/badge.svg?token=0LFVC8SCQV)](https://codecov.io/gh/MoLow/reporters)
 
-Environment-aware routing for `node:test` reporters. Register it once; it reads a
-`mux.config` file, picks the active **profile** (`ci` vs `local`, auto-detected),
-tees the test-event stream to every configured **reporter**, and pipes each
-reporter's output into its **sink** (`stdout`/`stderr`/a file, or a custom sink
-such as `@reporters/web`'s local HTTP server).
+# Reporter Multiplexer
+
+One `--test-reporter` flag, every environment covered.
+
+`@reporters/mux` is environment-aware routing for `node:test` reporters.
+Register it once; it reads a `mux.config` file, picks the active **profile**
+(`ci` vs `local`, auto-detected), tees the test-event stream to every configured
+**reporter**, and pipes each reporter's output into its **sink** —
+`stdout`/`stderr`, a file, a local HTTP viewer, or a remote upload with a
+shareable report URL.
+
+The same command gives you a live interactive tree at your desk, and a CI log
+plus a browsable report link on the build server:
+
+![the same mux command rendering a live tree locally and a CI log with a report link under REPORTERS_PROFILE=ci](https://raw.githubusercontent.com/MoLow/reporters/c219a78309b01285a92c99518a7f7b25a09ad7e2/packages/mux/assets/cli.gif)
+
+## Usage
 
 ```bash
 node --test --test-reporter=@reporters/mux
@@ -17,6 +29,7 @@ current directory. It default-exports a map of profile name → routes:
 
 ```js
 import { httpServer } from '@reporters/web/sink';
+import { gist } from '@reporters/sink';
 import live from '@reporters/live';
 
 export default {
@@ -26,7 +39,7 @@ export default {
   ],
   ci: [
     { reporter: '@reporters/gh',  sink: 'stdout' },
-    { reporter: '@reporters/web', sink: 'run.ndjson' }, // archive NDJSON as a CI artifact
+    { reporter: '@reporters/web', sink: gist() }, // uploads the run, links the hosted viewer
   ],
 };
 ```
@@ -46,7 +59,9 @@ Transform-stream reporters (like `@reporters/gh`) are supported as route reporte
 ### Profile resolution
 
 `REPORTERS_PROFILE` if set; otherwise `ci` when a CI environment is detected
-(`CI`, `GITHUB_ACTIONS`, `GITLAB_CI`, `BUILDKITE`, …), else `local`.
+(`CI`, `GITHUB_ACTIONS`, `GITLAB_CI`, `BUILDKITE`, …), else `local`. Profile
+names are yours — add a `nightly` or `benchmark` profile and select it with
+`REPORTERS_PROFILE=nightly`.
 
 ## Sinks
 
@@ -63,5 +78,14 @@ interface Sink {
 }
 ```
 
-Built in: `'stdout'`, `'stderr'`, and file paths. `@reporters/web` ships a
-`httpServer()` sink. (An `s3://` sink and hosted-viewer open are planned.)
+Built in: `'stdout'`, `'stderr'`, and file paths. Beyond those:
+
+- [`@reporters/web`](https://github.com/MoLow/reporters/tree/main/packages/web)
+  ships `httpServer()` — serves the viewer on localhost over the growing run.
+- [`@reporters/sink`](https://github.com/MoLow/reporters/tree/main/packages/sink)
+  ships `gist()` and `s3()` — upload the run where a browser can fetch it, so
+  the hosted viewer can render CI runs — plus `remoteSink()` to bring your own
+  transport.
+
+When a sink exposes a `viewerUrl`, mux prints `report at <url>` to stderr and —
+on GitHub Actions — adds a **View report** link to the job summary.
