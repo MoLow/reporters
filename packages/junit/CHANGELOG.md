@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.0.2](https://github.com/MoLow/reporters/compare/junit-v2.0.1...junit-v2.0.2) (2026-07-02)
+
+
+### Documentation
+
+* flag-order fixes and the gh collapsible actions log ([#216](https://github.com/MoLow/reporters/issues/216)) ([131f410](https://github.com/MoLow/reporters/commit/131f4107712d6d0b899d3b8ca7a39496b6e05276))
+* rewrite package READMEs with demos and clearer positioning ([#209](https://github.com/MoLow/reporters/issues/209)) ([e1265e5](https://github.com/MoLow/reporters/commit/e1265e5f6b8a0f34b80ef7ee725cede4ed16b6da))
+
+
+### Miscellaneous Chores
+
+* route this repo's tests through @reporters/mux ([#207](https://github.com/MoLow/reporters/issues/207)) ([85a5973](https://github.com/MoLow/reporters/commit/85a59737bc3d631b0293edf343b77fd82e0c459d))
+* run the whole test suite through one root node --test invocation ([#213](https://github.com/MoLow/reporters/issues/213)) ([a144243](https://github.com/MoLow/reporters/commit/a1442430f005ae9638cab04b1801be944a693c36))
+
 ## [2.0.1](https://github.com/MoLow/reporters/compare/junit-v2.0.0...junit-v2.0.1) (2026-06-02)
 
 

@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.0.1](https://github.com/MoLow/reporters/compare/testwatch-v2.0.0...testwatch-v2.0.1) (2026-07-02)
+
+
+### Documentation
+
+* rewrite package READMEs with demos and clearer positioning ([#209](https://github.com/MoLow/reporters/issues/209)) ([e1265e5](https://github.com/MoLow/reporters/commit/e1265e5f6b8a0f34b80ef7ee725cede4ed16b6da))
+
+
+### Miscellaneous Chores
+
+* route this repo's tests through @reporters/mux ([#207](https://github.com/MoLow/reporters/issues/207)) ([85a5973](https://github.com/MoLow/reporters/commit/85a59737bc3d631b0293edf343b77fd82e0c459d))
+
 ## [2.0.0](https://github.com/MoLow/reporters/compare/testwatch-v1.5.1...testwatch-v2.0.0) (2026-05-24)
 
 

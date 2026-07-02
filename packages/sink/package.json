@@ -1,6 +1,6 @@
 {
   "name": "@reporters/sink",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Delivery sinks for `@reporters/mux`: upload a run's NDJSON to a GitHub gist or S3 for the hosted viewer",
   "type": "module",
   "keywords": [
