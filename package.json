@@ -31,6 +31,7 @@
     "@reporters/gh": "workspace:^",
     "@reporters/live": "workspace:^",
     "@reporters/mux": "workspace:^",
+    "@reporters/sink": "workspace:^",
     "@reporters/web": "workspace:^",
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.0",

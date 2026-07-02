@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { appendFileSync } from 'node:fs';
 import { isCI } from './profile.ts';
 
 /**
@@ -32,5 +33,18 @@ function openInBrowser(url: string): void {
 }
 /* c8 ignore stop */
 
-/** Indirection so tests can observe the open without launching a browser. */
-export const internals = { openInBrowser };
+/**
+ * Surface a sink's viewer URL: always a stderr hint, and on GitHub Actions
+ * (GITHUB_STEP_SUMMARY set) also a "View report" link in the job summary.
+ */
+export function announce(url: string, env: NodeJS.ProcessEnv = process.env): void {
+  process.stderr.write(`\n@reporters/mux: report at ${url}\n`);
+  if (env.GITHUB_STEP_SUMMARY) {
+    try {
+      appendFileSync(env.GITHUB_STEP_SUMMARY, `\n[View report](${url})\n`);
+    } catch { /* summary unavailable — the stderr hint already landed */ }
+  }
+}
+
+/** Indirection so tests can observe opens/announces without side effects. */
+export const internals = { openInBrowser, announce };

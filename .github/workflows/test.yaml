@@ -24,6 +24,8 @@ jobs:
       - run: yarn install --immutable
       - run: yarn lint
       - run: yarn test
+        env:
+          GH_TOKEN: ${{ secrets.GIST_TOKEN }}
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
         with:

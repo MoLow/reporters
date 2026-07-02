@@ -65,12 +65,44 @@ test('runRoutes flushes a sink that implements flush() after the reporter comple
   assert.deepStrictEqual(events2, ['w:F:test:pass', 'w:F:test:pass', 'flush', 'close']);
 });
 
-test('runRoutes opens the sink viewer URL when the gate allows it', async () => {
+test('a sink start() failure still closes the sink (and rejects the run)', async () => {
+  let closed = false;
+  const sink: Sink = {
+    async start() { throw new Error('start boom'); },
+    write() {},
+    async close() { closed = true; },
+  };
+  const config: MuxConfig = { local: [{ reporter: tagReporter('S'), sink }] };
+  await assert.rejects(() => runRoutes(source(), config, { REPORTERS_OPEN: '0' }), /start boom/);
+  assert.strictEqual(closed, true);
+});
+
+test('runRoutes opens the sink viewer URL when the gate allows it', async (t) => {
+  const { internals } = await import('../src/open.ts');
+  const originalAnnounce = internals.announce;
+  internals.announce = () => {};
+  t.after(() => { internals.announce = originalAnnounce; });
+
   const opened: string[] = [];
   const viewerSink: Sink = { write() {}, async close() {}, viewerUrl: () => 'http://localhost:1234/' };
   const config: MuxConfig = { local: [{ reporter: tagReporter('V'), sink: viewerSink }] };
   await runRoutes(source(), config, {}, (url) => opened.push(url));
   assert.deepStrictEqual(opened, ['http://localhost:1234/']);
+});
+
+test('runRoutes announces a sink viewer url even when the open gate is closed', async (t) => {
+  const { internals } = await import('../src/open.ts');
+  const announced: string[] = [];
+  const originalAnnounce = internals.announce;
+  internals.announce = (url: string) => { announced.push(url); };
+  t.after(() => { internals.announce = originalAnnounce; });
+
+  const opened: string[] = [];
+  const viewerSink: Sink = { write() {}, async close() {}, viewerUrl: () => 'http://localhost:1/' };
+  const config: MuxConfig = { local: [{ reporter: tagReporter('A'), sink: viewerSink }] };
+  await runRoutes(source(), config, { REPORTERS_OPEN: '0' }, (url) => opened.push(url));
+  assert.deepStrictEqual(announced, ['http://localhost:1/'], 'announced despite the closed gate');
+  assert.deepStrictEqual(opened, [], 'not opened');
 });
 
 // A Transform-based reporter (the shape @reporters/gh uses): objectMode in, string out.

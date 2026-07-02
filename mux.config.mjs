@@ -1,4 +1,5 @@
 import { httpServer } from '@reporters/web/sink';
+import { gist } from '@reporters/sink';
 import live from '@reporters/live';
 
 export default {
@@ -8,5 +9,6 @@ export default {
   ],
   ci: [
     { reporter: '@reporters/gh', sink: 'stdout' },
+    { reporter: '@reporters/web', sink: gist() },
   ],
 };
