@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.0](https://github.com/MoLow/reporters/compare/sink-v1.0.0...sink-v1.1.0) (2026-07-02)
+
+
+### Features
+
+* **mux:** start every sink before reporters consume events ([#221](https://github.com/MoLow/reporters/issues/221)) ([c5ef14f](https://github.com/MoLow/reporters/commit/c5ef14fbe0357a4f756fb170f69876396806abd6))
+* **web:** let sinks set the viewer poll cadence via a poll query param ([#219](https://github.com/MoLow/reporters/issues/219)) ([a78404d](https://github.com/MoLow/reporters/commit/a78404d61cf924d0c8e221ee41b8b0337f3d1023))
+
 ## 1.0.0 (2026-07-02)
 
 
