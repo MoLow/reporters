@@ -45,7 +45,7 @@ export default {
 
 ```json
 // package.json
-{ "scripts": { "test": "node --test --test-reporter=@reporters/mux" } }
+{ "scripts": { "test": "node --test-reporter=@reporters/mux --test" } }
 ```
 
 That's it — `npm test` everywhere. mux detects CI, picks the profile, and in
@@ -106,10 +106,11 @@ internal, but useful if you're building a tree-shaped reporter of your own.)
 Reporters compose without mux too — `node:test` accepts the flag repeatedly:
 
 ```bash
-node --test \
+node \
   --test-reporter=@reporters/github --test-reporter-destination=stdout \
   --test-reporter=@reporters/junit  --test-reporter-destination=junit.xml \
-  --test-reporter=spec              --test-reporter-destination=stdout
+  --test-reporter=spec              --test-reporter-destination=stdout \
+  --test
 ```
 
 ## GitHub Actions: `gh` vs `github`
@@ -128,10 +129,11 @@ In short: reach for **`gh`** for the batteries-included experience, or **`github
 
 ```bash
 # gh — one reporter: readable log + annotations + summary
-node --test --test-reporter=@reporters/gh
+node --test-reporter=@reporters/gh --test
 
 # github — annotations + summary, paired with spec for the readable log
-node --test \
+node \
   --test-reporter=@reporters/github --test-reporter-destination=stdout \
-  --test-reporter=spec --test-reporter-destination=stdout
+  --test-reporter=spec --test-reporter-destination=stdout \
+  --test
 ```

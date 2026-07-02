@@ -33,9 +33,10 @@ yarn add --dev @reporters/github
 ```yaml
 # .github/workflows/test.yml
 - name: Run tests
-  run: node --test \
+  run: node \
     --test-reporter=@reporters/github --test-reporter-destination=stdout \
-    --test-reporter=spec --test-reporter-destination=stdout
+    --test-reporter=spec --test-reporter-destination=stdout \
+    --test
 ```
 
 The second reporter (`spec` here, but any reporter works) provides the

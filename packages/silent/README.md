@@ -12,7 +12,7 @@ suite still runs in full — the process exits `0` when everything passes and
 
 Handy whenever output is noise:
 
-- **Shell scripting** — `node --test --test-reporter=@reporters/silent && deploy.sh`
+- **Shell scripting** — `node --test-reporter=@reporters/silent --test && deploy.sh`
 - **Git hooks** — gate a commit or push on the suite without flooding the terminal.
 - **Benchmarking** — measure the suite itself, not the cost of rendering output.
 - **Muting one destination** — combine it with another reporter to keep a
@@ -31,5 +31,5 @@ yarn add --dev @reporters/silent
 ## Usage
 
 ```bash
-node --test --test-reporter=@reporters/silent
+node --test-reporter=@reporters/silent --test
 ```

@@ -25,7 +25,7 @@ browser (**[live demo](https://molow.github.io/reporters/?src=https://raw.github
 ## Usage
 
 ```bash
-node --test --test-reporter=@reporters/mux
+node --test-reporter=@reporters/mux --test
 ```
 
 ## Config

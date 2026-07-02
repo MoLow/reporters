@@ -34,14 +34,14 @@ yarn add --dev @reporters/gh
 ```yaml
 # .github/workflows/test.yml
 - name: Run tests
-  run: node --test --test-reporter=@reporters/gh
+  run: node --test-reporter=@reporters/gh --test
 ```
 
 The same command also works locally — when not running in GitHub Actions it
 just prints the spec-style log (no annotations):
 
 ```bash
-node --test --test-reporter=@reporters/gh
+node --test-reporter=@reporters/gh --test
 ```
 
 ## What it looks like
