@@ -1,9 +1,25 @@
-# @reporters/sink
+![tests](https://github.com/MoLow/reporters/actions/workflows/test.yaml/badge.svg?branch=main) [![codecov](https://codecov.io/gh/MoLow/reporters/branch/main/graph/badge.svg?token=0LFVC8SCQV)](https://codecov.io/gh/MoLow/reporters)
 
-Delivery sinks for [`@reporters/mux`](https://www.npmjs.com/package/@reporters/mux):
-upload a `node:test` run's NDJSON somewhere a browser can fetch it, so the hosted
-viewer at **https://molow.github.io/reporters/** can render CI runs — live-ish
-while the run streams (periodic re-upload), durable after.
+# CI Delivery Sinks
+
+Give every CI run a shareable, browsable report URL.
+
+`@reporters/sink` provides delivery sinks for
+[`@reporters/mux`](https://github.com/MoLow/reporters/tree/main/packages/mux):
+they upload a run's NDJSON event log somewhere a browser can fetch it — a GitHub
+gist or an S3 bucket — so the hosted viewer at
+**https://molow.github.io/reporters/** can render the run. Live-ish while the
+run streams (periodic re-upload), durable after. The report link lands right in
+your test output and, on GitHub Actions, in the job summary:
+
+![a mux run printing the shareable report URL, followed by the CI log](https://raw.githubusercontent.com/MoLow/reporters/PINSHA/packages/sink/assets/cli.gif)
+
+…and opening that link shows the full interactive tree — failures expanded with
+their assertion diffs ([live example](https://molow.github.io/reporters/?src=https://raw.githubusercontent.com/MoLow/reporters/PINSHA/packages/web/assets/demo-run.ndjson)):
+
+[![the hosted viewer rendering the delivered run](https://raw.githubusercontent.com/MoLow/reporters/PINSHA/packages/web/assets/viewer.png)](https://molow.github.io/reporters/?src=https://raw.githubusercontent.com/MoLow/reporters/PINSHA/packages/web/assets/demo-run.ndjson)
+
+## Usage
 
 ```js
 // mux.config.js
