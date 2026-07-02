@@ -27,7 +27,7 @@ yarn add --dev @reporters/live
 ## Usage
 
 ```bash
-node --test --test-reporter=@reporters/live
+node --test-reporter=@reporters/live --test
 ```
 
 ## What you get

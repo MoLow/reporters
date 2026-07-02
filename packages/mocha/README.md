@@ -48,5 +48,5 @@ Custom reporters work too — anything mocha can load:
 Then run the tests with `node:test`:
 
 ```bash
-node --test --test-reporter=@reporters/mocha
+node --test-reporter=@reporters/mocha --test
 ```

@@ -17,7 +17,7 @@ tests auto-expanded with their assertion diff and stack trace.
 ## Usage
 
 ```bash
-node --test --test-reporter=@reporters/web --test-reporter-destination=run.ndjson
+node --test-reporter=@reporters/web --test-reporter-destination=run.ndjson --test
 ```
 
 On a dev machine that command does everything: it writes the NDJSON log **and**
