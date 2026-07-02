@@ -23,6 +23,10 @@
     "./sink": {
       "types": "./dist/sink.d.ts",
       "import": "./dist/sink.js"
+    },
+    "./viewer": {
+      "types": "./dist/start.d.ts",
+      "import": "./dist/start.js"
     }
   },
   "main": "./dist/index.js",

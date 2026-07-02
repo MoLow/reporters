@@ -148,3 +148,49 @@ test('a failed upload never throws; it backs off and retries with the latest buf
   assert.match(captured, /upload failed \(AccessDenied\) — retrying/);
   assert.deepStrictEqual(bodies, ['{"a":1}\n{"b":2}\n'], 'the retry carries the latest buffer');
 });
+
+test('a viewerUrl callback overrides the link and receives the full context', async (t) => {
+  withFakeSdk(t);
+  let ctx: unknown;
+  const sink = s3({
+    bucket: 'ci-reports',
+    key: 'runs/1.ndjson',
+    pollMs: 500,
+    viewerBase: 'https://viewer.example/',
+    viewerUrl: (c) => { ctx = c; return `https://viewer.example/?key=${encodeURIComponent(c.key)}`; },
+  });
+  await sink.start!();
+  assert.strictEqual(sink.viewerUrl!(), 'https://viewer.example/?key=runs%2F1.ndjson');
+  assert.deepStrictEqual(ctx, {
+    key: 'runs/1.ndjson',
+    bucket: 'ci-reports',
+    presignedUrl: 'https://bucket.s3.example/runs/1.ndjson?sig=abc&expires=604800',
+    viewerBase: 'https://viewer.example/',
+    pollMs: 500,
+  });
+  await sink.close();
+});
+
+test('viewerUrl callback context defaults viewerBase and omits pollMs when unset', async (t) => {
+  withFakeSdk(t);
+  let ctx: { viewerBase: string; pollMs?: number } | undefined;
+  const sink = s3({
+    bucket: 'b',
+    key: 'k.ndjson',
+    viewerUrl: (c) => { ctx = c; return undefined; },
+  });
+  await sink.start!();
+  assert.strictEqual(sink.viewerUrl!(), undefined);
+  assert.strictEqual(ctx!.viewerBase, 'https://molow.github.io/reporters/');
+  assert.strictEqual(ctx!.pollMs, undefined);
+  await sink.close();
+});
+
+test('the viewerUrl callback is not called before start signs the url', async (t) => {
+  withFakeSdk(t);
+  let called = false;
+  const sink = s3({ bucket: 'b', key: 'k.ndjson', viewerUrl: () => { called = true; return 'x'; } });
+  assert.strictEqual(sink.viewerUrl!(), undefined);
+  assert.strictEqual(called, false);
+  await sink.close();
+});

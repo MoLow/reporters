@@ -7,7 +7,7 @@ export interface PullResult {
   reset: boolean;
 }
 
-type FetchLike = (url: string, init?: { headers?: Record<string, string> }) => Promise<Response>;
+export type FetchLike = (url: string, init?: { headers?: Record<string, string> }) => Promise<Response>;
 
 export const DEFAULT_POLL_MS = 1000;
 const MIN_POLL_MS = 100;
