@@ -103,37 +103,57 @@ export interface Matches {
   force: Set<string>;
 }
 
-export function computeMatches(files: TestNode[], query: string): Matches {
+/**
+ * Which nodes stay visible under the active filters. The text query and the
+ * status set compose as AND on leaves: a leaf matches when its own (or an
+ * ancestor's) name contains the query and its status is in the set. Ancestors
+ * of a match stay visible for path context and are force-expanded so the
+ * match is actually on screen; a leaf that only inherited its ancestor's name
+ * match doesn't force anything open.
+ */
+export function computeMatches(files: TestNode[], query: string, statuses: ReadonlySet<TestStatus> = new Set()): Matches {
   const visible = new Set<string>();
   const force = new Set<string>();
-  const addSubtree = (node: TestNode): void => {
-    for (const child of node.children) { visible.add(child.key); addSubtree(child); }
-  };
-  const walk = (node: TestNode, ancestors: string[]): boolean => {
-    const self = displayName(node).toLowerCase().includes(query);
-    let desc = false;
-    for (const child of node.children) if (walk(child, [...ancestors, node.key])) desc = true;
-    if (self || desc) {
+  const statusOk = (node: TestNode): boolean => statuses.size === 0 || statuses.has(node.status);
+  const walk = (node: TestNode, ancestors: string[], inheritedText: boolean): { vis: boolean; own: boolean } => {
+    const selfText = query !== '' && displayName(node).toLowerCase().includes(query);
+    const textOk = query === '' || selfText || inheritedText;
+    let descVis = false;
+    let descOwn = false;
+    for (const child of node.children) {
+      const r = walk(child, [...ancestors, node.key], textOk);
+      descVis ||= r.vis;
+      descOwn ||= r.own;
+    }
+    const leafMatch = node.children.length === 0 && textOk && statusOk(node);
+    if (leafMatch || descVis) {
       visible.add(node.key);
       for (const a of ancestors) visible.add(a);
-      if (desc) { force.add(node.key); for (const a of ancestors) force.add(a); }
-      if (self && node.children.length > 0) addSubtree(node);
-      return true;
     }
-    return false;
+    // Expand the path to nodes matched in their own right (a name hit, or a
+    // status hit under an active status filter) — not to leaves merely swept
+    // in by a container's name match.
+    if (descOwn) force.add(node.key);
+    const own = selfText || (leafMatch && statuses.size > 0) || descOwn;
+    return { vis: leafMatch || descVis, own };
   };
-  for (const file of files) walk(file, []);
+  for (const file of files) walk(file, [], false);
   return { visible, force };
 }
 
 export interface BuildOptions {
   overrides: Map<string, boolean>;
   query: string;
+  statuses?: ReadonlySet<TestStatus>;
   matches: Matches | null;
 }
 
+function filtering(opts: BuildOptions): boolean {
+  return opts.query !== '' || (opts.statuses?.size ?? 0) > 0;
+}
+
 export function isExpanded(node: TestNode, opts: BuildOptions): boolean {
-  if (opts.query && opts.matches?.force.has(node.key)) return true;
+  if (filtering(opts) && opts.matches?.force.has(node.key)) return true;
   const { overrides } = opts;
   return overrides.has(node.key) ? overrides.get(node.key)! : defaultExpanded(node);
 }
@@ -146,7 +166,7 @@ export function isDiagOpen(node: TestNode, overrides: Map<string, boolean>): boo
 export function buildRows(files: TestNode[], opts: BuildOptions): FlatRow[] {
   const rows: FlatRow[] = [];
   const push = (node: TestNode, depth: number): void => {
-    if (opts.query && !opts.matches!.visible.has(node.key)) return;
+    if (filtering(opts) && !opts.matches!.visible.has(node.key)) return;
     const container = isContainer(node);
     const expanded = container && isExpanded(node, opts);
     // A container (a file or suite) can still carry its own output — e.g.

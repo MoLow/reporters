@@ -348,6 +348,15 @@ export function TreeView({
   const [theme, toggleTheme] = useTheme();
   const [query, setQuery] = useState('');
   const [overrides, setOverrides] = useState<Map<string, boolean>>(new Map());
+  // Active status-chip filters; empty = unfiltered.
+  const [statuses, setStatuses] = useState<ReadonlySet<TestStatus>>(new Set());
+  const toggleStatus = (s: TestStatus) => {
+    setStatuses((prev) => {
+      const next = new Set(prev);
+      if (next.has(s)) next.delete(s); else next.add(s);
+      return next;
+    });
+  };
   // Rows already painted at least once — so we only play the enter animation for
   // rows that newly arrive during a live run, never on every re-render.
   const seenRef = useRef<Set<string>>(new Set());
@@ -361,10 +370,15 @@ export function TreeView({
   const { counts } = snapshot;
   const q = query.trim().toLowerCase();
 
-  const matches = useMemo(() => (q ? computeMatches(files, q) : null), [files, q]);
+  const matches = useMemo(
+    () => (q || statuses.size > 0 ? computeMatches(files, q, statuses) : null),
+    [files, q, statuses],
+  );
   const rows = useMemo(
-    () => buildRows(files, { overrides, query: q, matches }),
-    [files, overrides, q, matches],
+    () => buildRows(files, {
+      overrides, query: q, statuses, matches,
+    }),
+    [files, overrides, q, statuses, matches],
   );
 
   const toggle = (key: string, current: boolean) => {
@@ -441,11 +455,20 @@ export function TreeView({
           <Verdict counts={counts} inProgress={inProgress} duration={duration} />
           <div className="chips">
             {statChips.map((s) => (
-              <span className="chip" data-soft={s} key={s}>
+              <button
+                type="button"
+                className="chip"
+                data-soft={s}
+                data-active={statuses.has(s) ? 'true' : undefined}
+                aria-pressed={statuses.has(s)}
+                title={statuses.has(s) ? `Stop filtering by ${STATUS_LABEL[s]}` : `Show only ${STATUS_LABEL[s]} tests`}
+                onClick={() => toggleStatus(s)}
+                key={s}
+              >
                 <span className="chip-dot" data-stf={s} />
                 {counts[s]}
                 <span className="chip-label">{STATUS_LABEL[s]}</span>
-              </span>
+              </button>
             ))}
           </div>
           <div className="tools">

@@ -214,3 +214,61 @@ test('isPassingTodo flags only a passed leaf that still carries the todo directi
   const child = node({ key: 'c', status: 'passed', todo: true });
   assert.strictEqual(isPassingTodo(node({ status: 'passed', todo: true, children: [child] })), false, 'containers are not badged');
 });
+
+function tree() {
+  // file > suite > [failed leaf, passed leaf], plus a second file with a todo leaf
+  const failed = node({ key: 'f1', name: 'breaks', status: 'failed' });
+  const passed = node({ key: 'p1', name: 'works', status: 'passed' });
+  const suite = node({
+    key: 's1', name: 'suite one', type: 'suite', status: 'failed', children: [failed, passed],
+    counts: { ...zeroCounts(), failed: 1, passed: 1, total: 2 },
+  });
+  const fileA = node({
+    key: 'fa', type: 'file', file: '/a.test.js', children: [suite],
+    counts: { ...zeroCounts(), failed: 1, passed: 1, total: 2 },
+  });
+  const todo = node({ key: 't1', name: 'unfinished', status: 'todo' });
+  const fileB = node({
+    key: 'fb', type: 'file', file: '/b.test.js', children: [todo],
+    counts: { ...zeroCounts(), todo: 1, total: 1 },
+  });
+  return [fileA, fileB];
+}
+
+test('a status filter shows matching leaves with their ancestors, force-expanded', () => {
+  const files = tree();
+  const matches = computeMatches(files, '', new Set(['failed']));
+  assert.deepStrictEqual([...matches.visible].sort(), ['f1', 'fa', 's1']);
+  assert.ok(matches.force.has('fa') && matches.force.has('s1'), 'ancestors of a match are force-expanded');
+  const rows = buildRows(files, { overrides: new Map(), query: '', statuses: new Set(['failed']), matches });
+  assert.deepStrictEqual(rows.map((r) => r.node.key), ['fa', 's1', 'f1']);
+});
+
+test('multiple statuses union their matches', () => {
+  const files = tree();
+  const matches = computeMatches(files, '', new Set(['failed', 'todo']));
+  assert.deepStrictEqual([...matches.visible].sort(), ['f1', 'fa', 'fb', 's1', 't1']);
+});
+
+test('a status filter composes with the text query as AND', () => {
+  const files = tree();
+  const both = computeMatches(files, 'works', new Set(['failed']));
+  assert.deepStrictEqual([...both.visible], [], 'no leaf is both failed and named "works"');
+  const match = computeMatches(files, 'breaks', new Set(['failed']));
+  assert.deepStrictEqual([...match.visible].sort(), ['f1', 'fa', 's1']);
+});
+
+test('an empty status set leaves the tree unfiltered', () => {
+  const files = tree();
+  const rows = buildRows(files, {
+    overrides: new Map(), query: '', statuses: new Set(), matches: null,
+  });
+  assert.strictEqual(rows.length, 6, 'all nodes render');
+});
+
+test('a container name match under a status filter shows only matching leaves beneath it', () => {
+  const files = tree();
+  const matches = computeMatches(files, 'suite one', new Set(['passed']));
+  assert.ok(matches.visible.has('p1'), 'passed leaf under the matched suite is visible');
+  assert.ok(!matches.visible.has('f1'), 'failed leaf is filtered out despite the container name match');
+});
