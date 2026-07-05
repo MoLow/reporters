@@ -113,7 +113,9 @@ button { font-family: inherit; } input { font-family: inherit; }
 .verdict-main { font-size: 15px; font-weight: 700; letter-spacing: .01em; }
 .verdict-sub { font-size: 11px; opacity: .85; }
 .chips { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
-.chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; border: 1px solid transparent; cursor: pointer; font-family: inherit; }
+.chip:hover { filter: brightness(1.12); }
+.chip[data-active] { border-color: currentColor; }
 .chip-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
 .chip-label { opacity: .7; font-weight: 500; }
 .tools { margin-left: auto; display: flex; gap: 9px; align-items: center; }
