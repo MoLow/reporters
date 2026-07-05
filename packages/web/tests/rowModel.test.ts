@@ -4,7 +4,7 @@ import { createTreeStore } from '@reporters/tree-core';
 import type { Counts, TestEvent, TestNode } from '@reporters/tree-core';
 import {
   buildRows, collectContainerKeys, computeMatches, displayName, hasDiagnostics,
-  isDiagOpen, isExpanded, reasonOf, realError, rollup,
+  isDiagOpen, isExpanded, liveNodeDuration, nodeDuration, reasonOf, realError, rollup,
 } from '../src/client/rowModel.ts';
 
 const zeroCounts = (): Counts => ({
@@ -180,4 +180,28 @@ test('hasDiagnostics ignores a suppressed (synthetic/container) error', () => {
   assert.strictEqual(hasDiagnostics(container), false);
   // a failed leaf with a real error does have diagnostics
   assert.strictEqual(hasDiagnostics(node({ error: { message: 'real' } })), true);
+});
+
+test('nodeDuration prefers a measured wall-clock over summing concurrent children', () => {
+  const child = (key: string) => node({ key, durationMs: 600_000 });
+  const measured = node({
+    key: 'file', type: 'file', durationMs: 700_000, children: [child('a'), child('b'), child('c')],
+  });
+  assert.strictEqual(nodeDuration(measured), 700_000, 'measured wall-clock wins');
+  const unmeasured = node({ key: 'suite', type: 'suite', children: [child('a'), child('b')] });
+  assert.strictEqual(nodeDuration(unmeasured), 1_200_000, 'falls back to summing when unmeasured');
+  assert.strictEqual(nodeDuration(child('leaf')), 600_000);
+  assert.strictEqual(nodeDuration(node({ key: 'q', status: 'queued' })), 0, 'an unmeasured leaf has no duration');
+});
+
+test('liveNodeDuration ticks running leaves but keeps measured containers fixed', () => {
+  const since = new Map<string, number>();
+  const running = node({ key: 'r', status: 'running' });
+  const done = node({ key: 'd', durationMs: 50 });
+  const parent = node({ key: 'p', type: 'suite', children: [running, done] });
+  assert.strictEqual(liveNodeDuration(parent, 1000, since), 50, 'first sight starts the running clock at 0');
+  assert.strictEqual(liveNodeDuration(parent, 1300, since), 350, 'running leaf ticks with elapsed time');
+  const measured = node({ key: 'm', type: 'suite', durationMs: 80, children: [done] });
+  assert.strictEqual(liveNodeDuration(measured, 9999, since), 80, 'a completed, measured container is fixed');
+  assert.strictEqual(liveNodeDuration(node({ key: 'q', status: 'queued' }), 9999, since), 0, 'an unmeasured, not-running leaf has no duration');
 });
