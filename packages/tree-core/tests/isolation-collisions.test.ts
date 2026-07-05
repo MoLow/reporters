@@ -139,6 +139,76 @@ test('same-testId helper subtests from different processes stay distinct nodes',
   });
 });
 
+test('a mid-stream child with an unknown parentId anchors to a placeholder until its block resolves it', () => {
+  // Tailing a stream mid-run: the child's eager events arrive but its parent
+  // was enqueued before we started listening. The child needs a live anchor
+  // (a placeholder for the unknown parentId), which must disappear once the
+  // declaration block reveals the real parent.
+  const store = createTreeStore();
+  store.apply(ev('test:enqueue', { name: 'orphan restore', nesting: 2, file: HELPER, testId: 5, parentId: 3, type: 'test' }));
+
+  const live = store.getSnapshot();
+  const { path: livePath } = findOne(live.root, 'orphan restore');
+  assert.strictEqual(livePath[livePath.length - 1], '', `live child hangs off a placeholder anchor, got path: ${JSON.stringify(livePath)}`);
+
+  for (const event of [
+    ev('test:start', { name: 'backup', nesting: 1, file: ENTRY, testId: 3, parentId: 0 }),
+    ev('test:start', { name: 'orphan restore', nesting: 2, file: HELPER, testId: 5, parentId: 3 }),
+    ev('test:pass', { name: 'orphan restore', nesting: 2, file: HELPER, testId: 5, parentId: 3, details: done }),
+    ev('test:pass', { name: 'backup', nesting: 1, file: ENTRY, testId: 3, parentId: 0, details: done }),
+  ]) store.apply(event);
+
+  const { root } = store.getSnapshot();
+  const { path } = findOne(root, 'orphan restore');
+  assert.ok(path.includes('backup'), `child settles under its real parent, got path: ${JSON.stringify(path)}`);
+  const nameless = allNodes(root).filter((n) => (n.type === 'test' || n.type === 'suite') && n.name === '');
+  assert.deepStrictEqual(nameless, [], 'placeholder is pruned once empty');
+});
+
+test('a new top-level declaration start closes deeper open declaration levels', () => {
+  // Suite A's child never reports a result (its process died); when suite B's
+  // block starts, B's children must not attach to A's stale open child.
+  const { root } = build([
+    ev('test:start', { name: 'suite A', nesting: 0, file: ENTRY, testId: 1, parentId: 0 }),
+    ev('test:start', { name: 'child A', nesting: 1, file: ENTRY, testId: 2, parentId: 1 }),
+    ev('test:start', { name: 'suite B', nesting: 0, file: OTHER, testId: 1, parentId: 0 }),
+    ev('test:start', { name: 'child B', nesting: 1, file: OTHER, testId: 2, parentId: 1 }),
+    ev('test:pass', { name: 'child B', nesting: 1, file: OTHER, testId: 2, parentId: 1, details: done }),
+    ev('test:pass', { name: 'suite B', nesting: 0, file: OTHER, testId: 1, parentId: 0, details: done }),
+  ]);
+
+  assert.deepStrictEqual(findOne(root, 'child A').path.pop(), 'suite A');
+  assert.deepStrictEqual(findOne(root, 'child B').path.pop(), 'suite B');
+});
+
+test('a declaration result for a different test than the open one falls back to its own instance', () => {
+  // The open declaration node at this nesting is another test (its result never
+  // arrived); the pass must settle its own test, not the open one.
+  const { root } = build([
+    ev('test:start', { name: 'stuck', nesting: 0, file: ENTRY, testId: 1, parentId: 0 }),
+    ev('test:pass', { name: 'quick', nesting: 0, file: ENTRY, testId: 2, parentId: 0, details: done }),
+  ]);
+
+  assert.strictEqual(findOne(root, 'quick').node.status, 'passed');
+  assert.strictEqual(findOne(root, 'stuck').node.status, 'running');
+});
+
+test('a declaration start whose parentId matches neither the open node nor a local parent uses the open-parent lookup', () => {
+  // The enclosing declaration slot holds an unrelated test (interleaved decl
+  // streams), so the helper child must find its still-open parent by id.
+  const { root } = build([
+    ev('test:enqueue', { name: 'real parent', nesting: 0, file: ENTRY, testId: 7, parentId: 0, type: 'test' }),
+    ev('test:dequeue', { name: 'real parent', nesting: 0, file: ENTRY, testId: 7, parentId: 0, type: 'test' }),
+    ev('test:start', { name: 'unrelated top', nesting: 0, file: OTHER, testId: 9, parentId: 0 }),
+    ev('test:start', { name: 'helper child', nesting: 1, file: HELPER, testId: 8, parentId: 7 }),
+    ev('test:pass', { name: 'helper child', nesting: 1, file: HELPER, testId: 8, parentId: 7, details: done }),
+  ]);
+
+  const { path } = findOne(root, 'helper child');
+  assert.ok(path.includes('real parent'), `child resolves by parentId, got path: ${JSON.stringify(path)}`);
+  assert.ok(!path.includes('unrelated top'), 'child must not attach to the unrelated open declaration node');
+});
+
 test('identical helper subtests from two processes each attach to their own parent', () => {
   // Two files run the same helper flow: both subtests are named "restore VM"
   // with testId 3 and parentId 2 — byte-identical events from different
