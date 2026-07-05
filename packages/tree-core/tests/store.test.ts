@@ -190,6 +190,50 @@ test('tests appear as running from dequeue, before start/pass arrive', () => {
   assert.deepStrictEqual(file.children.map((c) => [c.name, c.status]), [['slow', 'running'], ['fast', 'running']]);
 });
 
+test('the file wrapper completion carries the file wall-clock onto the file node', () => {
+  // Concurrent tests inside a file sum to far more than the file's real
+  // duration; the wrapper's test:complete measures the actual wall-clock.
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:enqueue', data: { name: 'a.test.js', nesting: 0, file: '/x/a.test.js', testId: 1, parentId: 0 } },
+    { type: 'test:complete', data: { name: 'fast', nesting: 0, file: '/x/a.test.js', testId: 1, parentId: 0, details: { passed: true, duration_ms: 500 } } },
+    { type: 'test:complete', data: { name: 'slow', nesting: 0, file: '/x/a.test.js', testId: 2, parentId: 0, details: { passed: true, duration_ms: 600 } } },
+    { type: 'test:complete', data: { name: 'a.test.js', nesting: 0, file: '/x/a.test.js', testId: 1, parentId: 0, details: { passed: true, duration_ms: 700 } } },
+  ]);
+  const fileNode = store.getSnapshot().root.children[0];
+  assert.strictEqual(fileNode.type, 'file');
+  assert.strictEqual(fileNode.durationMs, 700);
+});
+
+test('a file wrapper pass carries the wall-clock but never overrides the completion detail', () => {
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:pass', data: { name: 't', nesting: 0, file: '/x/a.test.js', testId: 1, details: { duration_ms: 50 } } },
+    { type: 'test:pass', data: { name: 'a.test.js', nesting: 0, file: '/x/a.test.js', testId: 1, parentId: 0, details: { duration_ms: 80 } } },
+  ]);
+  assert.strictEqual(store.getSnapshot().root.children[0].durationMs, 80);
+
+  const withComplete = createTreeStore();
+  apply(withComplete, [
+    { type: 'test:pass', data: { name: 't', nesting: 0, file: '/x/a.test.js', testId: 1, details: { duration_ms: 50 } } },
+    { type: 'test:complete', data: { name: 'a.test.js', nesting: 0, file: '/x/a.test.js', testId: 1, parentId: 0, details: { passed: true, duration_ms: 70 } } },
+    { type: 'test:pass', data: { name: 'a.test.js', nesting: 0, file: '/x/a.test.js', testId: 1, parentId: 0, details: { duration_ms: 90 } } },
+    { type: 'test:summary', data: { file: '/x/a.test.js', success: true, duration_ms: 95, counts: {} } },
+  ]);
+  assert.strictEqual(withComplete.getSnapshot().root.children[0].durationMs, 70);
+});
+
+test('a per-file summary carries the file wall-clock when no wrapper completion has detail', () => {
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:dequeue', data: { name: 'a.test.js', nesting: 0, file: '/x/a.test.js', testId: 1, parentId: 0 } },
+    { type: 'test:pass', data: { name: 't', nesting: 0, file: '/x/a.test.js', testId: 1, details: { duration_ms: 50 } } },
+    { type: 'test:summary', data: { file: '/x/a.test.js', success: true, duration_ms: 90, counts: {} } },
+  ]);
+  const fileNode = store.getSnapshot().root.children[0];
+  assert.strictEqual(fileNode.durationMs, 90);
+});
+
 test('REPL-shaped events without file or nesting build under the <repl> group', () => {
   const store = createTreeStore();
   apply(store, [

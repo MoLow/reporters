@@ -16,6 +16,33 @@ export function isContainer(node: TestNode): boolean {
   return node.children.length > 0;
 }
 
+/**
+ * A node's displayed duration: the measured wall-clock when the runner
+ * reported one (a test/suite's own duration_ms, or the file wrapper's), else
+ * the sum of its children. Concurrent children overlap, so summing is only a
+ * fallback — a 40-minute run of concurrent files sums to many hours.
+ */
+export function nodeDuration(node: TestNode): number {
+  if (node.durationMs != null) return node.durationMs;
+  if (!isContainer(node)) return 0;
+  return node.children.reduce((total, child) => total + nodeDuration(child), 0);
+}
+
+/**
+ * Like `nodeDuration`, but a still-running leaf counts the time elapsed since
+ * the client first saw it running (`since`), so its counter ticks live between
+ * polls instead of sitting at 0 until the run settles.
+ */
+export function liveNodeDuration(node: TestNode, now: number, since: Map<string, number>): number {
+  if (!isContainer(node) && node.status === 'running') {
+    if (!since.has(node.key)) since.set(node.key, now); // first sight: start the clock
+    return Math.max(0, now - since.get(node.key)!);
+  }
+  if (node.durationMs != null) return node.durationMs;
+  if (!isContainer(node)) return 0;
+  return node.children.reduce((total, child) => total + liveNodeDuration(child, now, since), 0);
+}
+
 /** Container status = the worst status among descendants (severity order). */
 export function rollup(node: TestNode): TestStatus {
   if (!isContainer(node)) return node.status;

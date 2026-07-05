@@ -5,7 +5,7 @@ import {
   formatDuration, type Counts, type TestNode, type TestStatus, type TreeSnapshot,
 } from '@reporters/tree-core';
 import {
-  buildRows, collectContainerKeys, computeMatches, displayName, isContainer, reasonOf, realError, type FlatRow,
+  buildRows, collectContainerKeys, computeMatches, displayName, isContainer, liveNodeDuration, reasonOf, realError, type FlatRow,
 } from './rowModel.ts';
 
 // node:test captures colored output verbatim; render the ANSI SGR codes as real
@@ -19,27 +19,6 @@ const STATUS_ORDER: TestStatus[] = ['passed', 'failed', 'skipped', 'todo', 'runn
 const STATUS_LABEL: Record<TestStatus, string> = {
   passed: 'passed', failed: 'failed', skipped: 'skipped', todo: 'todo', running: 'running', queued: 'queued',
 };
-
-function sumDuration(node: TestNode): number {
-  if (!isContainer(node)) return node.durationMs ?? 0;
-  return node.children.reduce((total, child) => total + sumDuration(child), 0);
-}
-
-/**
- * Like `sumDuration`, but a still-running leaf counts the time elapsed since the
- * client first saw it running (`since`), so its counter ticks live between polls
- * instead of sitting at 0 until the run settles.
- */
-function liveDuration(node: TestNode, now: number, since: Map<string, number>): number {
-  if (!isContainer(node)) {
-    if (node.status === 'running') {
-      if (!since.has(node.key)) since.set(node.key, now); // first sight: start the clock
-      return Math.max(0, now - since.get(node.key)!);
-    }
-    return node.durationMs ?? 0;
-  }
-  return node.children.reduce((total, child) => total + liveDuration(child, now, since), 0);
-}
 
 /** Severity of a test's diagnostics, for the row badge tint. */
 function diagSeverity(node: TestNode): TestStatus {
@@ -307,7 +286,7 @@ function RowView({
             ))}
           </span>
         ) : null}
-        <span className="dur">{formatDuration(liveDuration(node, now, since)) || '—'}</span>
+        <span className="dur">{formatDuration(liveNodeDuration(node, now, since)) || '—'}</span>
       </div>
       {hasDiag ? (
         <div className={`collapsible${diagOpen ? ' open' : ''}`}>
@@ -411,9 +390,10 @@ export function TreeView({
   }, [inProgress]);
   const now = performance.now();
   const since = sinceRef.current;
-  // Sum of descendant durations (running leaves count live elapsed), consistent
-  // with the per-file/suite rows. Header ticks with the run.
-  const duration = liveDuration(snapshot.root, now, since);
+  // The run summary carries the real wall-clock; while still running, fall back
+  // to aggregating the files (running leaves count live elapsed, so the header
+  // ticks with the run).
+  const duration = snapshot.summary?.durationMs ?? liveNodeDuration(snapshot.root, now, since);
 
   // Enter-animation bookkeeping: play only for rows first seen during a live run,
   // staggered within each file so a file "unfurls" rather than popping as a slab.

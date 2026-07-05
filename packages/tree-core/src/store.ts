@@ -437,7 +437,15 @@ export function createTreeStore(): TreeStore {
         // this is what lets the live tree mark tests done in real time. It
         // carries testId on modern Node; older builds (no testId) fall back to
         // the declaration-ordered pass/fail stack below.
-        if (isFileLevel(data)) { sawFileWrapper = true; break; }
+        if (isFileLevel(data)) {
+          sawFileWrapper = true;
+          // The wrapper measures the file's real wall-clock — the file's
+          // concurrent tests sum to much more than the run actually took.
+          if (data.details?.duration_ms != null) {
+            ensureGroupNode(groupKey(data), data.file).durationMs = data.details.duration_ms;
+          }
+          break;
+        }
         if (data.testId == null) break;
         const status = statusFromComplete(data);
         upsertFromTestEvent(data, (node) => {
@@ -451,7 +459,15 @@ export function createTreeStore(): TreeStore {
       }
       case 'test:pass':
       case 'test:fail': {
-        if (isFileLevel(data)) { sawFileWrapper = true; declOpen.clear(); break; }
+        if (isFileLevel(data)) {
+          sawFileWrapper = true;
+          declOpen.clear();
+          if (data.details?.duration_ms != null) {
+            const group = ensureGroupNode(groupKey(data), data.file);
+            group.durationMs = group.durationMs ?? data.details.duration_ms;
+          }
+          break;
+        }
         const status = statusFromResult(type === 'test:pass' ? 'pass' : 'fail', data);
         if (data.testId != null) {
           declFinalize(status, data);
@@ -480,7 +496,15 @@ export function createTreeStore(): TreeStore {
         break;
       case 'test:summary':
         // A per-file summary trails its file's declaration block, closing it.
-        if (data.file !== undefined) declOpen.clear();
+        // It also carries the file's wall-clock, for builds whose wrapper
+        // completion lacks duration detail.
+        if (data.file !== undefined) {
+          declOpen.clear();
+          if (data.duration_ms != null) {
+            const group = ensureGroupNode(groupKey(data), data.file);
+            group.durationMs = group.durationMs ?? data.duration_ms;
+          }
+        }
         // Keep the cumulative summary for the run verdict. Under --test that's
         // the one with no file; when run without --test (a single process, no
         // file wrappers) the only summary carries the file, so accept it too.
