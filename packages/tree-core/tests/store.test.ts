@@ -190,6 +190,26 @@ test('tests appear as running from dequeue, before start/pass arrive', () => {
   assert.deepStrictEqual(file.children.map((c) => [c.name, c.status]), [['slow', 'running'], ['fast', 'running']]);
 });
 
+test('REPL-shaped events without file or nesting build under the <repl> group', () => {
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:enqueue', data: { name: 'eager', testId: 3, parentId: 0 } },
+    { type: 'test:complete', data: { name: 'eager', testId: 3, parentId: 0, details: { passed: true } } },
+    { type: 'test:start', data: { name: 'outer', testId: 1, parentId: 0 } },
+    { type: 'test:start', data: { name: 'inner', nesting: 1, testId: 2, parentId: 1 } },
+    { type: 'test:pass', data: { name: 'inner', nesting: 1, testId: 2, parentId: 1 } },
+    { type: 'test:pass', data: { name: 'outer', testId: 1, parentId: 0 } },
+    { type: 'test:diagnostic', data: { message: 'note' } },
+  ]);
+  const { root } = store.getSnapshot();
+  assert.strictEqual(root.children.length, 1);
+  const group = root.children[0];
+  assert.strictEqual(group.name, '<repl>');
+  assert.deepStrictEqual(group.children.map((c) => [c.name, c.status]), [['eager', 'passed'], ['outer', 'passed']]);
+  const outer = group.children[1];
+  assert.deepStrictEqual(outer.children.map((c) => c.name), ['inner']);
+});
+
 test('subscribe is notified on apply and stops after unsubscribe', () => {
   const store = createTreeStore();
   let calls = 0;
