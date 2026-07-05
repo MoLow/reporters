@@ -47,6 +47,41 @@ test('close() before start() is a no-op (no server to shut down)', async () => {
   await httpServer().close();
 });
 
+test('close() keeps serving until a connected viewer reads the tail', async () => {
+  const sink = httpServer();
+  await sink.start!();
+  const base = baseOf(sink);
+  sink.write('aaa\n');
+  await (await fetch(`${base}/run.ndjson`)).text(); // viewer connects and reads 4 bytes
+  sink.write('bbb\n'); // appended after the viewer's last poll
+  let closed = false;
+  const closing = sink.close().then(() => { closed = true; });
+  await new Promise((r) => setTimeout(r, 50));
+  assert.strictEqual(closed, false); // still serving while the viewer lags
+  const res = await fetch(`${base}/run.ndjson`, { headers: { Range: 'bytes=4-' } });
+  assert.strictEqual(await res.text(), 'bbb\n');
+  await closing; // the catch-up read releases the drain
+});
+
+test('close() gives up draining after drainTimeoutMs', async () => {
+  const sink = httpServer({ drainTimeoutMs: 50 });
+  await sink.start!();
+  const base = baseOf(sink);
+  sink.write('aaa\n');
+  await (await fetch(`${base}/run.ndjson`)).text();
+  sink.write('bbb\n'); // never read again (tab closed)
+  await sink.close();
+});
+
+test('close() does not wait when no viewer ever connected', async () => {
+  const sink = httpServer({ drainTimeoutMs: 60_000 });
+  await sink.start!();
+  sink.write('aaa\n');
+  const started = Date.now();
+  await sink.close();
+  assert.ok(Date.now() - started < 5_000); // headless run: no drain, no hang
+});
+
 test('honors HTTP Range for appended bytes', async () => {
   const sink = httpServer();
   await sink.start!();

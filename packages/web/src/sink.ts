@@ -5,18 +5,21 @@ export interface HttpServerOptions {
   host?: string;
   /** Viewer polling cadence in ms (default 250; the viewer clamps to 100–10000). */
   pollMs?: number;
+  /** How long close() keeps serving a lagging viewer before giving up (default 5000). */
+  drainTimeoutMs?: number;
 }
 
 /**
  * A sink that serves the run locally: the viewer page at `/` and the growing
  * NDJSON at `/run.ndjson` (HTTP Range aware, so the viewer polls appended bytes
  * — no `file://`/CORS limits). Stays alive after the run while attached to an
- * interactive terminal; otherwise shuts down so the process can exit.
+ * interactive terminal; otherwise drains a lagging viewer (bounded by
+ * `drainTimeoutMs`) and shuts down so the process can exit.
  */
 export function httpServer(opts: HttpServerOptions = {}): Sink {
   let server: ViewerServer | undefined;
   return {
-    async start() { server = await startViewerServer(opts.host, opts.pollMs); },
+    async start() { server = await startViewerServer(opts.host, opts.pollMs, opts.drainTimeoutMs); },
     write(chunk) { server?.push(chunk); },
     viewerUrl() { return server?.url; },
     async close() {
