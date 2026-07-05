@@ -220,3 +220,45 @@ test('subscribe is notified on apply and stops after unsubscribe', () => {
   store.apply({ type: 'test:pass', data: { name: 'u', nesting: 0, file: '/a.test.js', testId: 2 } });
   assert.strictEqual(calls, 1);
 });
+
+test('a leaf test stays a test when its dequeue wrongly reports the parent suite type (nodejs/node dequeue bug)', () => {
+  // Node's processPendingSubtests dequeues queued subtests with the PARENT's
+  // reportedType, so a plain test() queued inside a describe() dequeues as
+  // type 'suite'. The terminal events carry the test's real type — trust them.
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:enqueue', data: { name: 'suite', nesting: 0, file: '/a.test.js', testId: 1, parentId: 0, type: 'suite' } },
+    { type: 'test:dequeue', data: { name: 'suite', nesting: 0, file: '/a.test.js', testId: 1, parentId: 0, type: 'suite' } },
+    { type: 'test:enqueue', data: { name: 'first', nesting: 1, file: '/a.test.js', testId: 2, parentId: 1, type: 'test' } },
+    { type: 'test:enqueue', data: { name: 'queued', nesting: 1, file: '/a.test.js', testId: 3, parentId: 1, type: 'test' } },
+    { type: 'test:complete', data: { name: 'first', nesting: 1, file: '/a.test.js', testId: 2, parentId: 1, details: { duration_ms: 1, type: 'test', passed: true } } },
+    { type: 'test:dequeue', data: { name: 'queued', nesting: 1, file: '/a.test.js', testId: 3, parentId: 1, type: 'suite' } },
+    { type: 'test:complete', data: { name: 'queued', nesting: 1, file: '/a.test.js', testId: 3, parentId: 1, details: { duration_ms: 1, type: 'test', passed: true } } },
+    { type: 'test:complete', data: { name: 'suite', nesting: 0, file: '/a.test.js', testId: 1, parentId: 0, details: { duration_ms: 2, type: 'suite', passed: true } } },
+    { type: 'test:start', data: { name: 'suite', nesting: 0, file: '/a.test.js', testId: 1, parentId: 0 } },
+    { type: 'test:start', data: { name: 'first', nesting: 1, file: '/a.test.js', testId: 2, parentId: 1 } },
+    { type: 'test:pass', data: { name: 'first', nesting: 1, file: '/a.test.js', testId: 2, parentId: 1, details: { duration_ms: 1, type: 'test' } } },
+    { type: 'test:start', data: { name: 'queued', nesting: 1, file: '/a.test.js', testId: 3, parentId: 1 } },
+    { type: 'test:pass', data: { name: 'queued', nesting: 1, file: '/a.test.js', testId: 3, parentId: 1, details: { duration_ms: 1, type: 'test' } } },
+    { type: 'test:pass', data: { name: 'suite', nesting: 0, file: '/a.test.js', testId: 1, parentId: 0, details: { duration_ms: 2, type: 'suite' } } },
+  ]);
+  const suite = store.getSnapshot().root.children[0].children[0];
+  assert.strictEqual(suite.type, 'suite');
+  assert.deepStrictEqual(suite.children.map((c) => [c.name, c.type, c.status]), [
+    ['first', 'test', 'passed'],
+    ['queued', 'test', 'passed'],
+  ]);
+});
+
+test('testId-free results settle the node type from details.type (v22-shaped)', () => {
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:start', data: { name: 'group', nesting: 0, file: '/a.test.js' } },
+    { type: 'test:start', data: { name: 'leaf', nesting: 1, file: '/a.test.js' } },
+    { type: 'test:pass', data: { name: 'leaf', nesting: 1, file: '/a.test.js', details: { duration_ms: 1, type: 'test' } } },
+    { type: 'test:pass', data: { name: 'group', nesting: 0, file: '/a.test.js', details: { duration_ms: 2, type: 'suite' } } },
+  ]);
+  const group = store.getSnapshot().root.children[0].children[0];
+  assert.strictEqual(group.type, 'suite');
+  assert.deepStrictEqual(group.children.map((c) => [c.name, c.type]), [['leaf', 'test']]);
+});

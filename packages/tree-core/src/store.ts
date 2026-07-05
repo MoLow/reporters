@@ -338,7 +338,10 @@ export function createTreeStore(): TreeStore {
     assignFields(node, data);
     node.status = status;
     if (data.details?.duration_ms != null) node.durationMs = data.details.duration_ms;
-    if (data.details?.type === 'suite') node.type = 'suite';
+    // details.type is the finishing test's own type — authoritative. It can
+    // DEMOTE a wrong 'suite': Node dequeues a queued subtest with its parent's
+    // type, so a plain test() inside a describe() dequeues as 'suite'.
+    if (data.details?.type != null) node.type = data.details.type === 'suite' ? 'suite' : 'test';
     const error = serializeError(data.details?.error);
     if (error) node.error = error;
     for (const level of [...declOpen.keys()]) if (level >= nesting) declOpen.delete(level);
@@ -388,7 +391,7 @@ export function createTreeStore(): TreeStore {
     assignFields(node, data);
     node.status = status;
     if (data.details?.duration_ms != null) node.durationMs = data.details.duration_ms;
-    if (data.details?.type === 'suite') node.type = 'suite';
+    if (data.details?.type != null) node.type = data.details.type === 'suite' ? 'suite' : 'test';
     const error = serializeError(data.details?.error);
     if (error) node.error = error;
   }
@@ -443,7 +446,7 @@ export function createTreeStore(): TreeStore {
         upsertFromTestEvent(data, (node) => {
           node.status = status;
           if (data.details?.duration_ms != null) node.durationMs = data.details.duration_ms;
-          if (data.details?.type === 'suite') node.type = 'suite';
+          if (data.details?.type != null) node.type = data.details.type === 'suite' ? 'suite' : 'test';
           const error = serializeError(data.details?.error);
           if (error) node.error = error;
         });
