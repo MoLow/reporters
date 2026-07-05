@@ -20,9 +20,14 @@ export interface ViewerServer {
   readonly url: string;
   /** Append NDJSON bytes; served to the viewer via HTTP Range polling. */
   push(chunk: string | Buffer): void;
-  /** Shut the server down. */
+  /** Shut the server down. If a viewer has connected but not yet read the
+   *  whole log, keeps serving until it catches up (or `drainTimeoutMs`). */
   close(): Promise<void>;
 }
+
+/** How long close() keeps serving for a lagging viewer before giving up —
+ *  generous next to the poll cadence, yet a closed tab can't hang the exit. */
+const DRAIN_TIMEOUT_MS = 5000;
 
 /**
  * Start a local HTTP server that serves the viewer page at `/` and a growing
@@ -30,28 +35,42 @@ export interface ViewerServer {
  * live-updates as bytes are appended — no `file://`/CORS limits. Shared by the
  * `httpServer()` sink and the standalone reporter.
  */
-export function startViewerServer(host = '127.0.0.1', pollMs = 250): Promise<ViewerServer> {
+export function startViewerServer(
+  host = '127.0.0.1',
+  pollMs = 250,
+  drainTimeoutMs = DRAIN_TIMEOUT_MS,
+): Promise<ViewerServer> {
   const page = viewerPage();
   let buffer = Buffer.alloc(0);
+  let sawViewer = false;
+  let servedUpTo = 0;
+  let onCaughtUp: (() => void) | undefined;
+  function served(upTo: number): void {
+    servedUpTo = Math.max(servedUpTo, upTo);
+    if (servedUpTo >= buffer.length) onCaughtUp?.();
+  }
 
   return new Promise<ViewerServer>((resolve) => {
     const server: Server = createServer((req, res) => {
       const path = req.url!.split('?')[0];
       if (path === '/run.ndjson') {
+        sawViewer = true;
         const range = /^bytes=(\d+)-/.exec(req.headers.range ?? '');
         if (range) {
           const startByte = Number(range[1]);
-          if (startByte >= buffer.length) { res.writeHead(416).end(); return; }
+          if (startByte >= buffer.length) { served(startByte); res.writeHead(416).end(); return; }
           res.writeHead(206, {
             'content-type': 'application/x-ndjson',
             'accept-ranges': 'bytes',
             'content-range': `bytes ${startByte}-${buffer.length - 1}/${buffer.length}`,
           });
           res.end(buffer.subarray(startByte));
+          served(buffer.length);
           return;
         }
         res.writeHead(200, { 'content-type': 'application/x-ndjson', 'accept-ranges': 'bytes' });
         res.end(buffer);
+        served(buffer.length);
         return;
       }
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
@@ -67,8 +86,14 @@ export function startViewerServer(host = '127.0.0.1', pollMs = 250): Promise<Vie
         push(chunk) {
           buffer = Buffer.concat([buffer, Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)]);
         },
-        close() {
-          return new Promise<void>((res) => { server.close(() => res()); });
+        async close() {
+          if (sawViewer && servedUpTo < buffer.length) {
+            await new Promise<void>((res) => {
+              const timer = setTimeout(res, drainTimeoutMs);
+              onCaughtUp = () => { clearTimeout(timer); res(); };
+            });
+          }
+          await new Promise<void>((res) => { server.close(() => res()); });
         },
       });
     });
