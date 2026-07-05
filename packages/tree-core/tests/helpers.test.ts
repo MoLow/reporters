@@ -155,6 +155,22 @@ function node(partial: Partial<TestNode>): TestNode {
   };
 }
 
+test('isPassingTodo flags only a passed leaf still carrying the todo directive', () => {
+  assert.strictEqual(api.isPassingTodo(node({ type: 'test', status: 'passed', todo: true, children: [] })), true);
+  assert.strictEqual(api.isPassingTodo(node({ type: 'test', status: 'passed', todo: 'why', children: [] })), true);
+  assert.strictEqual(api.isPassingTodo(node({ type: 'test', status: 'passed', children: [] })), false);
+  assert.strictEqual(api.isPassingTodo(node({ type: 'test', status: 'todo', todo: true, children: [] })), false);
+  assert.strictEqual(api.isPassingTodo(node({ type: 'suite', status: 'passed', todo: true, children: [node({ type: 'test' })] })), false);
+});
+
+test('todoLabel mirrors the spec reporter directive text', () => {
+  assert.strictEqual(api.todoLabel(node({ type: 'test', todo: true, children: [] })), 'TODO');
+  assert.strictEqual(api.todoLabel(node({ type: 'test', todo: 'flaky backend', children: [] })), 'flaky backend');
+  assert.strictEqual(api.todoLabel(node({ type: 'test', todo: '', children: [] })), 'TODO');
+  assert.strictEqual(api.todoLabel(node({ type: 'test', children: [] })), undefined);
+  assert.strictEqual(api.todoLabel(node({ type: 'test', todo: false, children: [] })), undefined);
+});
+
 test('defaultExpanded keeps every container expanded and leaves collapsed', () => {
   const kids = [node({ type: 'test' })];
   assert.strictEqual(defaultExpanded(node({ type: 'file', children: kids })), true);

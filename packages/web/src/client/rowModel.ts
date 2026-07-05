@@ -50,6 +50,8 @@ export function rollup(node: TestNode): TestStatus {
   return 'passed';
 }
 
+export { isPassingTodo } from '@reporters/tree-core';
+
 export function reasonOf(node: TestNode): string | undefined {
   if (typeof node.skip === 'string') return node.skip;
   if (typeof node.todo === 'string') return node.todo;

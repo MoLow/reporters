@@ -144,6 +144,7 @@ button { font-family: inherit; } input { font-family: inherit; }
 .name[data-kind="suite"] { font-weight: 600; }
 .name[data-kind="test"] { font-weight: 450; }
 .diagbadge { flex: none; font-size: 10px; font-weight: 600; border-radius: 6px; padding: 1px 6px; }
+.todotag { flex: none; font-size: 10px; font-weight: 600; border-radius: 6px; padding: 1px 6px; }
 .spacer { flex: 1; min-width: 10px; }
 .pills { display: inline-flex; gap: 5px; flex: none; margin-right: 9px; }
 .pill { font-size: 11px; font-weight: 700; border-radius: 999px; padding: 1px 8px; font-variant-numeric: tabular-nums; }

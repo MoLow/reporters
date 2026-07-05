@@ -67,15 +67,33 @@ test('failed test carries the unwrapped cause error', () => {
   assert.strictEqual(node.error?.message, 'actual failure');
 });
 
-test('skip and todo map to their own statuses', () => {
+test('skip maps to its own status; todo status is reserved for failing todos', () => {
   const store = createTreeStore();
   apply(store, [
     { type: 'test:pass', data: { name: 's', nesting: 0, file: '/a.test.js', testId: 1, skip: true } },
-    { type: 'test:pass', data: { name: 'd', nesting: 0, file: '/a.test.js', testId: 2, todo: true } },
+    { type: 'test:pass', data: { name: 'green', nesting: 0, file: '/a.test.js', testId: 2, todo: true } },
+    { type: 'test:fail', data: { name: 'red', nesting: 0, file: '/a.test.js', testId: 3, todo: 'evaluating', details: { error: new Error('boom') } } },
   ]);
-  const [s, d] = store.getSnapshot().root.children[0].children;
+  const [s, green, red] = store.getSnapshot().root.children[0].children;
   assert.strictEqual(s.status, 'skipped');
-  assert.strictEqual(d.status, 'todo');
+  // A todo that actually passes reports as passed — it is a candidate to
+  // un-todo — and keeps its todo marker; a failing todo is the expected
+  // state and must not fail the run.
+  assert.strictEqual(green.status, 'passed');
+  assert.strictEqual(green.todo, true);
+  assert.strictEqual(red.status, 'todo');
+  assert.strictEqual(red.error?.message, 'boom');
+});
+
+test('test:complete resolves a todo result ahead of the buffered pass/fail', () => {
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:complete', data: { name: 'green', nesting: 0, file: '/a.test.js', testId: 1, parentId: 0, todo: true, details: { passed: true } } },
+    { type: 'test:complete', data: { name: 'red', nesting: 0, file: '/a.test.js', testId: 2, parentId: 0, todo: true, details: { passed: false, error: new Error('boom') } } },
+  ]);
+  const [green, red] = store.getSnapshot().root.children[0].children;
+  assert.strictEqual(green.status, 'passed');
+  assert.strictEqual(red.status, 'todo');
 });
 
 test('diagnostics attach to the last started test at that file+nesting', () => {
@@ -170,7 +188,7 @@ test('test:complete carries failure and skip/todo status', () => {
   apply(store, [
     { type: 'test:complete', data: { name: 'boom', nesting: 0, file: '/t.test.js', testId: 1, parentId: 0, details: { passed: false, error: new Error('nope') } } },
     { type: 'test:complete', data: { name: 'skipped', nesting: 0, file: '/t.test.js', testId: 2, parentId: 0, skip: true, details: { passed: true } } },
-    { type: 'test:complete', data: { name: 'todo', nesting: 0, file: '/t.test.js', testId: 3, parentId: 0, todo: true, details: { passed: true } } },
+    { type: 'test:complete', data: { name: 'todo', nesting: 0, file: '/t.test.js', testId: 3, parentId: 0, todo: true, details: { passed: false } } },
   ]);
   const [boom, skipped, todo] = store.getSnapshot().root.children[0].children;
   assert.strictEqual(boom.status, 'failed');
