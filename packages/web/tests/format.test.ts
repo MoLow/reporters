@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
 import {
-  classifyStack, extractLevel, levelSeverity, splitUrls, stripAnsi,
+  classifyFrame, classifyStack, extractLevel, levelSeverity, splitUrls, stripAnsi,
 } from '../src/client/format.ts';
 
 test('stripAnsi removes SGR codes', () => {
@@ -56,6 +56,22 @@ test('classifyStack: frame without parseable location stays plain', () => {
   const lines = classifyStack('    at <anonymous>');
   assert.strictEqual(lines[0].kind, 'frame');
   assert.strictEqual(lines[0].loc, undefined);
+});
+
+test('classifyFrame: frame lines inside log text are classified, others null', () => {
+  assert.strictEqual(classifyFrame('cacheKey: "256965e5"'), null);
+  assert.strictEqual(classifyFrame('Error: Simulated 504'), null);
+  const internal = classifyFrame('        at Test.run (node:internal/test_runner/test:1382:25)');
+  assert.strictEqual(internal?.kind, 'internal');
+  const user = classifyFrame('        at failOnce (file:///runner/t.test.ts:52:15)');
+  assert.strictEqual(user?.kind, 'frame');
+  assert.strictEqual(user?.loc?.location, 'file:///runner/t.test.ts:52:15');
+});
+
+test('classifyFrame: strips ANSI before matching', () => {
+  const frame = classifyFrame('    at f (\u001b[36m/repo/a.ts:1:2\u001b[39m)');
+  assert.strictEqual(frame?.kind, 'frame');
+  assert.strictEqual(frame?.loc?.location, '/repo/a.ts:1:2');
 });
 
 test('splitUrls: extracts http(s) URLs, keeps surrounding text', () => {

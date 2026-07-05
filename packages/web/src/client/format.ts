@@ -25,22 +25,26 @@ const FRAME_RE = /^\s+at\s/;
 const INTERNAL_RE = /\(node:|\snode:|node_modules[/\\]/;
 const LOC_RE = /((?:file:\/\/)?[^()\s]+:\d+:\d+)/;
 
+/** Classify a single line as a stack frame (dimmed internals, located user code), or null. */
+export function classifyFrame(line: string): StackLine | null {
+  const text = stripAnsi(line);
+  if (!FRAME_RE.test(text)) return null;
+  if (INTERNAL_RE.test(text)) return { text, kind: 'internal' };
+  const match = text.match(LOC_RE);
+  if (!match || match.index === undefined) return { text, kind: 'frame' };
+  return {
+    text,
+    kind: 'frame',
+    loc: {
+      pre: text.slice(0, match.index),
+      location: match[1],
+      post: text.slice(match.index + match[1].length),
+    },
+  };
+}
+
 export function classifyStack(stack: string): StackLine[] {
-  return stripAnsi(stack).split('\n').map((text) => {
-    if (!FRAME_RE.test(text)) return { text, kind: 'head' as const };
-    if (INTERNAL_RE.test(text)) return { text, kind: 'internal' as const };
-    const match = text.match(LOC_RE);
-    if (!match || match.index === undefined) return { text, kind: 'frame' as const };
-    return {
-      text,
-      kind: 'frame' as const,
-      loc: {
-        pre: text.slice(0, match.index),
-        location: match[1],
-        post: text.slice(match.index + match[1].length),
-      },
-    };
-  });
+  return stripAnsi(stack).split('\n').map((text) => classifyFrame(text) ?? { text, kind: 'head' as const });
 }
 
 export function levelSeverity(level: string): TestStatus {

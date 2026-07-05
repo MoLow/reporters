@@ -12,7 +12,7 @@ import {
 // colors (mapped to the theme's --ansi-* vars) rather than stripping them.
 import { AnsiHtml } from 'fancy-ansi/react';
 import {
-  classifyStack, extractLevel, levelSeverity, splitUrls,
+  classifyFrame, classifyStack, extractLevel, levelSeverity, splitUrls, type StackLine,
 } from './format.ts';
 
 const GLYPH: Record<TestStatus, string> = {
@@ -87,12 +87,36 @@ function linkifyDom(rootEl: HTMLElement): void {
   }
 }
 
+const FrameText = ({ frame }: { frame: StackLine }) => (frame.loc ? (
+  <>
+    {frame.loc.pre}
+    <span className="stack-loc">{frame.loc.location}</span>
+    {frame.loc.post}
+  </>
+) : <>{frame.text === '' ? ' ' : frame.text}</>);
+
 // AnsiHtml plus a DOM post-pass that wraps http(s) URLs in links — post-render
-// so ANSI color state stays intact across the link boundary.
+// so ANSI color state stays intact across the link boundary. Lines that look
+// like stack frames (also inside log messages) get node-style frame coloring.
 function Ansi({ text }: { text: string }) {
   const ref = useRef<HTMLSpanElement>(null);
   useEffect(() => { if (ref.current) linkifyDom(ref.current); });
-  return <span ref={ref}><AnsiHtml text={text} /></span>;
+  return (
+    <span ref={ref}>
+      {text.split('\n').map((line, i) => {
+        const frame = classifyFrame(line);
+        return (
+          // eslint-disable-next-line react/no-array-index-key
+          <React.Fragment key={i}>
+            {i > 0 ? '\n' : null}
+            {frame ? (
+              <span className="frame" data-kind={frame.kind}><FrameText frame={frame} /></span>
+            ) : <AnsiHtml text={line} />}
+          </React.Fragment>
+        );
+      })}
+    </span>
+  );
 }
 
 function Stack({ stack }: { stack: string }) {
@@ -101,13 +125,7 @@ function Stack({ stack }: { stack: string }) {
       {classifyStack(stack).map((line, i) => (
         // eslint-disable-next-line react/no-array-index-key
         <div className="stack-line" data-kind={line.kind} key={i}>
-          {line.loc ? (
-            <>
-              {line.loc.pre}
-              <span className="stack-loc">{line.loc.location}</span>
-              {line.loc.post}
-            </>
-          ) : (line.text === '' ? ' ' : line.text)}
+          <FrameText frame={line} />
         </div>
       ))}
     </pre>

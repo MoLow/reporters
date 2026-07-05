@@ -165,7 +165,7 @@ button { font-family: inherit; } input { font-family: inherit; }
 .diag-msg span { font-size: 13px; font-weight: 600; }
 .diag pre { margin: 0; font-family: var(--mono); font-size: 11.5px; line-height: 1.55; }
 .diag pre.stack { padding: 2px 14px 13px; color: var(--fg); overflow-x: auto; white-space: pre; }
-.stack-line[data-kind="internal"] { color: var(--faint); }
+.stack-line[data-kind="internal"], .frame[data-kind="internal"] { color: var(--faint); }
 .stack-loc { color: var(--ansi-cyan); }
 .diag pre.text { padding: 2px 14px 13px; color: var(--fg); overflow-x: auto; white-space: pre-wrap; word-break: break-word; }
 /* merged stdout+stderr: one block, per-line stream tagging */
