@@ -249,3 +249,16 @@ test('a leaf test stays a test when its dequeue wrongly reports the parent suite
     ['queued', 'test', 'passed'],
   ]);
 });
+
+test('testId-free results settle the node type from details.type (v22-shaped)', () => {
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:start', data: { name: 'group', nesting: 0, file: '/a.test.js' } },
+    { type: 'test:start', data: { name: 'leaf', nesting: 1, file: '/a.test.js' } },
+    { type: 'test:pass', data: { name: 'leaf', nesting: 1, file: '/a.test.js', details: { duration_ms: 1, type: 'test' } } },
+    { type: 'test:pass', data: { name: 'group', nesting: 0, file: '/a.test.js', details: { duration_ms: 2, type: 'suite' } } },
+  ]);
+  const group = store.getSnapshot().root.children[0].children[0];
+  assert.strictEqual(group.type, 'suite');
+  assert.deepStrictEqual(group.children.map((c) => [c.name, c.type]), [['leaf', 'test']]);
+});
