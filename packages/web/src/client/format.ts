@@ -48,3 +48,19 @@ export function levelSeverity(level: string): TestStatus {
   if (level === 'warn' || level === 'warning') return 'running';
   return 'skipped';
 }
+
+export interface TextSegment { kind: 'text' | 'url'; text: string; }
+
+const URL_RE = /https?:\/\/[^\s"'<>()\][]+/g;
+
+export function splitUrls(text: string): TextSegment[] {
+  const segments: TextSegment[] = [];
+  let last = 0;
+  for (const match of text.matchAll(URL_RE)) {
+    if (match.index > last) segments.push({ kind: 'text', text: text.slice(last, match.index) });
+    segments.push({ kind: 'url', text: match[0] });
+    last = match.index + match[0].length;
+  }
+  if (last < text.length || segments.length === 0) segments.push({ kind: 'text', text: text.slice(last) });
+  return segments;
+}

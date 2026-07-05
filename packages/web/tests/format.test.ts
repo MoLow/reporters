@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
 import {
-  classifyStack, extractLevel, levelSeverity, stripAnsi,
+  classifyStack, extractLevel, levelSeverity, splitUrls, stripAnsi,
 } from '../src/client/format.ts';
 
 test('stripAnsi removes SGR codes', () => {
@@ -56,6 +56,31 @@ test('classifyStack: frame without parseable location stays plain', () => {
   const lines = classifyStack('    at <anonymous>');
   assert.strictEqual(lines[0].kind, 'frame');
   assert.strictEqual(lines[0].loc, undefined);
+});
+
+test('splitUrls: extracts http(s) URLs, keeps surrounding text', () => {
+  assert.deepStrictEqual(splitUrls('logs: "https://app.example.com/logs?a=%22b%22&c=1" done'), [
+    { kind: 'text', text: 'logs: "' },
+    { kind: 'url', text: 'https://app.example.com/logs?a=%22b%22&c=1' },
+    { kind: 'text', text: '" done' },
+  ]);
+});
+
+test('splitUrls: no URLs yields single text segment', () => {
+  assert.deepStrictEqual(splitUrls('plain text'), [{ kind: 'text', text: 'plain text' }]);
+});
+
+test('splitUrls: URL at start and end, multiple URLs', () => {
+  assert.deepStrictEqual(splitUrls('https://a.io and http://b.io'), [
+    { kind: 'url', text: 'https://a.io' },
+    { kind: 'text', text: ' and ' },
+    { kind: 'url', text: 'http://b.io' },
+  ]);
+});
+
+test('splitUrls: does not swallow closing quotes/brackets', () => {
+  const [seg] = splitUrls('https://a.io/x)');
+  assert.deepStrictEqual(seg, { kind: 'url', text: 'https://a.io/x' });
 });
 
 test('levelSeverity maps levels to status tints', () => {
