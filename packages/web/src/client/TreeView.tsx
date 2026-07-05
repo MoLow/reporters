@@ -2,10 +2,10 @@ import React, {
   useEffect, useMemo, useRef, useState,
 } from 'react';
 import {
-  formatDuration, type Counts, type TestNode, type TestStatus, type TreeSnapshot,
+  formatDuration, todoLabel, type Counts, type TestNode, type TestStatus, type TreeSnapshot,
 } from '@reporters/tree-core';
 import {
-  buildRows, collectContainerKeys, computeMatches, displayName, isContainer, liveNodeDuration, reasonOf, realError, type FlatRow,
+  buildRows, collectContainerKeys, computeMatches, displayName, isContainer, isPassingTodo, liveNodeDuration, reasonOf, realError, type FlatRow,
 } from './rowModel.ts';
 
 // node:test captures colored output verbatim; render the ANSI SGR codes as real
@@ -256,6 +256,9 @@ function RowView({
           <span className="cglyph indicator" data-stc={status} data-spin={status === 'running' ? 'true' : undefined}>{GLYPH[status]}</span>
         )}
         <span className="name" data-kind={node.type} style={{ color: nameColor }}>{displayName(node)}</span>
+        {isPassingTodo(node) ? (
+          <span className="todotag" data-soft="todo"># {todoLabel(node)}</span>
+        ) : null}
         {hasDiag ? (
           // On a container the row click expands children, so the badge is its
           // own control for the node's own output; on a leaf the row already

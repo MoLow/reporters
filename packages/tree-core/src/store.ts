@@ -42,15 +42,18 @@ interface InternalNode {
 
 const TERMINAL: ReadonlySet<TestStatus> = new Set(['passed', 'failed', 'skipped', 'todo']);
 
+// A todo test that actually passes reports as passed (its `todo` marker is
+// kept on the node); `todo` status is reserved for todos that are failing
+// underneath — the expected state, which must not fail the run.
 function statusFromResult(type: 'pass' | 'fail', data: TestEventData): TestStatus {
   if (data.skip != null && data.skip !== false) return 'skipped';
-  if (data.todo != null && data.todo !== false) return 'todo';
+  if (data.todo != null && data.todo !== false) return type === 'pass' ? 'passed' : 'todo';
   return type === 'pass' ? 'passed' : 'failed';
 }
 
 function statusFromComplete(data: TestEventData): TestStatus {
   if (data.skip != null && data.skip !== false) return 'skipped';
-  if (data.todo != null && data.todo !== false) return 'todo';
+  if (data.todo != null && data.todo !== false) return data.details?.passed ? 'passed' : 'todo';
   return data.details?.passed ? 'passed' : 'failed';
 }
 

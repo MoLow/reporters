@@ -1,5 +1,5 @@
 import {
-  formatDuration, SYMBOLS, STATUS_LABEL, type TestNode, type TreeSnapshot, type TestStatus,
+  formatDuration, SYMBOLS, STATUS_LABEL, todoLabel, type TestNode, type TreeSnapshot, type TestStatus,
 } from '@reporters/tree-core';
 
 function basename(file: string | undefined): string {
@@ -12,7 +12,8 @@ function renderNode(node: TestNode, depth: number, lines: string[]): void {
   const indent = '  '.repeat(depth);
   const label = node.type === 'file' ? basename(node.file) : node.name;
   const duration = node.durationMs != null ? ` (${formatDuration(node.durationMs)})` : '';
-  lines.push(`${indent}${SYMBOLS[node.status]} ${label}${duration}`);
+  const todoTag = todoLabel(node) != null ? ` # ${todoLabel(node)}` : '';
+  lines.push(`${indent}${SYMBOLS[node.status]} ${label}${duration}${todoTag}`);
 
   if (node.status === 'failed' && node.children.length === 0 && node.error) {
     const errIndent = '  '.repeat(depth + 2);

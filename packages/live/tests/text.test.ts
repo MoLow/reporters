@@ -66,3 +66,19 @@ test('renders a summary line from the counts', () => {
   assert.match(text, /1 passed/);
   assert.match(text, /1 failed/);
 });
+
+test('suffixes todo tests with the directive, spec-reporter style', () => {
+  const snapshot = build([
+    { type: 'test:pass', data: { name: 'green', nesting: 0, file: '/a.test.js', testId: 1, todo: true, details: { duration_ms: 2 } } },
+    { type: 'test:fail', data: { name: 'red', nesting: 0, file: '/a.test.js', testId: 2, todo: 'flaky backend', details: { error: new Error('boom') } } },
+    { type: 'test:pass', data: { name: 'plain', nesting: 0, file: '/a.test.js', testId: 3 } },
+  ]);
+  const text = renderTreeText(snapshot);
+  // a passing todo reports as passed; the directive is the suffix (# TODO when
+  // no reason was given, the reason otherwise) — same as the spec reporter
+  assert.match(text, /✔ green \(2ms\) # TODO/);
+  const redLine = text.split('\n').find((l) => l.includes('red'))!;
+  assert.ok(redLine.includes('# flaky backend'), 'a failing todo carries its reason');
+  const plainLine = text.split('\n').find((l) => l.includes('plain'))!;
+  assert.ok(!plainLine.includes('#'), 'non-todo rows are not suffixed');
+});

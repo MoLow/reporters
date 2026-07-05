@@ -4,7 +4,7 @@ import { createTreeStore } from '@reporters/tree-core';
 import type { Counts, TestEvent, TestNode } from '@reporters/tree-core';
 import {
   buildRows, collectContainerKeys, computeMatches, displayName, hasDiagnostics,
-  isDiagOpen, isExpanded, liveNodeDuration, nodeDuration, reasonOf, realError, rollup,
+  isDiagOpen, isExpanded, isPassingTodo, liveNodeDuration, nodeDuration, reasonOf, realError, rollup,
 } from '../src/client/rowModel.ts';
 
 const zeroCounts = (): Counts => ({
@@ -204,4 +204,13 @@ test('liveNodeDuration ticks running leaves but keeps measured containers fixed'
   const measured = node({ key: 'm', type: 'suite', durationMs: 80, children: [done] });
   assert.strictEqual(liveNodeDuration(measured, 9999, since), 80, 'a completed, measured container is fixed');
   assert.strictEqual(liveNodeDuration(node({ key: 'q', status: 'queued' }), 9999, since), 0, 'an unmeasured, not-running leaf has no duration');
+});
+
+test('isPassingTodo flags only a passed leaf that still carries the todo directive', () => {
+  assert.strictEqual(isPassingTodo(node({ status: 'passed', todo: true })), true);
+  assert.strictEqual(isPassingTodo(node({ status: 'passed', todo: 'evaluating' })), true);
+  assert.strictEqual(isPassingTodo(node({ status: 'passed' })), false, 'a plain pass is not a todo');
+  assert.strictEqual(isPassingTodo(node({ status: 'todo', todo: true })), false, 'a failing todo keeps the todo status');
+  const child = node({ key: 'c', status: 'passed', todo: true });
+  assert.strictEqual(isPassingTodo(node({ status: 'passed', todo: true, children: [child] })), false, 'containers are not badged');
 });

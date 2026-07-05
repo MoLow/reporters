@@ -1,7 +1,7 @@
 import React from 'react';
 import { Text, Box } from 'ink';
 import {
-  formatDuration, INK_COLOR, SPINNER_FRAMES, SYMBOLS, type TestNode,
+  formatDuration, INK_COLOR, SPINNER_FRAMES, SYMBOLS, todoLabel, type TestNode,
 } from '@reporters/tree-core';
 
 function basename(file: string | undefined): string {
@@ -67,6 +67,7 @@ export function TreeNode({
         <Text color="yellow">{hasDiag ? (showDiag ? '▾ ' : '▸ ') : '  '}</Text>
         <Text color={INK_COLOR[node.status]}>{symbol} </Text>
         <Text bold={node.type === 'file'} inverse={selected} underline={selected}>{label}</Text>
+        {todoLabel(node) != null ? <Text color={INK_COLOR.todo}>{' # '}{todoLabel(node)}</Text> : null}
         {node.durationMs != null ? <Text dimColor>{' '}{formatDuration(node.durationMs)}</Text> : null}
       </Box>
       {showDiag ? <Diagnostics node={node} indent={'  '.repeat(depth + 2)} /> : null}
