@@ -68,9 +68,11 @@ export interface TreeSnapshot {
   root: TestNode;
   counts: Counts;
   summary?: SummaryData;
-  /** Stamp range of the stream so far — the run's elapsed wall-clock is
-   *  `lastT - firstT`, independent of when a viewer joined. Absent when the
-   *  stream carries no stamps (logs from older writers). */
+  /** Stamp range of the run so far — the run's elapsed wall-clock is
+   *  `lastT - firstT`, independent of when a viewer joined. `firstT` reaches
+   *  before the first stamped line when a finish-first node's backdated start
+   *  does (head-truncated log). Absent when the stream carries no stamps
+   *  (logs from older writers). */
   clock?: { firstT: number; lastT: number };
 }
 

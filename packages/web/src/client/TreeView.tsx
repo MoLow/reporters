@@ -677,8 +677,11 @@ export function TreeView({
   // stream's stamp range IS the run's elapsed time — first stamp to the
   // projected "now" (stamp-less logs fall back to aggregating files, which
   // ticks with the run). Project past the last stamp only while something is
-  // actually running: a stream that dies without a summary must freeze at its
-  // last stamp, not tick forever on the client clock.
+  // running, so the header ticks exactly when some row ticks: a stream that
+  // dies idle freezes at its last stamp. One that dies mid-test keeps ticking
+  // with its running rows — from the client there is no telling that apart
+  // from a long quiet test. The freeze during a zero-running gap (isolation
+  // spawning the next file) lasts a process spawn and reads as a pause.
   const headerLead = counts.running > 0 && clock ? now - clock.receivedAt : 0;
   const duration = snapshot.summary?.durationMs
     ?? (snapshot.clock && clock ? clock.lastT + headerLead - snapshot.clock.firstT
