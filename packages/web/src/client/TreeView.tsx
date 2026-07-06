@@ -33,6 +33,8 @@ interface DiagBlock {
   kind: 'error' | 'output' | 'list' | 'text';
   /** Header count (`Output · 1.9k lines`), also surfaced on the row chip. */
   count?: { n: number; unit: string };
+  /** Row-chip text when it should differ from the title (e.g. the trimmed skip reason). */
+  chip?: string;
   /** ANSI-stripped plain text for the Copy button. */
   copyText: string;
   message?: string;
@@ -157,14 +159,15 @@ function computeDiagBlocks(node: TestNode): DiagBlock[] {
       : items.some((i) => i.sev === 'running') ? 'running' : 'skipped';
     blocks.push({
       key: 'diag', title: 'Diagnostics', icon: '◇', sev, kind: 'list', items,
-      count: { n: items.length, unit: items.length === 1 ? 'note' : 'notes' },
       copyText: stripAnsi(node.diagnostics.map((d) => d.message).join('\n')),
     });
   }
   const reason = reasonOf(node);
   if (reason) {
+    const plain = stripAnsi(reason).replace(/\s+/g, ' ').trim();
     blocks.push({
       key: 'reason', title: node.status === 'skipped' ? 'why skipped' : 'why todo',
+      chip: plain.length > 32 ? `${plain.slice(0, 31)}…` : plain,
       icon: '⊘', sev: 'skipped', kind: 'text', text: reason, copyText: stripAnsi(reason),
     });
   }
@@ -282,7 +285,7 @@ function DiagSection({
     const el = bodyRef.current;
     if (el) el.scrollTop = toEnd ? el.scrollHeight : 0;
   };
-  const long = (block.count?.n ?? 0) > 20;
+  const long = (block.lines?.length ?? block.items?.length ?? 0) > 20;
   return (
     <div className="diag-sec">
       <span className="diag-bar" data-stf={block.sev} />
@@ -451,6 +454,9 @@ function RowView({
         data-fail={isTest && status === 'failed'}
         data-running={status === 'running' ? 'true' : undefined}
         onClick={clickable ? activate : undefined}
+        // A pointer click shouldn't paint the keyboard focus ring on the row
+        // (Safari matches :focus-visible on clicked tabindex elements).
+        onMouseDown={(e) => e.preventDefault()}
         onKeyDown={onKeyDown}
       >
         <span className="guides">
@@ -480,6 +486,7 @@ function RowView({
             tabIndex={container ? 0 : undefined}
             aria-expanded={container ? diagOpen : undefined}
             data-active={diagOpen ? 'true' : undefined}
+            onMouseDown={(e) => e.preventDefault()}
             onClick={container ? (e) => { e.stopPropagation(); toggleDiag(); } : undefined}
             onKeyDown={container ? (e) => {
               if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); toggleDiag(); }
@@ -487,7 +494,7 @@ function RowView({
           >
             {diagBlocks(node).map((block) => (
               <span className="affch" data-soft={block.sev} key={block.key}>
-                {block.icon} {block.title}
+                {block.icon} {block.chip ?? block.title}
                 {block.count ? ` · ${formatCount(block.count.n)} ${block.count.unit}` : ''}
               </span>
             ))}
@@ -756,10 +763,23 @@ export function TreeView({
               since={since}
             />
           ))
-        ) : q ? (
-          <CenteredState icon="⌕" iconStatus="skipped" title={`No tests match “${query.trim()}”`}>
-            <div className="state-sub">Try a shorter query, or search by file name.</div>
-            <button type="button" className="btn-primary" onClick={() => setQuery('')}>Clear filter</button>
+        ) : q || statuses.size > 0 ? (
+          <CenteredState
+            icon="⌕"
+            iconStatus="skipped"
+            title={q ? `No tests match “${query.trim()}”` : 'No tests match the active filters'}
+          >
+            <div className="state-sub">
+              {q ? 'Try a shorter query, or search by file name.'
+                : 'No test has any of the selected statuses.'}
+            </div>
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={() => { setQuery(''); setStatuses(new Set()); }}
+            >
+              Clear filters
+            </button>
           </CenteredState>
         ) : (
           <CenteredState icon="◴" iconStatus="queued" pulse title="Waiting for the first results">

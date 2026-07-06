@@ -78,6 +78,13 @@ test('rollup: leaves keep their status, containers take the worst descendant', (
   assert.strictEqual(rollup(failed), 'failed');
   // A container with children but no counted descendants falls through to passed.
   assert.strictEqual(rollup(node({ key: 'e', children: [leaf], counts: zeroCounts() })), 'passed');
+  // Skips and todos don't drag a green container down: 8 passed + 1 skipped is passed.
+  const mostlyPassed = node({ key: 'm', children: [leaf], counts: { ...zeroCounts(), passed: 8, skipped: 1, total: 9 } });
+  assert.strictEqual(rollup(mostlyPassed), 'passed');
+  assert.strictEqual(rollup(node({ key: 't', children: [leaf], counts: { ...zeroCounts(), passed: 2, todo: 1, total: 3 } })), 'passed');
+  // All-skipped (or skipped+todo) containers still read as skipped/todo.
+  assert.strictEqual(rollup(node({ key: 's', children: [leaf], counts: { ...zeroCounts(), skipped: 3, total: 3 } })), 'skipped');
+  assert.strictEqual(rollup(node({ key: 'q', children: [leaf], counts: { ...zeroCounts(), passed: 1, queued: 1, total: 2 } })), 'queued', 'queued still outranks passed while a run is incomplete');
 });
 
 test('reasonOf returns the skip/todo string, or undefined', () => {

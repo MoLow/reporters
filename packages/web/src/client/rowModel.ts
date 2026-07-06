@@ -1,6 +1,9 @@
 import type { TestNode, TestStatus } from '@reporters/tree-core';
 
-const SEVERITY: TestStatus[] = ['failed', 'running', 'queued', 'todo', 'skipped', 'passed'];
+// Worst-first for a container's rollup. `passed` outranks `todo`/`skipped` so a
+// suite with passes and a few skips reads green; skipped/todo only win when
+// nothing ran. `queued` stays above `passed` — an incomplete container isn't done.
+const SEVERITY: TestStatus[] = ['failed', 'running', 'queued', 'passed', 'todo', 'skipped'];
 
 function basename(file: string | undefined): string {
   if (!file) return '<unknown>';
