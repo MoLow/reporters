@@ -314,8 +314,8 @@ export function createTreeStore(): TreeStore {
   // point, and eager-only siblings (position provisional, no decl anchor yet),
   // stay exactly where they are.
   function placeInDeclOrder(node: InternalNode): void {
-    const parent = node.parentKey ? nodes.get(node.parentKey) : undefined;
-    if (!parent) return;
+    // Callers link() the node first, so a parent always exists.
+    const parent = nodes.get(node.parentKey!)!;
     let lastDecl = -1;
     for (let i = 0; i < parent.childKeys.length; i += 1) {
       const key = parent.childKeys[i];
@@ -331,9 +331,9 @@ export function createTreeStore(): TreeStore {
   // by whichever process reports first — a wall-clock race. Its first
   // declaration-ordered test settles the group's slot among the root children,
   // the same way declaration starts settle test siblings.
-  function settleGroup(parentKey: string | null): void {
-    const parent = parentKey ? nodes.get(parentKey) : undefined;
-    if (!parent || parent.type !== 'file' || parent.declPlaced) return;
+  function settleGroup(parentKey: string): void {
+    const parent = nodes.get(parentKey)!;
+    if (parent.type !== 'file' || parent.declPlaced) return;
     parent.declPlaced = true;
     placeInDeclOrder(parent);
   }
@@ -355,7 +355,7 @@ export function createTreeStore(): TreeStore {
     // A replayed start (watch-mode rerun, re-read stream) must not move a
     // settled node — a PARTIAL rerun would shuffle it past its siblings.
     if (!settled) placeInDeclOrder(node);
-    settleGroup(node.parentKey);
+    settleGroup(node.parentKey!);
     assignFields(node, data);
     if (!TERMINAL.has(node.status)) node.status = 'running';
     declOpen.set(nesting, node.key);
@@ -405,7 +405,7 @@ export function createTreeStore(): TreeStore {
     node.file = data.file;
     nodes.set(key, node);
     link(node, parentKey);
-    settleGroup(node.parentKey);
+    settleGroup(node.parentKey!);
     assignFields(node, data);
     node.status = 'running';
 
