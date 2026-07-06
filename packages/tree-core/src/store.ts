@@ -307,6 +307,37 @@ export function createTreeStore(): TreeStore {
     return resolveParentKey(data, gk);
   }
 
+  // Declaration starts arrive in declaration order, so a node that decl-starts
+  // must sit after every previously decl-placed sibling — an eager mis-link
+  // (ambiguous parentId) can otherwise leave it appended out of order once the
+  // decl re-link lands. Move it the minimal distance: nodes already past that
+  // point, and eager-only siblings (position provisional, no decl anchor yet),
+  // stay exactly where they are.
+  function placeInDeclOrder(node: InternalNode): void {
+    // Callers link() the node first, so a parent always exists.
+    const parent = nodes.get(node.parentKey!)!;
+    let lastDecl = -1;
+    for (let i = 0; i < parent.childKeys.length; i += 1) {
+      const key = parent.childKeys[i];
+      if (key !== node.key && nodes.get(key)?.declPlaced) lastDecl = i;
+    }
+    if (parent.childKeys.indexOf(node.key) > lastDecl) return;
+    const keys = parent.childKeys.filter((k) => k !== node.key);
+    keys.splice(lastDecl, 0, node.key);
+    parent.childKeys = keys;
+  }
+
+  // A group without a wrapper (a shared helper with top-level tests) is created
+  // by whichever process reports first — a wall-clock race. Its first
+  // declaration-ordered test settles the group's slot among the root children,
+  // the same way declaration starts settle test siblings.
+  function settleGroup(parentKey: string): void {
+    const parent = nodes.get(parentKey)!;
+    if (parent.type !== 'file' || parent.declPlaced) return;
+    parent.declPlaced = true;
+    placeInDeclOrder(parent);
+  }
+
   function declStart(data: TestEventData): void {
     const gk = groupKey(data);
     const nesting = data.nesting ?? 0;
@@ -315,11 +346,16 @@ export function createTreeStore(): TreeStore {
       .filter((n) => n.name === data.name || n.name === '');
     // Same declaration position again is a replay; otherwise claim the eager
     // instance, or split off a new one when a colliding process already did.
-    const node = candidates.find((n) => n.declPlaced && n.parentKey === parentKey)
+    const settled = candidates.find((n) => n.declPlaced && n.parentKey === parentKey);
+    const node = settled
       ?? candidates.find((n) => !n.declPlaced)
       ?? newInstance(gk, data.testId!, data.file);
     link(node, parentKey);
     node.declPlaced = true;
+    // A replayed start (watch-mode rerun, re-read stream) must not move a
+    // settled node — a PARTIAL rerun would shuffle it past its siblings.
+    if (!settled) placeInDeclOrder(node);
+    settleGroup(node.parentKey!);
     assignFields(node, data);
     if (!TERMINAL.has(node.status)) node.status = 'running';
     declOpen.set(nesting, node.key);
@@ -369,6 +405,7 @@ export function createTreeStore(): TreeStore {
     node.file = data.file;
     nodes.set(key, node);
     link(node, parentKey);
+    settleGroup(node.parentKey!);
     assignFields(node, data);
     node.status = 'running';
 
@@ -419,7 +456,18 @@ export function createTreeStore(): TreeStore {
         // they start — grouped by file, they don't collide across files. The
         // terminal-status guard in upsert keeps this idempotent and lets the
         // later start/pass/fail settle the final state.
-        if (isFileLevel(data)) { sawFileWrapper = true; break; }
+        if (isFileLevel(data)) {
+          sawFileWrapper = true;
+          // The runner enqueues the file wrappers up front, in the order the
+          // files will report. Claim the group slots now so file order doesn't
+          // depend on which process happens to emit a test event first. Only
+          // the enqueue is that ordered signal — a dequeue seen without its
+          // enqueue (mid-run attach) arrives at wall-clock position, and its
+          // group must stay unplaced to settle in decl-stream order instead.
+          const group = ensureGroupNode(groupKey(data), data.file);
+          if (type === 'test:enqueue') group.declPlaced = true;
+          break;
+        }
         if (data.testId == null) break;
         // Note: don't record "last started" here — enqueue/dequeue are eager, so
         // it would mis-attribute diagnostics. That's recorded on test:start,

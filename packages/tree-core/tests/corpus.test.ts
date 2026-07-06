@@ -1,38 +1,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
 import { createTreeStore } from '../src/store.ts';
 import { parseWireLines, serializeWireLine } from '../src/wire.ts';
 import type { TestEvent, TestNode } from '../src/types.ts';
-
-const here = dirname(fileURLToPath(import.meta.url));
-const captureReporter = join(here, 'capture-reporter.mjs');
+import { build, captureEvents } from './util.ts';
 
 // `--test-isolation` was not available on older Node (e.g. v22), where it errors
 // with "bad option". Feature-detect so we can skip the isolation=none case there.
 const isolationFlagSupported = spawnSync(process.execPath, ['--help'], { encoding: 'utf8' })
   .stdout.includes('--test-isolation');
-
-function captureEvents(files: string[], extraArgs: string[] = []): TestEvent[] {
-  // Strip NODE_TEST_CONTEXT so the spawned runner does not think it is a child
-  // of this test process (which would make it serialize to a fd, not stdout).
-  const env = { ...process.env };
-  delete env.NODE_TEST_CONTEXT;
-  const child = spawnSync(
-    process.execPath,
-    ['--test', ...extraArgs, '--test-reporter', captureReporter, '--test-reporter-destination', 'stdout', ...files],
-    { cwd: here, encoding: 'utf8', env },
-  );
-  return (child.stdout ?? '').trim().split('\n').filter(Boolean).map((line) => JSON.parse(line) as TestEvent);
-}
-
-function build(events: TestEvent[]) {
-  const store = createTreeStore();
-  for (const event of events) store.apply(event);
-  return store.getSnapshot();
-}
 
 function leaf(node: TestNode, name: string): TestNode | undefined {
   if (node.name === name && node.children.length === 0) return node;
