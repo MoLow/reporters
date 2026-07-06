@@ -97,6 +97,8 @@ export interface TestEventData {
     error?: unknown;
     type?: string;
     passed?: boolean;
+    attempt?: number;
+    passed_on_attempt?: number;
   };
   counts?: Record<string, number>;
   duration_ms?: number;
