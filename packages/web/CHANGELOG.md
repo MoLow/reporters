@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/MoLow/reporters/compare/web-v1.4.0...web-v1.4.1) (2026-07-06)
+
+
+### Bug Fixes
+
+* **web:** true live durations via writer stamps on the wire ([#237](https://github.com/MoLow/reporters/issues/237)) ([42d5478](https://github.com/MoLow/reporters/commit/42d5478d153de83d8f457fb8783794a5aed54408))
+
 ## [1.4.0](https://github.com/MoLow/reporters/compare/web-v1.3.0...web-v1.4.0) (2026-07-06)
 
 
