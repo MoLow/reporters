@@ -164,7 +164,9 @@ button { font-family: inherit; } input { font-family: inherit; }
 .diag-msg { padding: 0 14px; }
 .diag-msg span { font-size: 13px; font-weight: 600; }
 .diag pre { margin: 0; font-family: var(--mono); font-size: 11.5px; line-height: 1.55; }
-.diag pre.stack { padding: 2px 14px 13px; color: var(--dim); overflow-x: auto; white-space: pre; }
+.diag pre.stack { padding: 2px 14px 13px; color: var(--fg); overflow-x: auto; white-space: pre; }
+.stack-line[data-kind="internal"], .frame[data-kind="internal"] { color: var(--faint); }
+.stack-loc { color: var(--ansi-cyan); }
 .diag pre.text { padding: 2px 14px 13px; color: var(--fg); overflow-x: auto; white-space: pre-wrap; word-break: break-word; }
 /* merged stdout+stderr: one block, per-line stream tagging */
 .out { padding: 4px 14px 12px; }
@@ -173,7 +175,9 @@ button { font-family: inherit; } input { font-family: inherit; }
 .diag-list { padding: 2px 14px 12px; display: flex; flex-direction: column; gap: 6px; }
 .diag-item { font-size: 12.5px; color: var(--fg); display: flex; gap: 9px; align-items: baseline; }
 .diag-level { font-size: 9.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; flex: none; border-radius: 5px; padding: 1px 6px; }
-.diag-item .txt { font-family: var(--mono); font-size: 12px; }
+.diag-item .txt { font-family: var(--mono); font-size: 12px; white-space: pre-wrap; word-break: break-word; }
+.diag a { color: var(--st-todo); text-decoration: underline; text-underline-offset: 2px; word-break: break-all; }
+.diag a:hover { filter: brightness(1.15); }
 
 /* full-tree states */
 .state { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 13px; padding: 66px 20px; text-align: center; }

@@ -11,6 +11,9 @@ import {
 // node:test captures colored output verbatim; render the ANSI SGR codes as real
 // colors (mapped to the theme's --ansi-* vars) rather than stripping them.
 import { AnsiHtml } from 'fancy-ansi/react';
+import {
+  classifyFrame, classifyStack, extractLevel, levelSeverity, splitUrls, type StackLine,
+} from './format.ts';
 
 const GLYPH: Record<TestStatus, string> = {
   passed: '✓', failed: '✕', skipped: '⊘', todo: '◇', running: '◐', queued: '○',
@@ -23,7 +26,9 @@ const STATUS_LABEL: Record<TestStatus, string> = {
 /** Severity of a test's diagnostics, for the row badge tint. */
 function diagSeverity(node: TestNode): TestStatus {
   if (realError(node) || node.stderr.length > 0) return 'failed';
-  if (node.diagnostics.some((d) => d.level === 'warn')) return 'running';
+  const sevs = node.diagnostics.map((d) => levelSeverity(extractLevel(d.message) ?? d.level));
+  if (sevs.includes('failed')) return 'failed';
+  if (sevs.includes('running')) return 'running';
   return 'skipped';
 }
 
@@ -56,6 +61,77 @@ function outputLines(node: TestNode): OutLine[] {
   return lines;
 }
 
+function linkifyDom(rootEl: HTMLElement): void {
+  const walker = document.createTreeWalker(rootEl, NodeFilter.SHOW_TEXT);
+  const textNodes: Text[] = [];
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+    if (!n.parentElement?.closest('a')) textNodes.push(n as Text);
+  }
+  for (const textNode of textNodes) {
+    const segments = splitUrls(textNode.data);
+    if (!segments.some((s) => s.kind === 'url')) continue;
+    const frag = document.createDocumentFragment();
+    for (const seg of segments) {
+      if (seg.kind === 'url') {
+        const a = document.createElement('a');
+        a.href = seg.text;
+        a.target = '_blank';
+        a.rel = 'noreferrer';
+        a.textContent = seg.text;
+        frag.appendChild(a);
+      } else {
+        frag.appendChild(document.createTextNode(seg.text));
+      }
+    }
+    textNode.replaceWith(frag);
+  }
+}
+
+const FrameText = ({ frame }: { frame: StackLine }) => (frame.loc ? (
+  <>
+    {frame.loc.pre}
+    <span className="stack-loc">{frame.loc.location}</span>
+    {frame.loc.post}
+  </>
+) : <>{frame.text === '' ? ' ' : frame.text}</>);
+
+// AnsiHtml plus a DOM post-pass that wraps http(s) URLs in links — post-render
+// so ANSI color state stays intact across the link boundary. Lines that look
+// like stack frames (also inside log messages) get node-style frame coloring.
+function Ansi({ text }: { text: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  useEffect(() => { if (ref.current) linkifyDom(ref.current); });
+  return (
+    <span ref={ref}>
+      {text.split('\n').map((line, i) => {
+        const frame = classifyFrame(line);
+        return (
+          // eslint-disable-next-line react/no-array-index-key
+          <React.Fragment key={i}>
+            {i > 0 ? '\n' : null}
+            {frame ? (
+              <span className="frame" data-kind={frame.kind}><FrameText frame={frame} /></span>
+            ) : <AnsiHtml text={line} />}
+          </React.Fragment>
+        );
+      })}
+    </span>
+  );
+}
+
+function Stack({ stack }: { stack: string }) {
+  return (
+    <pre className="stack">
+      {classifyStack(stack).map((line, i) => (
+        // eslint-disable-next-line react/no-array-index-key
+        <div className="stack-line" data-kind={line.kind} key={i}>
+          <FrameText frame={line} />
+        </div>
+      ))}
+    </pre>
+  );
+}
+
 // At most three sections per test — Error, Output, Diagnostics (plus a reason
 // for skipped/todo). stdout+stderr collapse into one Output block; text keeps
 // its ANSI (colored at render); synthetic container rollups never render an Error.
@@ -75,11 +151,10 @@ function diagBlocks(node: TestNode): DiagBlock[] {
   if (node.diagnostics.length > 0) {
     blocks.push({
       key: 'diag', title: 'Diagnostics', icon: '◇', sev: 'skipped', kind: 'list',
-      items: node.diagnostics.map((d) => ({
-        level: d.level,
-        sev: d.level === 'error' ? 'failed' : d.level === 'warn' ? 'running' : 'skipped',
-        text: d.message,
-      })),
+      items: node.diagnostics.map((d) => {
+        const level = extractLevel(d.message) ?? d.level;
+        return { level, sev: levelSeverity(level), text: d.message };
+      }),
     });
   }
   const reason = reasonOf(node);
@@ -138,8 +213,8 @@ function Diagnostics({ node, indent }: { node: TestNode; indent: string }) {
             </div>
             {block.kind === 'error' ? (
               <>
-                <div className="diag-msg" data-stc="failed"><AnsiHtml text={block.message!} /></div>
-                <pre className="stack"><AnsiHtml text={block.stack!} /></pre>
+                <div className="diag-msg" data-stc="failed"><Ansi text={block.message!} /></div>
+                <Stack stack={block.stack!} />
               </>
             ) : null}
             {block.kind === 'output' ? (
@@ -147,20 +222,20 @@ function Diagnostics({ node, indent }: { node: TestNode; indent: string }) {
                 {block.lines!.map((line, i) => (
                   // eslint-disable-next-line react/no-array-index-key
                   <div className="out-line" data-err={line.stream === 'err' ? 'true' : undefined} key={i}>
-                    <AnsiHtml text={line.text === '' ? ' ' : line.text} />
+                    <Ansi text={line.text === '' ? ' ' : line.text} />
                   </div>
                 ))}
               </div>
             ) : null}
             {block.kind === 'text' ? (
-              <pre className="text"><AnsiHtml text={block.text!} /></pre>
+              <pre className="text"><Ansi text={block.text!} /></pre>
             ) : null}
             {block.kind === 'list' ? (
               <div className="diag-list">
                 {block.items!.map((item, i) => (
                   <div className="diag-item" key={i}>
                     <span className="diag-level" data-soft={item.sev}>{item.level}</span>
-                    <span className="txt"><AnsiHtml text={item.text} /></span>
+                    <span className="txt"><Ansi text={item.text} /></span>
                   </div>
                 ))}
               </div>
