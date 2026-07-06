@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.2](https://github.com/MoLow/reporters/compare/web-v1.5.1...web-v1.5.2) (2026-07-06)
+
+
+### Bug Fixes
+
+* **tree-core,web:** keep still-running parents and open file wrappers marked running ([#246](https://github.com/MoLow/reporters/issues/246)) ([f4be82d](https://github.com/MoLow/reporters/commit/f4be82db6c708c1d43c466a186d6b6219a096120))
+
 ## [1.5.1](https://github.com/MoLow/reporters/compare/web-v1.5.0...web-v1.5.1) (2026-07-06)
 
 
