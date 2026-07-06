@@ -112,7 +112,11 @@ test('isCarried: leaf by passedOnAttempt, container by all-carried counts', () =
 test('carriedAttempt: uniform value or undefined', () => {
   const a0 = leaf({ passedOnAttempt: 0, counts: { ...zero(), passed: 1, carried: 1, total: 1 } });
   const a1 = leaf({ passedOnAttempt: 1, counts: { ...zero(), passed: 1, carried: 1, total: 1 } });
+  const fresh = leaf();
   assert.strictEqual(carriedAttempt(container([a0, a0])), 0);
   assert.strictEqual(carriedAttempt(container([a0, a1])), undefined);
   assert.strictEqual(carriedAttempt(a1), 1);
+  // Non-carried leaves don't participate; siblings after a detected mix are skipped.
+  assert.strictEqual(carriedAttempt(container([fresh, a1])), 1);
+  assert.strictEqual(carriedAttempt(container([container([a0, a1]), a0])), undefined);
 });
