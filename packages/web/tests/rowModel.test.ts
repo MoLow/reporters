@@ -8,7 +8,7 @@ import {
 } from '../src/client/rowModel.ts';
 
 const zeroCounts = (): Counts => ({
-  passed: 0, failed: 0, skipped: 0, todo: 0, running: 0, queued: 0, total: 0,
+  passed: 0, failed: 0, skipped: 0, todo: 0, running: 0, queued: 0, carried: 0, total: 0,
 });
 
 function node(over: Partial<TestNode> = {}): TestNode {

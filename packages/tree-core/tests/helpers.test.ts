@@ -169,7 +169,7 @@ function node(partial: Partial<TestNode>): TestNode {
     stderr: [],
     children: [],
     counts: {
-      passed: 0, failed: 0, skipped: 0, todo: 0, running: 0, queued: 0, total: 0,
+      passed: 0, failed: 0, skipped: 0, todo: 0, running: 0, queued: 0, carried: 0, total: 0,
     },
     ...partial,
   };
