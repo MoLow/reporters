@@ -7,8 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       packages:
-        description: 'JSON array of package names to publish (e.g. ["@reporters/bail","@reporters/github"])'
-        required: true
+        description: 'JSON array of package names to publish (e.g. ["@reporters/bail","@reporters/github"]); leave empty to only deploy the viewer'
+        required: false
+        default: ''
         type: string
 
 jobs:
@@ -49,7 +50,7 @@ jobs:
 
   npm-publish:
     needs: release-please
-    if: ${{ always() && (github.event_name == 'workflow_dispatch' || (needs.release-please.result == 'success' && needs.release-please.outputs.releases_created && needs.release-please.outputs.packages && fromJson(needs.release-please.outputs.packages || '[]')[0] != null)) }}
+    if: ${{ always() && ((github.event_name == 'workflow_dispatch' && inputs.packages != '') || (needs.release-please.result == 'success' && needs.release-please.outputs.releases_created && needs.release-please.outputs.packages && fromJson(needs.release-please.outputs.packages || '[]')[0] != null)) }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -72,3 +73,35 @@ jobs:
           echo "PACKAGE_NAME=$PACKAGE_NAME" >> $GITHUB_OUTPUT
       - run: yarn npm publish --provenance --access public
         working-directory: packages/${{ steps.package-name.outputs.PACKAGE_NAME }}
+
+  deploy-viewer:
+    if: ${{ github.event_name == 'push' || inputs.packages == '' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages
+      cancel-in-progress: true
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy-retry.outputs.page_url || steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v5
+      - run: corepack enable
+      - uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+      - run: yarn install --immutable
+      - run: yarn workspace @reporters/web build
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: packages/web/dist/viewer
+      - id: deploy
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
+      - id: deploy-retry
+        if: ${{ steps.deploy.outcome == 'failure' }}
+        uses: actions/deploy-pages@v4
