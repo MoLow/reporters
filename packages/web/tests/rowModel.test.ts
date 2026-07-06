@@ -54,13 +54,15 @@ test('buildRows surfaces a diagnostics affordance on an expanded container file 
   assert.strictEqual(fileRow.hasDiag, true, 'an expanded container must expose its own stdout/stderr');
 });
 
-test('a collapsed container hides its own stdout/stderr along with its children', () => {
+test('a collapsed container still surfaces its own stdout/stderr affordance', () => {
   const file = fileNode();
   const rows = buildRows([file], { overrides: new Map([[file.key, false]]), query: '', matches: null });
   const fileRow = rows.find((r) => r.node.type === 'file')!;
   assert.strictEqual(fileRow.expanded, false, 'the file is collapsed');
-  assert.strictEqual(fileRow.hasDiag, false, 'a collapsed container must not surface its output');
-  assert.strictEqual(fileRow.diagOpen, false);
+  assert.strictEqual(fileRow.hasDiag, true, 'the output chip stays visible while collapsed');
+  assert.strictEqual(fileRow.diagOpen, false, 'but the panel stays closed until asked');
+  const open = buildRows([file], { overrides: new Map([[file.key, false], [`${file.key}::diag`, true]]), query: '', matches: null });
+  assert.strictEqual(open.find((r) => r.node.type === 'file')!.diagOpen, true, 'opening the panel works while collapsed');
 });
 
 test('displayName shows the basename for files and the raw name otherwise', () => {

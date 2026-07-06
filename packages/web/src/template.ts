@@ -145,10 +145,15 @@ button { font-family: inherit; } input { font-family: inherit; }
 .name[data-kind="file"] { font-family: var(--mono); font-weight: 700; }
 .name[data-kind="suite"] { font-weight: 600; }
 .name[data-kind="test"] { font-weight: 450; }
-/* named output affordances (§10e): what's inside, tinted by severity */
-.affs { display: inline-flex; gap: 5px; flex: none; align-items: center; border-radius: 7px; }
+/* named output affordances (§10e): what's inside, tinted by severity — the
+   whole group is the diagnostics toggle on every row */
+.affs { display: inline-flex; gap: 5px; flex: none; align-items: center; border-radius: 7px; cursor: pointer; padding: 1px 3px; }
+.affs:hover { background: var(--row-hover); }
+.affs:hover .affch { filter: brightness(1.12); }
 .affch { flex: none; font-size: 10px; font-weight: 600; border-radius: 6px; padding: 1px 7px; white-space: nowrap; border: 1px solid transparent; }
 .affs[data-active] .affch { border-color: currentColor; }
+.affcaret { color: var(--faint); font-size: 9px; transition: transform 160ms var(--ease-out); }
+.affcaret[data-open] { transform: rotate(180deg); }
 .todotag { flex: none; font-size: 10px; font-weight: 600; border-radius: 6px; padding: 1px 6px; }
 .spacer { flex: 1; min-width: 10px; }
 .pills { display: inline-flex; gap: 5px; flex: none; margin-right: 9px; }

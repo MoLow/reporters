@@ -476,21 +476,20 @@ function RowView({
         ) : null}
         {hasDiag ? (
           // Named, severity-tinted affordances (§10e): what's inside and how
-          // much of it, not a generic "Details". On a container the row click
-          // expands children, so the chip group is its own control for the
-          // node's own output; on a leaf the row already toggles diagnostics,
-          // so the chips are labels.
+          // much of it, not a generic "Details". The chip group is the
+          // diagnostics toggle on every row — one consistent control whether
+          // or not the row also expands children.
           <span
             className="affs"
-            role={container ? 'button' : undefined}
-            tabIndex={container ? 0 : undefined}
-            aria-expanded={container ? diagOpen : undefined}
+            role="button"
+            tabIndex={0}
+            aria-expanded={diagOpen}
             data-active={diagOpen ? 'true' : undefined}
             onMouseDown={(e) => e.preventDefault()}
-            onClick={container ? (e) => { e.stopPropagation(); toggleDiag(); } : undefined}
-            onKeyDown={container ? (e) => {
+            onClick={(e) => { e.stopPropagation(); toggleDiag(); }}
+            onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); toggleDiag(); }
-            } : undefined}
+            }}
           >
             {diagBlocks(node)
               // The passing-todo tag already names the reason — don't repeat it.
@@ -501,6 +500,7 @@ function RowView({
                   {block.count ? ` · ${formatCount(block.count.n)} ${block.count.unit}` : ''}
                 </span>
               ))}
+            <span className="affcaret" data-open={diagOpen ? 'true' : undefined}>▾</span>
           </span>
         ) : null}
         <span className="spacer" />
