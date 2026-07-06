@@ -327,6 +327,17 @@ export function createTreeStore(): TreeStore {
     parent.childKeys = keys;
   }
 
+  // A group without a wrapper (a shared helper with top-level tests) is created
+  // by whichever process reports first — a wall-clock race. Its first
+  // declaration-ordered test settles the group's slot among the root children,
+  // the same way declaration starts settle test siblings.
+  function settleGroup(parentKey: string | null): void {
+    const parent = parentKey ? nodes.get(parentKey) : undefined;
+    if (!parent || parent.type !== 'file' || parent.declPlaced) return;
+    parent.declPlaced = true;
+    placeInDeclOrder(parent);
+  }
+
   function declStart(data: TestEventData): void {
     const gk = groupKey(data);
     const nesting = data.nesting ?? 0;
@@ -335,12 +346,16 @@ export function createTreeStore(): TreeStore {
       .filter((n) => n.name === data.name || n.name === '');
     // Same declaration position again is a replay; otherwise claim the eager
     // instance, or split off a new one when a colliding process already did.
-    const node = candidates.find((n) => n.declPlaced && n.parentKey === parentKey)
+    const settled = candidates.find((n) => n.declPlaced && n.parentKey === parentKey);
+    const node = settled
       ?? candidates.find((n) => !n.declPlaced)
       ?? newInstance(gk, data.testId!, data.file);
     link(node, parentKey);
     node.declPlaced = true;
-    placeInDeclOrder(node);
+    // A replayed start (watch-mode rerun, re-read stream) must not move a
+    // settled node — a PARTIAL rerun would shuffle it past its siblings.
+    if (!settled) placeInDeclOrder(node);
+    settleGroup(node.parentKey);
     assignFields(node, data);
     if (!TERMINAL.has(node.status)) node.status = 'running';
     declOpen.set(nesting, node.key);
@@ -390,6 +405,7 @@ export function createTreeStore(): TreeStore {
     node.file = data.file;
     nodes.set(key, node);
     link(node, parentKey);
+    settleGroup(node.parentKey);
     assignFields(node, data);
     node.status = 'running';
 
@@ -445,7 +461,7 @@ export function createTreeStore(): TreeStore {
           // The runner enqueues the file wrappers up front, in the order the
           // files will report. Claim the group slots now so file order doesn't
           // depend on which process happens to emit a test event first.
-          ensureGroupNode(groupKey(data), data.file);
+          ensureGroupNode(groupKey(data), data.file).declPlaced = true;
           break;
         }
         if (data.testId == null) break;

@@ -8,42 +8,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
 import { createTreeStore } from '../src/store.ts';
-import type { TestEvent, TestNode } from '../src/types.ts';
-
-function build(events: TestEvent[]) {
-  const store = createTreeStore();
-  for (const event of events) store.apply(event);
-  return store.getSnapshot();
-}
-
-function findAll(root: TestNode, name: string): { node: TestNode; path: string[] }[] {
-  const found: { node: TestNode; path: string[] }[] = [];
-  (function walk(node: TestNode, path: string[]) {
-    if (node.name === name) found.push({ node, path });
-    node.children.forEach((child) => walk(child, [...path, node.name]));
-  }(root, []));
-  return found;
-}
-
-function findOne(root: TestNode, name: string): { node: TestNode; path: string[] } {
-  const matches = findAll(root, name);
-  assert.strictEqual(matches.length, 1, `expected exactly one node named "${name}", got ${matches.length}`);
-  return matches[0];
-}
-
-function allNodes(root: TestNode): TestNode[] {
-  const nodes: TestNode[] = [];
-  (function walk(node: TestNode) { nodes.push(node); node.children.forEach(walk); }(root));
-  return nodes;
-}
+import type { TestEvent } from '../src/types.ts';
+import {
+  allNodes, build, done, ev, findAll, findOne,
+} from './util.ts';
 
 const ENTRY = '/x/tests/s3.test.ts';
 const HELPER = '/x/tests/s3Utils.ts';
 const OTHER = '/x/tests/ddb.test.ts';
 const OTHER_HELPER = '/x/tests/ddbUtils.ts';
-
-const ev = (type: TestEvent['type'], data: TestEvent['data']): TestEvent => ({ type, data });
-const done = { passed: true, duration_ms: 1 };
 
 test('late buffered start does not re-parent a helper subtest onto a husk', () => {
   // Real pattern: the child's eager events resolve the parent correctly, then

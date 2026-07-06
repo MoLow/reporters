@@ -5,27 +5,10 @@
 // the declaration-ordered stream settles the final position.
 import { test } from 'node:test';
 import assert from 'node:assert';
-import { createTreeStore } from '../src/store.ts';
-import type { TestEvent, TestNode } from '../src/types.ts';
-
-function build(events: TestEvent[]) {
-  const store = createTreeStore();
-  for (const event of events) store.apply(event);
-  return store.getSnapshot();
-}
-
-function findOne(root: TestNode, name: string): TestNode {
-  const found: TestNode[] = [];
-  (function walk(node: TestNode) {
-    if (node.name === name) found.push(node);
-    node.children.forEach(walk);
-  }(root));
-  assert.strictEqual(found.length, 1, `expected exactly one node named "${name}", got ${found.length}`);
-  return found[0];
-}
-
-const ev = (type: TestEvent['type'], data: TestEvent['data']): TestEvent => ({ type, data });
-const done = { passed: true, duration_ms: 1 };
+import type { TestEvent } from '../src/types.ts';
+import {
+  build, done, ev, findOne,
+} from './util.ts';
 
 const A = '/x/tests/a.test.ts';
 const B = '/x/tests/b.test.ts';
@@ -86,6 +69,46 @@ test('declaration order settles sibling positions after an eager mis-link', () =
     ev('test:pass', { name: 'restore', nesting: 2, file: A, testId: 26, parentId: 4, details: done }),
     ev('test:pass', { name: 'backup', nesting: 1, file: A, testId: 4, parentId: 0, details: done }),
   ]);
-  const backup = findOne(root, 'backup');
+  const { node: backup } = findOne(root, 'backup');
   assert.deepStrictEqual(backup.children.map((n) => n.name), ['scan', 'restore']);
+});
+
+test('a re-delivered start leaves an already-settled node in place', () => {
+  // A watch-mode reporter appending a rerun to the same stream re-delivers
+  // starts with no dedup; a partial rerun must not shuffle settled siblings.
+  const sibling = (name: string, testId: number): TestEvent[] => [
+    ev('test:start', { name, nesting: 1, file: A, testId, parentId: 1 }),
+    ev('test:pass', { name, nesting: 1, file: A, testId, parentId: 1, details: done }),
+  ];
+  const { root } = build([
+    ev('test:start', { name: 'suite', nesting: 0, file: A, testId: 1, parentId: 0 }),
+    ...sibling('first', 2),
+    ...sibling('second', 3),
+    ...sibling('third', 4),
+    // rerun of "first" only
+    ...sibling('first', 2),
+    ev('test:pass', { name: 'suite', nesting: 0, file: A, testId: 1, parentId: 0, details: done }),
+  ]);
+  const { node: suite } = findOne(root, 'suite');
+  assert.deepStrictEqual(suite.children.map((n) => n.name), ['first', 'second', 'third']);
+});
+
+test('root groups without a file wrapper settle in declaration-stream order', () => {
+  // Shared helpers with top-level tests get no wrapper of their own; their
+  // groups must not order by which process emits an eager event first.
+  const H1 = '/x/tests/helperOne.ts';
+  const H2 = '/x/tests/helperTwo.ts';
+  const { root } = build([
+    // Eager arrival order: helperTwo first (wall-clock race).
+    ev('test:enqueue', { name: 'two', nesting: 0, file: H2, testId: 9, parentId: 0, type: 'test' }),
+    ev('test:enqueue', { name: 'one', nesting: 0, file: H1, testId: 9, parentId: 0, type: 'test' }),
+    ev('test:complete', { name: 'two', nesting: 0, file: H2, testId: 9, parentId: 0, details: done }),
+    ev('test:complete', { name: 'one', nesting: 0, file: H1, testId: 9, parentId: 0, details: done }),
+    // Declaration-ordered stream reports helperOne's block first.
+    ev('test:start', { name: 'one', nesting: 0, file: H1, testId: 9, parentId: 0 }),
+    ev('test:pass', { name: 'one', nesting: 0, file: H1, testId: 9, parentId: 0, details: done }),
+    ev('test:start', { name: 'two', nesting: 0, file: H2, testId: 9, parentId: 0 }),
+    ev('test:pass', { name: 'two', nesting: 0, file: H2, testId: 9, parentId: 0, details: done }),
+  ]);
+  assert.deepStrictEqual(root.children.map((n) => n.file), [H1, H2]);
 });
