@@ -27,10 +27,17 @@ export async function startViewer(options: ViewerOptions = {}): Promise<void> {
 
   let store: TreeStore = createTreeStore();
   let streaming = true;
+  let pending = true;
   let loadError = false;
   const retry = () => window.location.reload();
   const draw = () => root.render(
-    <TreeView snapshot={store.getSnapshot()} streaming={streaming} loadError={loadError} onRetry={retry} />,
+    <TreeView
+      snapshot={store.getSnapshot()}
+      streaming={streaming}
+      pending={pending}
+      loadError={loadError}
+      onRetry={retry}
+    />,
   );
 
   let source;
@@ -54,15 +61,17 @@ export async function startViewer(options: ViewerOptions = {}): Promise<void> {
   for (;;) {
     try {
       const { events, reset } = await reader.pull();
+      const firstCheck = pending;
+      pending = false;
       if (reset) store = createTreeStore();
       for (const event of events) store.apply(event);
       loadError = false;
       if (store.getSnapshot().summary) { streaming = false; draw(); break; }
-      if (events.length || reset) draw();
+      if (events.length || reset || firstCheck) draw();
     } catch (err) {
       // Never received any data yet: the source is missing/unreachable — surface
       // the error screen. Once data has arrived, treat failures as transient.
-      if (store.getSnapshot().root.children.length === 0) { loadError = true; draw(); }
+      if (store.getSnapshot().root.children.length === 0) { pending = false; loadError = true; draw(); }
       console.error(err);
     }
     await delay(source.pollMs);
