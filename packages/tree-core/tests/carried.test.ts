@@ -2,10 +2,33 @@ import { test } from 'node:test';
 import assert from 'node:assert';
 import { toWireEvent } from '../src/wire.ts';
 import { createTreeStore } from '../src/store.ts';
-import type { TestEvent } from '../src/types.ts';
+import { isCarried, carriedAttempt } from '../src/carried.ts';
+import type { Counts, TestEvent, TestNode } from '../src/types.ts';
 
 function apply(store: ReturnType<typeof createTreeStore>, events: TestEvent[]) {
   for (const event of events) store.apply(event);
+}
+
+const zero = (): Counts => ({
+  passed: 0, failed: 0, skipped: 0, todo: 0, running: 0, queued: 0, carried: 0, total: 0,
+});
+
+function leaf(over: Partial<TestNode> = {}): TestNode {
+  return {
+    key: 'k', testId: undefined, parentKey: null, file: undefined, name: '',
+    nesting: 0, type: 'test', status: 'passed', diagnostics: [], stdout: [], stderr: [],
+    children: [], counts: { ...zero(), passed: 1, total: 1 }, ...over,
+  };
+}
+
+function container(children: TestNode[]): TestNode {
+  const counts = zero();
+  for (const c of children) {
+    counts.passed += c.counts.passed;
+    counts.carried += c.counts.carried;
+    counts.total += c.counts.total;
+  }
+  return { ...leaf({ type: 'suite' }), children, counts };
 }
 
 test('toWireEvent preserves rerun details fields', () => {
@@ -74,4 +97,22 @@ test('a fresh finish without a start still backdates the run clock', () => {
     { type: 'test:pass', t: 1000000, data: { name: 'fresh', nesting: 0, file: '/a.test.js', testId: 1, details: { duration_ms: 900000, attempt: 1 } } },
   ]);
   assert.strictEqual(store.getSnapshot().clock?.firstT, 100000);
+});
+
+test('isCarried: leaf by passedOnAttempt, container by all-carried counts', () => {
+  const carried0 = leaf({ passedOnAttempt: 0, counts: { ...zero(), passed: 1, carried: 1, total: 1 } });
+  const fresh = leaf();
+  assert.strictEqual(isCarried(carried0), true);
+  assert.strictEqual(isCarried(fresh), false);
+  assert.strictEqual(isCarried(container([carried0, carried0])), true);
+  assert.strictEqual(isCarried(container([carried0, fresh])), false);
+  assert.strictEqual(isCarried(container([fresh, fresh])), false);
+});
+
+test('carriedAttempt: uniform value or undefined', () => {
+  const a0 = leaf({ passedOnAttempt: 0, counts: { ...zero(), passed: 1, carried: 1, total: 1 } });
+  const a1 = leaf({ passedOnAttempt: 1, counts: { ...zero(), passed: 1, carried: 1, total: 1 } });
+  assert.strictEqual(carriedAttempt(container([a0, a0])), 0);
+  assert.strictEqual(carriedAttempt(container([a0, a1])), undefined);
+  assert.strictEqual(carriedAttempt(a1), 1);
 });
