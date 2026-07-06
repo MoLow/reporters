@@ -492,12 +492,15 @@ function RowView({
               if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); toggleDiag(); }
             } : undefined}
           >
-            {diagBlocks(node).map((block) => (
-              <span className="affch" data-soft={block.sev} key={block.key}>
-                {block.icon} {block.chip ?? block.title}
-                {block.count ? ` · ${formatCount(block.count.n)} ${block.count.unit}` : ''}
-              </span>
-            ))}
+            {diagBlocks(node)
+              // The passing-todo tag already names the reason — don't repeat it.
+              .filter((block) => !(block.key === 'reason' && isPassingTodo(node)))
+              .map((block) => (
+                <span className="affch" data-soft={block.sev} key={block.key}>
+                  {block.icon} {block.chip ?? block.title}
+                  {block.count ? ` · ${formatCount(block.count.n)} ${block.count.unit}` : ''}
+                </span>
+              ))}
           </span>
         ) : null}
         <span className="spacer" />
