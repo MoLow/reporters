@@ -392,3 +392,44 @@ test('a container name match under a status filter shows only matching leaves be
   assert.ok(matches.visible.has('p1'), 'passed leaf under the matched suite is visible');
   assert.ok(!matches.visible.has('f1'), 'failed leaf is filtered out despite the container name match');
 });
+
+test('onlyRerun hides carried leaves, keeps executed tests and their ancestors', () => {
+  const carried = node({ key: 'c', name: 'carried', passedOnAttempt: 0, counts: { ...zeroCounts(), passed: 1, carried: 1, total: 1 } });
+  const fresh = node({ key: 'f', name: 'fresh', counts: { ...zeroCounts(), passed: 1, total: 1 } });
+  const file = node({
+    key: 'file', type: 'file', children: [carried, fresh],
+    counts: { ...zeroCounts(), passed: 2, carried: 1, total: 2 },
+  });
+  const matches = computeMatches([file], '', new Set(), true);
+  assert.ok(!matches.visible.has('c'));
+  assert.ok(matches.visible.has('f'));
+  assert.ok(matches.visible.has('file'));
+
+  const rows = buildRows([file], { overrides: new Map(), query: '', statuses: new Set(), matches, onlyRerun: true });
+  assert.deepStrictEqual(rows.map((r) => r.node.key), ['file', 'f']);
+});
+
+test('onlyRerun composes with the name filter', () => {
+  const carried = node({ key: 'c', name: 'alpha carried', passedOnAttempt: 0, counts: { ...zeroCounts(), passed: 1, carried: 1, total: 1 } });
+  const fresh = node({ key: 'f', name: 'alpha fresh', counts: { ...zeroCounts(), passed: 1, total: 1 } });
+  const other = node({ key: 'o', name: 'beta fresh', counts: { ...zeroCounts(), passed: 1, total: 1 } });
+  const file = node({
+    key: 'file', type: 'file', children: [carried, fresh, other],
+    counts: { ...zeroCounts(), passed: 3, carried: 1, total: 3 },
+  });
+  const matches = computeMatches([file], 'alpha', new Set(), true);
+  assert.ok(!matches.visible.has('c'));
+  assert.ok(matches.visible.has('f'));
+  assert.ok(!matches.visible.has('o'));
+});
+
+test('an all-carried file disappears under onlyRerun', () => {
+  const carried = node({ key: 'c', name: 'carried', passedOnAttempt: 0, counts: { ...zeroCounts(), passed: 1, carried: 1, total: 1 } });
+  const file = node({
+    key: 'file', type: 'file', children: [carried],
+    counts: { ...zeroCounts(), passed: 1, carried: 1, total: 1 },
+  });
+  const matches = computeMatches([file], '', new Set(), true);
+  const rows = buildRows([file], { overrides: new Map(), query: '', statuses: new Set(), matches, onlyRerun: true });
+  assert.deepStrictEqual(rows, []);
+});
