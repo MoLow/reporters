@@ -4,7 +4,7 @@ import { createTreeStore } from '@reporters/tree-core';
 import type { Counts, TestEvent, TestNode } from '@reporters/tree-core';
 import {
   buildRows, collectContainerKeys, computeMatches, displayName, hasDiagnostics,
-  isDiagOpen, isExpanded, isPassingTodo, liveNodeDuration, nodeDuration, reasonOf, realError, rollup,
+  isExpanded, isPassingTodo, isSectionOpen, liveNodeDuration, nodeDuration, reasonOf, realError, rollup,
 } from '../src/client/rowModel.ts';
 
 const zeroCounts = (): Counts => ({
@@ -46,21 +46,40 @@ test('a file node with its own stdout/stderr reports diagnostics', () => {
   assert.strictEqual(hasDiagnostics(fileNode()), true);
 });
 
-test('buildRows surfaces a diagnostics affordance on an expanded container file with output', () => {
-  const rows = buildRows([fileNode()], noQuery);
-  const fileRow = rows.find((r) => r.node.type === 'file')!;
-  assert.strictEqual(fileRow.container, true, 'file has test children, so it is a container');
+test('buildRows nests an output header row inside an expanded node with output', () => {
+  const file = fileNode();
+  const rows = buildRows([file], noQuery);
+  const fileRow = rows.find((r) => r.kind === 'node' && r.node.type === 'file')!;
+  assert.strictEqual(fileRow.expandable, true);
   assert.strictEqual(fileRow.expanded, true, 'a file defaults to expanded');
-  assert.strictEqual(fileRow.hasDiag, true, 'an expanded container must expose its own stdout/stderr');
+  assert.strictEqual(fileRow.hasDiag, true, 'the row carries the passive output badge');
+  const outRow = rows.find((r) => r.kind === 'output')!;
+  assert.strictEqual(outRow.node.key, file.key, 'the output row belongs to the file node');
+  assert.strictEqual(outRow.depth, fileRow.depth + 1, 'own output is indented one level, before children');
+  assert.strictEqual(rows.indexOf(outRow), rows.indexOf(fileRow) + 1, 'output comes first inside the region');
 });
 
-test('a collapsed container hides its own stdout/stderr along with its children', () => {
+test('a collapsed node hides its output panel slot', () => {
   const file = fileNode();
-  const rows = buildRows([file], { overrides: new Map([[file.key, false]]), query: '', matches: null });
-  const fileRow = rows.find((r) => r.node.type === 'file')!;
-  assert.strictEqual(fileRow.expanded, false, 'the file is collapsed');
-  assert.strictEqual(fileRow.hasDiag, false, 'a collapsed container must not surface its output');
-  assert.strictEqual(fileRow.diagOpen, false);
+  const collapsed = buildRows([file], { overrides: new Map([[file.key, false]]), query: '', matches: null });
+  assert.strictEqual(collapsed.some((r) => r.kind === 'output'), false, 'collapsed region hides the output panel');
+  assert.strictEqual(collapsed[0].hasDiag, true, 'the badge still marks that output exists');
+});
+
+test('a pure leaf with output is expandable and reveals only its output row', () => {
+  const leaf = node({
+    key: 'f/t', status: 'failed', error: { message: 'boom' },
+  });
+  const file = node({
+    key: 'f', type: 'file', file: '/repo/f.test.js', children: [leaf],
+    counts: { ...zeroCounts(), failed: 1, total: 1 },
+  });
+  const rows = buildRows([file], noQuery);
+  const leafRow = rows.find((r) => r.kind === 'node' && r.node.key === 'f/t')!;
+  assert.strictEqual(leafRow.expandable, true, 'a leaf with output can be expanded');
+  assert.strictEqual(leafRow.expanded, true, 'a failed node defaults to expanded');
+  assert.ok(rows.some((r) => r.kind === 'output' && r.node.key === 'f/t'), 'its output panel slot is present');
+  assert.strictEqual(isSectionOpen(leaf, 'error', new Map()), true, 'a failed leaf opens with its error visible');
 });
 
 test('displayName shows the basename for files and the raw name otherwise', () => {
@@ -78,6 +97,13 @@ test('rollup: leaves keep their status, containers take the worst descendant', (
   assert.strictEqual(rollup(failed), 'failed');
   // A container with children but no counted descendants falls through to passed.
   assert.strictEqual(rollup(node({ key: 'e', children: [leaf], counts: zeroCounts() })), 'passed');
+  // Skips and todos don't drag a green container down: 8 passed + 1 skipped is passed.
+  const mostlyPassed = node({ key: 'm', children: [leaf], counts: { ...zeroCounts(), passed: 8, skipped: 1, total: 9 } });
+  assert.strictEqual(rollup(mostlyPassed), 'passed');
+  assert.strictEqual(rollup(node({ key: 't', children: [leaf], counts: { ...zeroCounts(), passed: 2, todo: 1, total: 3 } })), 'passed');
+  // All-skipped (or skipped+todo) containers still read as skipped/todo.
+  assert.strictEqual(rollup(node({ key: 's', children: [leaf], counts: { ...zeroCounts(), skipped: 3, total: 3 } })), 'skipped');
+  assert.strictEqual(rollup(node({ key: 'q', children: [leaf], counts: { ...zeroCounts(), passed: 1, queued: 1, total: 2 } })), 'queued', 'queued still outranks passed while a run is incomplete');
 });
 
 test('reasonOf returns the skip/todo string, or undefined', () => {
@@ -134,11 +160,30 @@ test('isExpanded honors query force, overrides, then per-type defaults', () => {
   assert.strictEqual(isExpanded(node({ key: 't', type: 'test' }), opts()), false);
 });
 
-test('isDiagOpen defaults to open only for failures, but an override wins', () => {
-  assert.strictEqual(isDiagOpen(node({ key: 'a', status: 'failed' }), new Map()), true);
-  assert.strictEqual(isDiagOpen(node({ key: 'a', status: 'passed' }), new Map()), false);
-  assert.strictEqual(isDiagOpen(node({ key: 'a', status: 'failed' }), new Map([['a::diag', false]])), false);
-  assert.strictEqual(isDiagOpen(node({ key: 'a', status: 'passed' }), new Map([['a::diag', true]])), true);
+test('isSectionOpen defaults open only for the error section, overrides win', () => {
+  const n = node({ key: 'a', status: 'failed' });
+  assert.strictEqual(isSectionOpen(n, 'error', new Map()), true, 'the error section surfaces with zero clicks');
+  assert.strictEqual(isSectionOpen(n, 'reason', new Map()), true, 'the one-line skip/todo reason is cheap — open it');
+  assert.strictEqual(isSectionOpen(n, 'diag', new Map()), false, 'heavy sections need a deliberate click');
+  assert.strictEqual(isSectionOpen(n, 'output', new Map()), false);
+  assert.strictEqual(isSectionOpen(n, 'error', new Map([['a::diag:error', false]])), false);
+  assert.strictEqual(isSectionOpen(n, 'diag', new Map([['a::diag:diag', true]])), true);
+});
+
+test('collectContainerKeys includes leaves that carry their own output', () => {
+  const file = node({
+    key: 'f',
+    type: 'file',
+    stdout: ['hi\n'],
+    children: [
+      node({ key: 'f/t1', error: { message: 'boom' }, status: 'failed' }),
+      node({ key: 'f/t2' }),
+    ],
+    counts: { ...zeroCounts(), failed: 1, passed: 1, total: 2 },
+  });
+  const keys: string[] = [];
+  collectContainerKeys([file], keys);
+  assert.deepStrictEqual(keys, ['f', 'f/t1'], 'the plain passed leaf is not expandable');
 });
 
 test('buildRows drops nodes filtered out by an active query', () => {

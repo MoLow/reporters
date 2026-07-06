@@ -53,6 +53,14 @@ export function levelSeverity(level: string): TestStatus {
   return 'skipped';
 }
 
+/** Compact count for section headers: exact under 1000, `1.9k` above. */
+export function formatCount(n: number): string {
+  if (n < 1000) return String(n);
+  const k = n / 1000;
+  const rounded = Math.round(k * 10) / 10;
+  return `${Number.isInteger(rounded) ? rounded.toFixed(0) : rounded}k`;
+}
+
 export interface TextSegment { kind: 'text' | 'url'; text: string; }
 
 const URL_RE = /https?:\/\/[^\s"'<>()\][]+/g;

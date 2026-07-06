@@ -5,14 +5,14 @@ import {
   formatDuration, todoLabel, type Counts, type TestNode, type TestStatus, type TreeSnapshot,
 } from '@reporters/tree-core';
 import {
-  buildRows, collectContainerKeys, computeMatches, displayName, isContainer, isPassingTodo, liveNodeDuration, reasonOf, realError, type FlatRow,
+  buildRows, collectContainerKeys, computeMatches, displayName, isContainer, isSectionOpen, liveNodeDuration, reasonOf, realError, type FlatRow,
 } from './rowModel.ts';
 
 // node:test captures colored output verbatim; render the ANSI SGR codes as real
 // colors (mapped to the theme's --ansi-* vars) rather than stripping them.
 import { AnsiHtml } from 'fancy-ansi/react';
 import {
-  classifyFrame, classifyStack, extractLevel, levelSeverity, splitUrls, type StackLine,
+  classifyFrame, classifyStack, extractLevel, formatCount, levelSeverity, splitUrls, stripAnsi, type StackLine,
 } from './format.ts';
 
 const GLYPH: Record<TestStatus, string> = {
@@ -23,15 +23,6 @@ const STATUS_LABEL: Record<TestStatus, string> = {
   passed: 'passed', failed: 'failed', skipped: 'skipped', todo: 'todo', running: 'running', queued: 'queued',
 };
 
-/** Severity of a test's diagnostics, for the row badge tint. */
-function diagSeverity(node: TestNode): TestStatus {
-  if (realError(node) || node.stderr.length > 0) return 'failed';
-  const sevs = node.diagnostics.map((d) => levelSeverity(extractLevel(d.message) ?? d.level));
-  if (sevs.includes('failed')) return 'failed';
-  if (sevs.includes('running')) return 'running';
-  return 'skipped';
-}
-
 interface OutLine { stream: 'out' | 'err'; text: string; }
 
 interface DiagBlock {
@@ -40,6 +31,12 @@ interface DiagBlock {
   icon: string;
   sev: TestStatus;
   kind: 'error' | 'output' | 'list' | 'text';
+  /** Header count (`Output · 1.9k lines`), also surfaced on the row chip. */
+  count?: { n: number; unit: string };
+  /** Row-chip text when it should differ from the title (e.g. the trimmed skip reason). */
+  chip?: string;
+  /** ANSI-stripped plain text for the Copy button. */
+  copyText: string;
   message?: string;
   stack?: string;
   text?: string;
@@ -135,35 +132,55 @@ function Stack({ stack }: { stack: string }) {
 // At most three sections per test — Error, Output, Diagnostics (plus a reason
 // for skipped/todo). stdout+stderr collapse into one Output block; text keeps
 // its ANSI (colored at render); synthetic container rollups never render an Error.
-function diagBlocks(node: TestNode): DiagBlock[] {
+function computeDiagBlocks(node: TestNode): DiagBlock[] {
   const blocks: DiagBlock[] = [];
   const error = realError(node);
   if (error) {
+    const stack = error.stack ?? error.message;
     blocks.push({
       key: 'error', title: 'Error', icon: '✕', sev: 'failed', kind: 'error',
-      message: error.message, stack: error.stack ?? error.message,
+      message: error.message, stack, copyText: stripAnsi(stack),
     });
   }
   const lines = outputLines(node);
   if (lines.length > 0) {
-    blocks.push({ key: 'output', title: 'Output', icon: '›', sev: 'skipped', kind: 'output', lines });
+    blocks.push({
+      key: 'output', title: 'Output', icon: '›', sev: 'skipped', kind: 'output', lines,
+      count: { n: lines.length, unit: lines.length === 1 ? 'line' : 'lines' },
+      copyText: stripAnsi(lines.map((l) => l.text).join('\n')),
+    });
   }
   if (node.diagnostics.length > 0) {
+    const items = node.diagnostics.map((d) => {
+      const level = extractLevel(d.message) ?? d.level;
+      return { level, sev: levelSeverity(level), text: d.message };
+    });
+    const sev: TestStatus = items.some((i) => i.sev === 'failed') ? 'failed'
+      : items.some((i) => i.sev === 'running') ? 'running' : 'skipped';
     blocks.push({
-      key: 'diag', title: 'Diagnostics', icon: '◇', sev: 'skipped', kind: 'list',
-      items: node.diagnostics.map((d) => {
-        const level = extractLevel(d.message) ?? d.level;
-        return { level, sev: levelSeverity(level), text: d.message };
-      }),
+      key: 'diag', title: 'Diagnostics', icon: '◇', sev, kind: 'list', items,
+      copyText: stripAnsi(node.diagnostics.map((d) => d.message).join('\n')),
     });
   }
   const reason = reasonOf(node);
   if (reason) {
+    const plain = stripAnsi(reason).replace(/\s+/g, ' ').trim();
+    const label = `${node.status === 'skipped' ? 'Skipped' : 'Todo'}: ${plain}`;
     blocks.push({
       key: 'reason', title: node.status === 'skipped' ? 'why skipped' : 'why todo',
-      icon: '⊘', sev: 'skipped', kind: 'text', text: reason,
+      chip: label.length > 40 ? `${label.slice(0, 39)}…` : label,
+      icon: '⊘', sev: 'skipped', kind: 'text', text: reason, copyText: stripAnsi(reason),
     });
   }
+  return blocks;
+}
+
+// Blocks are needed by both the row chips and the open panel; splitting a huge
+// log into lines twice per render would hurt, so cache per snapshot node.
+const blocksCache = new WeakMap<TestNode, DiagBlock[]>();
+function diagBlocks(node: TestNode): DiagBlock[] {
+  let blocks = blocksCache.get(node);
+  if (!blocks) { blocks = computeDiagBlocks(node); blocksCache.set(node, blocks); }
   return blocks;
 }
 
@@ -200,48 +217,220 @@ const SearchIcon = () => (
   </svg>
 );
 
-function Diagnostics({ node, indent }: { node: TestNode; indent: string }) {
+function BlockContent({ block }: { block: DiagBlock }) {
   return (
-    <div className="diag" style={{ margin: `5px 12px 11px ${indent}` }}>
-      {diagBlocks(node).map((block) => (
-        <div className="diag-sec" key={block.key}>
-          <span className="diag-bar" data-stf={block.sev} />
-          <div className="diag-body">
-            <div className="diag-head">
-              <span className="diag-icon" data-stc={block.sev}>{block.icon}</span>
-              <span className="diag-title">{block.title}</span>
+    <>
+      {block.kind === 'error' ? (
+        <>
+          <div className="diag-msg" data-stc="failed"><Ansi text={block.message!} /></div>
+          <Stack stack={block.stack!} />
+        </>
+      ) : null}
+      {block.kind === 'output' ? (
+        <div className="out">
+          {block.lines!.map((line, i) => (
+            // eslint-disable-next-line react/no-array-index-key
+            <div className="out-line" data-err={line.stream === 'err' ? 'true' : undefined} key={i}>
+              <Ansi text={line.text === '' ? ' ' : line.text} />
             </div>
-            {block.kind === 'error' ? (
+          ))}
+        </div>
+      ) : null}
+      {block.kind === 'text' ? (
+        <pre className="text"><Ansi text={block.text!} /></pre>
+      ) : null}
+      {block.kind === 'list' ? (
+        <div className="diag-list">
+          {block.items!.map((item, i) => (
+            // eslint-disable-next-line react/no-array-index-key
+            <div className="diag-item" key={i}>
+              <span className="diag-level" data-soft={item.sev}>{item.level}</span>
+              <span className="txt"><Ansi text={item.text} /></span>
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </>
+  );
+}
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = () => {
+    void navigator.clipboard?.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1200);
+    });
+  };
+  return <button type="button" className="hbtn" onClick={copy} title="Copy to clipboard">{copied ? 'Copied' : '⧉ Copy'}</button>;
+}
+
+/** One section: sticky header with controls above the capped scroll region
+ *  (§10a). A settled log opens at the top — logs read top-to-bottom; only a
+ *  still-running log tail-follows, and stops the moment the reader scrolls up
+ *  or the test settles (§11a). */
+/** One boxed panel section (design demo): its header is the disclosure for
+ *  just this section — caret + name on the left, the toolbar on the right —
+ *  and the capped log body collapses beneath it. */
+function DiagSection({
+  block, node, open, onToggle,
+}: {
+  block: DiagBlock; node: TestNode; open: boolean; onToggle: () => void;
+}) {
+  const [modal, setModal] = useState(false);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const pinned = useRef(false);
+  // Lazy-mount the body, but keep it once opened so collapse animates and
+  // scroll survives.
+  const everOpen = useRef(open);
+  if (open) everOpen.current = true;
+  const running = node.status === 'running';
+  useEffect(() => {
+    const el = bodyRef.current;
+    if (!el || !running || !open) return;
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 48;
+    if (!pinned.current || nearBottom) { el.scrollTop = el.scrollHeight; pinned.current = true; }
+  });
+  const jump = (toEnd: boolean) => {
+    const el = bodyRef.current;
+    if (el) el.scrollTop = toEnd ? el.scrollHeight : 0;
+  };
+  const long = (block.lines?.length ?? block.items?.length ?? 0) > 20;
+  return (
+    <div className="diag-sec" data-open={open ? 'true' : undefined}>
+      <span className="diag-bar" data-stf={block.sev} />
+      <div className="diag-body">
+        <div
+          className="diag-head"
+          role="button"
+          tabIndex={0}
+          aria-expanded={open}
+          aria-label={`${open ? 'Hide' : 'Show'} ${block.title.toLowerCase()} of ${displayName(node)}`}
+          onClick={onToggle}
+          onMouseDown={(e) => e.preventDefault()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle(); }
+            else if (e.key === 'ArrowRight' && !open) { e.preventDefault(); onToggle(); }
+            else if (e.key === 'ArrowLeft' && open) { e.preventDefault(); onToggle(); }
+          }}
+        >
+          <span className="caret" data-open={open ? 'true' : undefined}>▸</span>
+          <span className="diag-icon" data-stc={block.sev}>{block.icon}</span>
+          <span className="diag-title">{block.chip ?? block.title}</span>
+          {block.count ? <span className="diag-count">· {formatCount(block.count.n)} {block.count.unit}</span> : null}
+          <div
+            className="diag-tools"
+            // Toolbar clicks act on the section, never toggle it.
+            // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events
+            onClick={(e) => e.stopPropagation()}
+          >
+            {open && long ? (
               <>
-                <div className="diag-msg" data-stc="failed"><Ansi text={block.message!} /></div>
-                <Stack stack={block.stack!} />
+                <button type="button" className="hbtn" onClick={() => jump(false)} title="Jump to top">⤒</button>
+                <button type="button" className="hbtn" onClick={() => jump(true)} title="Jump to end">⤓</button>
               </>
             ) : null}
-            {block.kind === 'output' ? (
-              <div className="out">
-                {block.lines!.map((line, i) => (
-                  // eslint-disable-next-line react/no-array-index-key
-                  <div className="out-line" data-err={line.stream === 'err' ? 'true' : undefined} key={i}>
-                    <Ansi text={line.text === '' ? ' ' : line.text} />
-                  </div>
-                ))}
-              </div>
-            ) : null}
-            {block.kind === 'text' ? (
-              <pre className="text"><Ansi text={block.text!} /></pre>
-            ) : null}
-            {block.kind === 'list' ? (
-              <div className="diag-list">
-                {block.items!.map((item, i) => (
-                  <div className="diag-item" key={i}>
-                    <span className="diag-level" data-soft={item.sev}>{item.level}</span>
-                    <span className="txt"><Ansi text={item.text} /></span>
-                  </div>
-                ))}
-              </div>
+            <CopyButton text={block.copyText} />
+            <button type="button" className="hbtn" onClick={() => setModal(true)} title="Open full log">⤢ Full log</button>
+            {open ? (
+              <button type="button" className="hbtn" onClick={onToggle} title="Collapse this section">Collapse</button>
             ) : null}
           </div>
         </div>
+        <div className={`collapsible${open ? ' open' : ''}`}>
+          <div className="inner">
+            {everOpen.current ? (
+              <div className="log-body" ref={bodyRef}><BlockContent block={block} /></div>
+            ) : null}
+          </div>
+        </div>
+      </div>
+      {modal ? (
+        <LogModal title={`${block.title} — ${displayName(node)}`} block={block} onClose={() => setModal(false)} />
+      ) : null}
+    </div>
+  );
+}
+
+function LogModal({ title, block, onClose }: { title: string; block: DiagBlock; onClose: () => void }) {
+  // Lines stay whole by default — the modal exists for room; wrapping is opt-in (§11b).
+  const [wrap, setWrap] = useState(false);
+  const boxRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const prev = document.activeElement as HTMLElement | null;
+    boxRef.current?.focus();
+    return () => prev?.focus?.();
+  }, []);
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') { e.stopPropagation(); onClose(); return; }
+    if (e.key !== 'Tab') return;
+    const focusables = boxRef.current?.querySelectorAll<HTMLElement>('button, a[href], input');
+    if (!focusables || focusables.length === 0) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  };
+  return (
+    // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events
+    <div className="modal-backdrop" onClick={onClose}>
+      <div
+        className={`modal${wrap ? ' wrap' : ''}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        ref={boxRef}
+        tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={onKeyDown}
+      >
+        <div className="modal-head">
+          <span className="diag-icon" data-stc={block.sev}>{block.icon}</span>
+          <span className="modal-title">{title}</span>
+          {block.count ? <span className="diag-count">{formatCount(block.count.n)} {block.count.unit}</span> : null}
+          <div className="diag-tools">
+            <CopyButton text={block.copyText} />
+            <button type="button" className="hbtn" data-on={wrap ? 'true' : undefined} onClick={() => setWrap(!wrap)} title="Toggle line wrapping">Wrap</button>
+            <button type="button" className="hbtn" onClick={onClose} aria-label="Close">✕</button>
+          </div>
+        </div>
+        <div className="modal-body"><BlockContent block={block} /></div>
+      </div>
+    </div>
+  );
+}
+
+/** A node's own-output region (design demo): a stack of boxed, independently
+ *  collapsible panel sections — a panel, never a tree node. */
+function OutputPanel({
+  row, overrides, toggle, enter,
+}: {
+  row: FlatRow;
+  overrides: Map<string, boolean>;
+  toggle: (key: string, current: boolean) => void;
+  enter: number | null;
+}) {
+  const { node, depth } = row;
+  const blocks = diagBlocks(node);
+  const style: React.CSSProperties = {
+    margin: `4px 12px 7px ${depth * 20 + 18}px`,
+    ...(enter !== null ? { animationDelay: `${Math.min(enter, 8) * 18}ms` } : {}),
+  };
+  return (
+    <div
+      className={`diag${enter !== null ? ' row-enter' : ''}`}
+      role="group"
+      aria-label={`Output of ${displayName(node)}`}
+      style={style}
+    >
+      {blocks.map((block) => (
+        <DiagSection
+          block={block}
+          node={node}
+          open={isSectionOpen(node, block.key, overrides)}
+          onToggle={() => toggle(`${node.key}::diag:${block.key}`, isSectionOpen(node, block.key, overrides))}
+          key={block.key}
+        />
       ))}
     </div>
   );
@@ -264,6 +453,12 @@ function useSettle(status: TestStatus): boolean {
   return settled;
 }
 
+const trimTag = (s: string): string => (s.length > 32 ? `${s.slice(0, 31)}…` : s);
+
+/** Stable identity for enter-animation bookkeeping and React keys — a node row
+ *  and its nested output row share a node but are distinct rows. */
+const rowKey = (row: FlatRow): string => (row.kind === 'output' ? `${row.node.key}::out` : row.node.key);
+
 interface RowViewProps {
   row: FlatRow;
   toggle: (key: string, current: boolean) => void;
@@ -278,99 +473,78 @@ function RowView({
   row, toggle, enter, now, since,
 }: RowViewProps) {
   const {
-    node, depth, status, container, expanded, hasDiag, diagOpen,
+    node, depth, status, expandable, expanded, hasDiag,
   } = row;
   const settled = useSettle(status);
-  const clickable = container || hasDiag;
-  const toggleDiag = () => toggle(`${node.key}::diag`, diagOpen);
-  const activate = () => {
-    if (container) toggle(node.key, expanded);
-    else if (hasDiag) toggleDiag();
-  };
+  // One disclosure per row: expanding reveals the node's region (its own
+  // output header first, then children). Same gesture for every node type.
+  const activate = () => { if (expandable) toggle(node.key, expanded); };
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); }
-    else if (e.key === 'ArrowRight' && ((container && !expanded) || (hasDiag && !diagOpen))) { e.preventDefault(); activate(); }
-    else if (e.key === 'ArrowLeft' && ((container && expanded) || (hasDiag && diagOpen))) { e.preventDefault(); activate(); }
+    else if (e.key === 'ArrowRight' && expandable && !expanded) { e.preventDefault(); activate(); }
+    else if (e.key === 'ArrowLeft' && expandable && expanded) { e.preventDefault(); activate(); }
   };
 
   const counts = node.counts;
   const isTest = node.type === 'test';
+  const container = isContainer(node);
   const nameColor = isTest && status === 'failed' ? 'var(--st-failed)'
     : isTest && (status === 'skipped' || status === 'todo' || status === 'queued') ? 'var(--dim)'
       : 'var(--fg)';
-  const ariaExpanded = container ? expanded : hasDiag ? diagOpen : undefined;
-  const indent = `${depth * 20 + 38}px`;
 
   const rowClass = `row${enter !== null ? ' row-enter' : ''}${settled ? ` settle-${status}` : ''}`;
   const rowStyle = enter !== null ? { animationDelay: `${Math.min(enter, 8) * 18}ms` } : undefined;
+  const hasError = hasDiag && diagBlocks(node).some((b) => b.key === 'error');
 
   return (
-    <div>
-      <div
-        className={rowClass}
-        style={rowStyle}
-        role="treeitem"
-        aria-expanded={ariaExpanded}
-        aria-label={`${displayName(node)}, ${status}${container ? `, ${counts.total} tests` : ''}`}
-        tabIndex={0}
-        data-clickable={clickable}
-        data-fail={isTest && status === 'failed'}
-        data-running={status === 'running' ? 'true' : undefined}
-        onClick={clickable ? activate : undefined}
-        onKeyDown={onKeyDown}
-      >
-        <span className="guides">
-          {Array.from({ length: depth }, (_, i) => <span className="guide" key={i} />)}
-        </span>
-        <span className="caret" data-open={container && expanded ? 'true' : undefined}>{container ? '▸' : ''}</span>
-        {isTest ? (
-          status === 'running'
-            ? <span className="spinner indicator" />
-            : <span className="dot indicator" data-stf={status} />
-        ) : (
-          <span className="cglyph indicator" data-stc={status} data-spin={status === 'running' ? 'true' : undefined}>{GLYPH[status]}</span>
-        )}
-        <span className="name" data-kind={node.type} style={{ color: nameColor }}>{displayName(node)}</span>
-        {isPassingTodo(node) ? (
-          <span className="todotag" data-soft="todo"># {todoLabel(node)}</span>
-        ) : null}
-        {hasDiag ? (
-          // On a container the row click expands children, so the badge is its
-          // own control for the node's own output; on a leaf the row already
-          // toggles diagnostics, so the badge is just a label.
-          container ? (
-            <span
-              className="diagbadge"
-              role="button"
-              tabIndex={0}
-              aria-expanded={diagOpen}
-              data-soft={diagSeverity(node)}
-              onClick={(e) => { e.stopPropagation(); toggleDiag(); }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); toggleDiag(); }
-              }}
-            >
-              {diagOpen ? 'Hide' : 'Details'}
-            </span>
-          ) : (
-            <span className="diagbadge" data-soft={diagSeverity(node)}>{diagOpen ? 'Hide' : 'Details'}</span>
-          )
-        ) : null}
-        <span className="spacer" />
-        {container && !expanded ? (
-          <span className="pills">
-            {STATUS_ORDER.filter((s) => counts[s] > 0).map((s) => (
-              <span className="pill" data-soft={s} key={s}>{counts[s]}</span>
-            ))}
-          </span>
-        ) : null}
-        <span className="dur">{formatDuration(liveNodeDuration(node, now, since)) || '—'}</span>
-      </div>
+    <div
+      className={rowClass}
+      style={rowStyle}
+      role="treeitem"
+      aria-expanded={expandable ? expanded : undefined}
+      aria-label={`${displayName(node)}, ${status}${container ? `, ${counts.total} tests` : ''}`}
+      tabIndex={0}
+      data-clickable={expandable}
+      data-fail={isTest && status === 'failed'}
+      data-running={status === 'running' ? 'true' : undefined}
+      onClick={expandable ? activate : undefined}
+      // A pointer click shouldn't paint the keyboard focus ring on the row
+      // (Safari matches :focus-visible on clicked tabindex elements).
+      onMouseDown={(e) => e.preventDefault()}
+      onKeyDown={onKeyDown}
+    >
+      <span className="guides">
+        {Array.from({ length: depth }, (_, i) => <span className="guide" key={i} />)}
+      </span>
+      <span className="caret" data-open={expandable && expanded ? 'true' : undefined}>{expandable ? '▸' : ''}</span>
+      {isTest ? (
+        status === 'running'
+          ? <span className="spinner indicator" />
+          : <span className="dot indicator" data-stf={status} />
+      ) : (
+        <span className="cglyph indicator" data-stc={status} data-spin={status === 'running' ? 'true' : undefined}>{GLYPH[status]}</span>
+      )}
+      <span className="name" data-kind={node.type} style={{ color: nameColor }}>{displayName(node)}</span>
       {hasDiag ? (
-        <div className={`collapsible${diagOpen ? ' open' : ''}`}>
-          <div className="inner"><Diagnostics node={node} indent={indent} /></div>
-        </div>
+        // Passive badge (never a control): output exists inside this node.
+        <span className="outbadge" data-stc={hasError ? 'failed' : undefined} title="Has output">
+          {hasError ? '✕' : '◇'}
+        </span>
       ) : null}
+      {todoLabel(node) ? (
+        <span className="todotag" data-soft="todo"># {trimTag(todoLabel(node)!)}</span>
+      ) : typeof node.skip === 'string' && node.skip ? (
+        <span className="todotag" data-soft="skipped">⊘ {trimTag(node.skip)}</span>
+      ) : null}
+      <span className="spacer" />
+      {container && !expanded ? (
+        <span className="pills">
+          {STATUS_ORDER.filter((s) => counts[s] > 0).map((s) => (
+            <span className="pill" data-soft={s} key={s}>{counts[s]}</span>
+          ))}
+        </span>
+      ) : null}
+      <span className="dur">{formatDuration(liveNodeDuration(node, now, since)) || '—'}</span>
     </div>
   );
 }
@@ -460,6 +634,8 @@ export function TreeView({
     setOverrides((prev) => new Map(prev).set(key, !current));
   };
   const [allCollapsed, setAllCollapsed] = useState(false);
+  // Logs live inside rows now, so collapsing rows inherently hides them —
+  // one hierarchy, one unambiguous collapse (revised design ruling).
   const toggleAll = () => {
     const keys: string[] = [];
     collectContainerKeys(files, keys);
@@ -495,9 +671,10 @@ export function TreeView({
     let stagger = 0;
     for (const row of rows) {
       if (row.node.type === 'file') stagger = 0;
-      const firstSeen = !seen.has(row.node.key);
-      seen.add(row.node.key);
-      if (firstSeen && inProgress) { enterMap.set(row.node.key, stagger); stagger += 1; }
+      const key = rowKey(row);
+      const firstSeen = !seen.has(key);
+      seen.add(key);
+      if (firstSeen && inProgress) { enterMap.set(key, stagger); stagger += 1; }
     }
   }
 
@@ -569,9 +746,9 @@ export function TreeView({
               type="button"
               className="btn"
               onClick={toggleAll}
-              title={allCollapsed ? 'Expand all' : 'Collapse all'}
+              title={allCollapsed ? 'Expand all files and suites' : 'Collapse all files and suites'}
             >
-              {allCollapsed ? 'Expand' : 'Collapse'}
+              {allCollapsed ? 'Expand all' : 'Collapse all'}
             </button>
           </div>
         </div>
@@ -591,20 +768,41 @@ export function TreeView({
 
       <div className="tree" role="tree" aria-label="Test results">
         {rows.length > 0 ? (
-          rows.map((row) => (
+          rows.map((row) => (row.kind === 'output' ? (
+            <OutputPanel
+              key={rowKey(row)}
+              row={row}
+              overrides={overrides}
+              toggle={toggle}
+              enter={enterMap.has(rowKey(row)) ? enterMap.get(rowKey(row))! : null}
+            />
+          ) : (
             <RowView
-              key={row.node.key}
+              key={rowKey(row)}
               row={row}
               toggle={toggle}
-              enter={enterMap.has(row.node.key) ? enterMap.get(row.node.key)! : null}
+              enter={enterMap.has(rowKey(row)) ? enterMap.get(rowKey(row))! : null}
               now={now}
               since={since}
             />
-          ))
-        ) : q ? (
-          <CenteredState icon="⌕" iconStatus="skipped" title={`No tests match “${query.trim()}”`}>
-            <div className="state-sub">Try a shorter query, or search by file name.</div>
-            <button type="button" className="btn-primary" onClick={() => setQuery('')}>Clear filter</button>
+          )))
+        ) : q || statuses.size > 0 ? (
+          <CenteredState
+            icon="⌕"
+            iconStatus="skipped"
+            title={q ? `No tests match “${query.trim()}”` : 'No tests match the active filters'}
+          >
+            <div className="state-sub">
+              {q ? 'Try a shorter query, or search by file name.'
+                : 'No test has any of the selected statuses.'}
+            </div>
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={() => { setQuery(''); setStatuses(new Set()); }}
+            >
+              Clear filters
+            </button>
           </CenteredState>
         ) : (
           <CenteredState icon="◴" iconStatus="queued" pulse title="Waiting for the first results">
