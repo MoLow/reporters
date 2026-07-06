@@ -3,7 +3,7 @@ import assert from 'node:assert';
 import { createTreeStore } from '@reporters/tree-core';
 import type { Counts, TestEvent, TestNode } from '@reporters/tree-core';
 import {
-  buildRows, collectContainerKeys, collectDiagKeys, computeMatches, displayName, hasDiagnostics,
+  buildRows, collectContainerKeys, computeMatches, displayName, hasDiagnostics,
   isDiagOpen, isExpanded, isPassingTodo, liveNodeDuration, nodeDuration, reasonOf, realError, rollup,
 } from '../src/client/rowModel.ts';
 
@@ -46,23 +46,43 @@ test('a file node with its own stdout/stderr reports diagnostics', () => {
   assert.strictEqual(hasDiagnostics(fileNode()), true);
 });
 
-test('buildRows surfaces a diagnostics affordance on an expanded container file with output', () => {
-  const rows = buildRows([fileNode()], noQuery);
-  const fileRow = rows.find((r) => r.node.type === 'file')!;
-  assert.strictEqual(fileRow.container, true, 'file has test children, so it is a container');
+test('buildRows nests an output header row inside an expanded node with output', () => {
+  const file = fileNode();
+  const rows = buildRows([file], noQuery);
+  const fileRow = rows.find((r) => r.kind === 'node' && r.node.type === 'file')!;
+  assert.strictEqual(fileRow.expandable, true);
   assert.strictEqual(fileRow.expanded, true, 'a file defaults to expanded');
-  assert.strictEqual(fileRow.hasDiag, true, 'an expanded container must expose its own stdout/stderr');
+  assert.strictEqual(fileRow.hasDiag, true, 'the row carries the passive output badge');
+  const outRow = rows.find((r) => r.kind === 'output')!;
+  assert.strictEqual(outRow.node.key, file.key, 'the output row belongs to the file node');
+  assert.strictEqual(outRow.depth, fileRow.depth + 1, 'own output is indented one level, before children');
+  assert.strictEqual(rows.indexOf(outRow), rows.indexOf(fileRow) + 1, 'output comes first inside the region');
+  assert.strictEqual(outRow.diagOpen, false, 'a passing node opens with its output header closed');
 });
 
-test('a collapsed container still surfaces its own stdout/stderr affordance', () => {
+test('a collapsed node hides its output row; the ::diag override opens the panel', () => {
   const file = fileNode();
-  const rows = buildRows([file], { overrides: new Map([[file.key, false]]), query: '', matches: null });
-  const fileRow = rows.find((r) => r.node.type === 'file')!;
-  assert.strictEqual(fileRow.expanded, false, 'the file is collapsed');
-  assert.strictEqual(fileRow.hasDiag, true, 'the output chip stays visible while collapsed');
-  assert.strictEqual(fileRow.diagOpen, false, 'but the panel stays closed until asked');
-  const open = buildRows([file], { overrides: new Map([[file.key, false], [`${file.key}::diag`, true]]), query: '', matches: null });
-  assert.strictEqual(open.find((r) => r.node.type === 'file')!.diagOpen, true, 'opening the panel works while collapsed');
+  const collapsed = buildRows([file], { overrides: new Map([[file.key, false]]), query: '', matches: null });
+  assert.strictEqual(collapsed.some((r) => r.kind === 'output'), false, 'collapsed region hides the output header');
+  assert.strictEqual(collapsed[0].hasDiag, true, 'the badge still marks that output exists');
+  const open = buildRows([file], { overrides: new Map([[`${file.key}::diag`, true]]), query: '', matches: null });
+  assert.strictEqual(open.find((r) => r.kind === 'output')!.diagOpen, true);
+});
+
+test('a pure leaf with output is expandable and reveals only its output row', () => {
+  const leaf = node({
+    key: 'f/t', status: 'failed', error: { message: 'boom' },
+  });
+  const file = node({
+    key: 'f', type: 'file', file: '/repo/f.test.js', children: [leaf],
+    counts: { ...zeroCounts(), failed: 1, total: 1 },
+  });
+  const rows = buildRows([file], noQuery);
+  const leafRow = rows.find((r) => r.kind === 'node' && r.node.key === 'f/t')!;
+  assert.strictEqual(leafRow.expandable, true, 'a leaf with output can be expanded');
+  assert.strictEqual(leafRow.expanded, true, 'a failed node defaults to expanded');
+  const outRow = rows.find((r) => r.kind === 'output' && r.node.key === 'f/t')!;
+  assert.strictEqual(outRow.diagOpen, true, 'a failed leaf opens with its error visible');
 });
 
 test('displayName shows the basename for files and the raw name otherwise', () => {
@@ -154,7 +174,7 @@ test('isDiagOpen defaults to open only for failed leaves, but an override wins',
   assert.strictEqual(isDiagOpen(failedContainer, new Map([['a::diag', true]])), true);
 });
 
-test('collectDiagKeys gathers ::diag keys for nodes that have output', () => {
+test('collectContainerKeys includes leaves that carry their own output', () => {
   const file = node({
     key: 'f',
     type: 'file',
@@ -166,8 +186,8 @@ test('collectDiagKeys gathers ::diag keys for nodes that have output', () => {
     counts: { ...zeroCounts(), failed: 1, passed: 1, total: 2 },
   });
   const keys: string[] = [];
-  collectDiagKeys([file], keys);
-  assert.deepStrictEqual(keys, ['f::diag', 'f/t1::diag']);
+  collectContainerKeys([file], keys);
+  assert.deepStrictEqual(keys, ['f', 'f/t1'], 'the plain passed leaf is not expandable');
 });
 
 test('buildRows drops nodes filtered out by an active query', () => {

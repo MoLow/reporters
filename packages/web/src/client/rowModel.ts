@@ -87,17 +87,23 @@ export function hasDiagnostics(node: TestNode): boolean {
 function defaultExpanded(node: TestNode): boolean {
   const { counts } = node;
   if (node.type === 'file') return !(counts.total > 0 && counts.queued === counts.total);
-  if (node.type === 'suite') return counts.failed > 0 || counts.running > 0;
-  return false;
+  // Failures surface with zero clicks: a failed node (leaf or both-node) opens,
+  // as does anything with a failed/running descendant.
+  return node.status === 'failed' || counts.failed > 0 || counts.running > 0;
 }
 
 export interface FlatRow {
   node: TestNode;
   depth: number;
   status: TestStatus;
-  container: boolean;
+  /** 'node' = a file/suite/test row; 'output' = its nested own-output header row. */
+  kind: 'node' | 'output';
+  /** The row has a region to reveal: children and/or its own output. */
+  expandable: boolean;
   expanded: boolean;
+  /** Node rows: the node carries its own output (drives the passive badge). */
   hasDiag: boolean;
+  /** Output rows: the panel below the header is open. */
   diagOpen: boolean;
 }
 
@@ -169,42 +175,38 @@ export function isDiagOpen(node: TestNode, overrides: Map<string, boolean>): boo
   return !isContainer(node) && node.status === 'failed';
 }
 
+// One disclosure per row: expanding a node reveals ONE region holding its own
+// output (as a nested, collapsed-by-default header row) followed by its child
+// rows. A pure leaf reveals only its output; a pure container only children;
+// a both-node reveals output then children.
 export function buildRows(files: TestNode[], opts: BuildOptions): FlatRow[] {
   const rows: FlatRow[] = [];
   const push = (node: TestNode, depth: number): void => {
     if (filtering(opts) && !opts.matches!.visible.has(node.key)) return;
-    const container = isContainer(node);
-    const expanded = container && isExpanded(node, opts);
-    // A container (a file or suite) can still carry its own output — e.g.
-    // top-level stdout/stderr on the file node — so it gets a diagnostics
-    // affordance too, visible whether or not its children are expanded.
     const diag = hasDiagnostics(node);
+    const expandable = isContainer(node) || diag;
+    const expanded = expandable && isExpanded(node, opts);
+    const status = rollup(node);
     rows.push({
-      node,
-      depth,
-      status: rollup(node),
-      container,
-      expanded,
-      hasDiag: diag,
-      diagOpen: diag && isDiagOpen(node, opts.overrides),
+      node, depth, status, kind: 'node', expandable, expanded, hasDiag: diag, diagOpen: false,
     });
-    if (container && expanded) {
-      for (const child of node.children) push(child, depth + 1);
+    if (!expanded) return;
+    if (diag) {
+      const open = isDiagOpen(node, opts.overrides);
+      rows.push({
+        node, depth: depth + 1, status, kind: 'output', expandable: true, expanded: open, hasDiag: true, diagOpen: open,
+      });
     }
+    for (const child of node.children) push(child, depth + 1);
   };
   for (const file of files) push(file, 0);
   return rows;
 }
 
+/** Keys of every expandable row — containers plus nodes with their own output. */
 export function collectContainerKeys(nodes: TestNode[], into: string[]): void {
   for (const node of nodes) {
-    if (isContainer(node)) { into.push(node.key); collectContainerKeys(node.children, into); }
-  }
-}
-
-export function collectDiagKeys(nodes: TestNode[], into: string[]): void {
-  for (const node of nodes) {
-    if (hasDiagnostics(node)) into.push(`${node.key}::diag`);
-    collectDiagKeys(node.children, into);
+    if (isContainer(node) || hasDiagnostics(node)) into.push(node.key);
+    collectContainerKeys(node.children, into);
   }
 }

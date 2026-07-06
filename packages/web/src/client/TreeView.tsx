@@ -5,7 +5,7 @@ import {
   formatDuration, todoLabel, type Counts, type TestNode, type TestStatus, type TreeSnapshot,
 } from '@reporters/tree-core';
 import {
-  buildRows, collectContainerKeys, collectDiagKeys, computeMatches, displayName, isContainer, isPassingTodo, liveNodeDuration, reasonOf, realError, type FlatRow,
+  buildRows, collectContainerKeys, computeMatches, displayName, isContainer, isPassingTodo, liveNodeDuration, reasonOf, realError, type FlatRow,
 } from './rowModel.ts';
 
 // node:test captures colored output verbatim; render the ANSI SGR codes as real
@@ -406,6 +406,10 @@ function useSettle(status: TestStatus): boolean {
   return settled;
 }
 
+/** Stable identity for enter-animation bookkeeping and React keys — a node row
+ *  and its nested output row share a node but are distinct rows. */
+const rowKey = (row: FlatRow): string => (row.kind === 'output' ? `${row.node.key}::out` : row.node.key);
+
 interface RowViewProps {
   row: FlatRow;
   toggle: (key: string, current: boolean) => void;
@@ -416,136 +420,156 @@ interface RowViewProps {
   since: Map<string, number>;
 }
 
-function RowView({
-  row, toggle, enter, now, since,
-}: RowViewProps) {
-  const {
-    node, depth, status, container, expanded, hasDiag, diagOpen,
-  } = row;
-  const settled = useSettle(status);
+/** The nested own-output header row (design ruling): the single sub-disclosure
+ *  for a node's Error / Output / Diagnostics, sitting first inside the node's
+ *  expanded region. */
+function OutputRow({
+  row, toggle, enter,
+}: {
+  row: FlatRow; toggle: (key: string, current: boolean) => void; enter: number | null;
+}) {
+  const { node, depth, diagOpen } = row;
   // Mount the panel lazily (a closed panel of a 10k-line log costs nothing),
   // but keep it mounted once opened so collapse animates and scroll survives.
   const everOpen = useRef(diagOpen);
   if (diagOpen) everOpen.current = true;
-  const clickable = container || hasDiag;
   const toggleDiag = () => toggle(`${node.key}::diag`, diagOpen);
-  // Double-click accelerator (design ruling Q4): straight to the full-log
-  // modal. Never the only path — the panel header's Full log button is the
-  // discoverable one.
+  // Double-click accelerator: straight to the full-log modal. Never the only
+  // path — the panel header's Full log button is the discoverable one.
   const [modalNonce, setModalNonce] = useState(0);
-  const onDoubleClick = !container && hasDiag ? () => {
+  const onDoubleClick = () => {
     if (!diagOpen) toggleDiag();
     setModalNonce((n) => n + 1);
-  } : undefined;
-  const activate = () => {
-    if (container) toggle(node.key, expanded);
-    else if (hasDiag) toggleDiag();
   };
-  const onKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); }
-    else if (e.key === 'ArrowRight' && ((container && !expanded) || (hasDiag && !diagOpen))) { e.preventDefault(); activate(); }
-    else if (e.key === 'ArrowLeft' && ((container && expanded) || (hasDiag && diagOpen))) { e.preventDefault(); activate(); }
-  };
-
-  const counts = node.counts;
-  const isTest = node.type === 'test';
-  const nameColor = isTest && status === 'failed' ? 'var(--st-failed)'
-    : isTest && (status === 'skipped' || status === 'todo' || status === 'queued') ? 'var(--dim)'
-      : 'var(--fg)';
-  const ariaExpanded = container ? expanded : hasDiag ? diagOpen : undefined;
-  const indent = `${depth * 20 + 38}px`;
-
-  const rowClass = `row${enter !== null ? ' row-enter' : ''}${settled ? ` settle-${status}` : ''}`;
+  const blocks = diagBlocks(node).filter((b) => !(b.key === 'reason' && isPassingTodo(node)));
+  const rowClass = `row out-row${enter !== null ? ' row-enter' : ''}`;
   const rowStyle = enter !== null ? { animationDelay: `${Math.min(enter, 8) * 18}ms` } : undefined;
-
   return (
     <div>
       <div
         className={rowClass}
         style={rowStyle}
         role="treeitem"
-        aria-expanded={ariaExpanded}
-        aria-label={`${displayName(node)}, ${status}${container ? `, ${counts.total} tests` : ''}`}
+        aria-expanded={diagOpen}
+        aria-label={`${diagOpen ? 'Hide' : 'Show'} ${blocks.map((b) => b.title.toLowerCase()).join(', ')} of ${displayName(node)}`}
         tabIndex={0}
-        data-clickable={clickable}
-        data-fail={isTest && status === 'failed'}
-        data-running={status === 'running' ? 'true' : undefined}
-        onClick={clickable ? activate : undefined}
+        data-clickable="true"
+        onClick={toggleDiag}
         onDoubleClick={onDoubleClick}
-        // A pointer click shouldn't paint the keyboard focus ring on the row
-        // (Safari matches :focus-visible on clicked tabindex elements).
         onMouseDown={(e) => e.preventDefault()}
-        onKeyDown={onKeyDown}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleDiag(); }
+          else if (e.key === 'ArrowRight' && !diagOpen) { e.preventDefault(); toggleDiag(); }
+          else if (e.key === 'ArrowLeft' && diagOpen) { e.preventDefault(); toggleDiag(); }
+        }}
       >
         <span className="guides">
           {Array.from({ length: depth }, (_, i) => <span className="guide" key={i} />)}
         </span>
-        <span className="caret" data-open={container && expanded ? 'true' : undefined}>{container ? '▸' : ''}</span>
-        {isTest ? (
-          status === 'running'
-            ? <span className="spinner indicator" />
-            : <span className="dot indicator" data-stf={status} />
-        ) : (
-          <span className="cglyph indicator" data-stc={status} data-spin={status === 'running' ? 'true' : undefined}>{GLYPH[status]}</span>
-        )}
-        <span className="name" data-kind={node.type} style={{ color: nameColor }}>{displayName(node)}</span>
-        {isPassingTodo(node) ? (
-          <span className="todotag" data-soft="todo"># {todoLabel(node)}</span>
-        ) : null}
-        {hasDiag ? (
-          // A bordered, left-chevron pill group naming what's inside (§10e +
-          // design ruling): the disclosure trigger for this row's output panel.
-          // On a leaf the row click does the same; on a container this is the
-          // only trigger, since the row click is spoken for by the children.
+        <span className="caret" data-open={diagOpen ? 'true' : undefined}>▸</span>
+        {blocks.map((block) => (
           <span
-            className="affs"
-            role="button"
-            tabIndex={0}
-            aria-expanded={diagOpen}
-            aria-label={`${diagOpen ? 'Hide' : 'Show'} ${diagBlocks(node).map((b) => b.title.toLowerCase()).join(', ')}`}
-            data-active={diagOpen ? 'true' : undefined}
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={(e) => { e.stopPropagation(); toggleDiag(); }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); toggleDiag(); }
-            }}
+            className="affch"
+            data-soft={block.sev}
+            data-quiet={block.key === 'error' ? undefined : 'true'}
+            key={block.key}
           >
-            <span className="affcaret" data-open={diagOpen ? 'true' : undefined}>▸</span>
-            {diagBlocks(node)
-              // The passing-todo tag already names the reason — don't repeat it.
-              .filter((block) => !(block.key === 'reason' && isPassingTodo(node)))
-              .map((block) => (
-                <span
-                  className="affch"
-                  data-soft={block.sev}
-                  data-quiet={block.key === 'error' ? undefined : 'true'}
-                  key={block.key}
-                >
-                  {block.chip ?? block.title}
-                  {block.count ? ` · ${formatCount(block.count.n)} ${block.count.unit}` : ''}
-                </span>
-              ))}
+            {block.icon} {block.chip ?? block.title}
+            {block.count ? ` · ${formatCount(block.count.n)} ${block.count.unit}` : ''}
           </span>
-        ) : null}
+        ))}
         <span className="spacer" />
-        {container && !expanded ? (
-          <span className="pills">
-            {STATUS_ORDER.filter((s) => counts[s] > 0).map((s) => (
-              <span className="pill" data-soft={s} key={s}>{counts[s]}</span>
-            ))}
-          </span>
-        ) : null}
-        <span className="dur">{formatDuration(liveNodeDuration(node, now, since)) || '—'}</span>
       </div>
-      {hasDiag ? (
-        <div className={`collapsible${diagOpen ? ' open' : ''}`}>
-          <div className="inner">
-            {everOpen.current ? (
-              <Diagnostics node={node} indent={indent} onCollapse={toggleDiag} modalNonce={modalNonce} />
-            ) : null}
-          </div>
+      <div className={`collapsible${diagOpen ? ' open' : ''}`}>
+        <div className="inner">
+          {everOpen.current ? (
+            <Diagnostics
+              node={node}
+              indent={`${depth * 20 + 38}px`}
+              onCollapse={toggleDiag}
+              modalNonce={modalNonce}
+            />
+          ) : null}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function RowView({
+  row, toggle, enter, now, since,
+}: RowViewProps) {
+  const {
+    node, depth, status, expandable, expanded, hasDiag,
+  } = row;
+  const settled = useSettle(status);
+  // One disclosure per row: expanding reveals the node's region (its own
+  // output header first, then children). Same gesture for every node type.
+  const activate = () => { if (expandable) toggle(node.key, expanded); };
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); }
+    else if (e.key === 'ArrowRight' && expandable && !expanded) { e.preventDefault(); activate(); }
+    else if (e.key === 'ArrowLeft' && expandable && expanded) { e.preventDefault(); activate(); }
+  };
+
+  const counts = node.counts;
+  const isTest = node.type === 'test';
+  const container = isContainer(node);
+  const nameColor = isTest && status === 'failed' ? 'var(--st-failed)'
+    : isTest && (status === 'skipped' || status === 'todo' || status === 'queued') ? 'var(--dim)'
+      : 'var(--fg)';
+
+  const rowClass = `row${enter !== null ? ' row-enter' : ''}${settled ? ` settle-${status}` : ''}`;
+  const rowStyle = enter !== null ? { animationDelay: `${Math.min(enter, 8) * 18}ms` } : undefined;
+  const hasError = hasDiag && diagBlocks(node).some((b) => b.key === 'error');
+
+  return (
+    <div
+      className={rowClass}
+      style={rowStyle}
+      role="treeitem"
+      aria-expanded={expandable ? expanded : undefined}
+      aria-label={`${displayName(node)}, ${status}${container ? `, ${counts.total} tests` : ''}`}
+      tabIndex={0}
+      data-clickable={expandable}
+      data-fail={isTest && status === 'failed'}
+      data-running={status === 'running' ? 'true' : undefined}
+      onClick={expandable ? activate : undefined}
+      // A pointer click shouldn't paint the keyboard focus ring on the row
+      // (Safari matches :focus-visible on clicked tabindex elements).
+      onMouseDown={(e) => e.preventDefault()}
+      onKeyDown={onKeyDown}
+    >
+      <span className="guides">
+        {Array.from({ length: depth }, (_, i) => <span className="guide" key={i} />)}
+      </span>
+      <span className="caret" data-open={expandable && expanded ? 'true' : undefined}>{expandable ? '▸' : ''}</span>
+      {isTest ? (
+        status === 'running'
+          ? <span className="spinner indicator" />
+          : <span className="dot indicator" data-stf={status} />
+      ) : (
+        <span className="cglyph indicator" data-stc={status} data-spin={status === 'running' ? 'true' : undefined}>{GLYPH[status]}</span>
+      )}
+      <span className="name" data-kind={node.type} style={{ color: nameColor }}>{displayName(node)}</span>
+      {isPassingTodo(node) ? (
+        <span className="todotag" data-soft="todo"># {todoLabel(node)}</span>
       ) : null}
+      <span className="spacer" />
+      {container && !expanded ? (
+        <span className="pills">
+          {STATUS_ORDER.filter((s) => counts[s] > 0).map((s) => (
+            <span className="pill" data-soft={s} key={s}>{counts[s]}</span>
+          ))}
+        </span>
+      ) : null}
+      {hasDiag ? (
+        // Passive badge (never a control): output exists inside this node.
+        <span className="outbadge" data-stc={hasError ? 'failed' : undefined} title="Has output">
+          {hasError ? '✕' : '◇'}
+        </span>
+      ) : null}
+      <span className="dur">{formatDuration(liveNodeDuration(node, now, since)) || '—'}</span>
     </div>
   );
 }
@@ -635,8 +659,8 @@ export function TreeView({
     setOverrides((prev) => new Map(prev).set(key, !current));
   };
   const [allCollapsed, setAllCollapsed] = useState(false);
-  // Two independent collapse scopes (§11c): this folds the TREE (containers)
-  // only; open log panels are untouched and get their own "Close logs" control.
+  // Logs live inside rows now, so collapsing rows inherently hides them —
+  // one hierarchy, one unambiguous collapse (revised design ruling).
   const toggleAll = () => {
     const keys: string[] = [];
     collectContainerKeys(files, keys);
@@ -647,15 +671,6 @@ export function TreeView({
       return next;
     });
     setAllCollapsed(!allCollapsed);
-  };
-  const closeLogs = () => {
-    const diagKeys: string[] = [];
-    collectDiagKeys(files, diagKeys);
-    setOverrides((prev) => {
-      const next = new Map(prev);
-      for (const key of diagKeys) next.set(key, false);
-      return next;
-    });
   };
 
   const inProgress = !snapshot.summary && (streaming || counts.running > 0 || counts.queued > 0);
@@ -681,9 +696,10 @@ export function TreeView({
     let stagger = 0;
     for (const row of rows) {
       if (row.node.type === 'file') stagger = 0;
-      const firstSeen = !seen.has(row.node.key);
-      seen.add(row.node.key);
-      if (firstSeen && inProgress) { enterMap.set(row.node.key, stagger); stagger += 1; }
+      const key = rowKey(row);
+      const firstSeen = !seen.has(key);
+      seen.add(key);
+      if (firstSeen && inProgress) { enterMap.set(key, stagger); stagger += 1; }
     }
   }
 
@@ -759,11 +775,6 @@ export function TreeView({
             >
               {allCollapsed ? 'Expand all' : 'Collapse all'}
             </button>
-            {rows.some((r) => r.diagOpen) ? (
-              <button type="button" className="btn" onClick={closeLogs} title="Close every open log panel">
-                Close logs
-              </button>
-            ) : null}
           </div>
         </div>
         <div className="hdr-bar-row">
@@ -782,16 +793,23 @@ export function TreeView({
 
       <div className="tree" role="tree" aria-label="Test results">
         {rows.length > 0 ? (
-          rows.map((row) => (
-            <RowView
-              key={row.node.key}
+          rows.map((row) => (row.kind === 'output' ? (
+            <OutputRow
+              key={rowKey(row)}
               row={row}
               toggle={toggle}
-              enter={enterMap.has(row.node.key) ? enterMap.get(row.node.key)! : null}
+              enter={enterMap.has(rowKey(row)) ? enterMap.get(rowKey(row))! : null}
+            />
+          ) : (
+            <RowView
+              key={rowKey(row)}
+              row={row}
+              toggle={toggle}
+              enter={enterMap.has(rowKey(row)) ? enterMap.get(rowKey(row))! : null}
               now={now}
               since={since}
             />
-          ))
+          )))
         ) : q || statuses.size > 0 ? (
           <CenteredState
             icon="⌕"

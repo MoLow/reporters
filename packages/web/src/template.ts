@@ -145,18 +145,15 @@ button { font-family: inherit; } input { font-family: inherit; }
 .name[data-kind="file"] { font-family: var(--mono); font-weight: 700; }
 .name[data-kind="suite"] { font-weight: 600; }
 .name[data-kind="test"] { font-weight: 450; }
-/* named output affordances (§10e + design ruling): a bordered, left-chevron
-   pill group — the disclosure trigger for the row's output panel. Error is
-   loud (filled failed tint); the rest are quiet outline pills until hover;
-   open reads as pressed. */
-.affs { display: inline-flex; gap: 5px; flex: none; align-items: center; border-radius: 999px; cursor: pointer; padding: 2px 8px 2px 6px; min-height: 24px; border: 1px solid var(--line); background: transparent; transition: border-color .13s, background-color .13s; }
-.affs:hover { border-color: var(--line-2); background: var(--row-hover); }
-.affs[data-active] { border-color: var(--line-2); background: var(--panel-2); }
-.affch { flex: none; font-size: 10px; font-weight: 600; border-radius: 999px; padding: 1px 7px; white-space: nowrap; border: 1px solid transparent; }
-/* quiet chips sit neutral until the group is hovered or open */
-.affs:not(:hover):not([data-active]) .affch[data-quiet] { background: transparent; color: var(--dim); }
-.affcaret { color: var(--faint); font-size: 9px; line-height: 1; transition: transform 160ms var(--ease-out); }
-.affcaret[data-open] { transform: rotate(90deg); }
+/* the nested own-output header row (design ruling): one sub-disclosure inside
+   a node's region. Its labels name what's inside; Error stays loud, the rest
+   sit quiet until the row is hovered. */
+.out-row { min-height: 28px; }
+.affch { flex: none; font-size: 10px; font-weight: 600; border-radius: 999px; padding: 1px 8px; white-space: nowrap; }
+.out-row:not(:hover) .affch[data-quiet] { background: transparent; color: var(--dim); border: 1px solid var(--line); }
+.out-row .affch[data-quiet] { border: 1px solid transparent; }
+/* passive badge on a node row: output exists inside (never a control) */
+.outbadge { flex: none; color: var(--faint); font-size: 11px; font-weight: 700; margin-right: 2px; }
 .todotag { flex: none; font-size: 10px; font-weight: 600; border-radius: 6px; padding: 1px 6px; }
 .spacer { flex: 1; min-width: 10px; }
 .pills { display: inline-flex; gap: 5px; flex: none; margin-right: 9px; }
