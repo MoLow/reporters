@@ -7,6 +7,7 @@ const DARK = `
   --st-passed:#34d27b; --st-failed:#fb5a6a; --st-skipped:#8a93a1; --st-todo:#7c9cff; --st-running:#ffb13d; --st-queued:#5d6573;
   --soft-passed:rgba(52,210,123,.15); --soft-failed:rgba(251,90,106,.16); --soft-skipped:rgba(138,147,161,.16); --soft-todo:rgba(124,156,255,.16); --soft-running:rgba(255,177,61,.17); --soft-queued:rgba(93,101,115,.18);
   --fail-tint:rgba(251,90,106,.07);
+  --carry-fg:#a2a9b5; --carry-bg:rgba(255,255,255,.06); --carry-border:rgba(255,255,255,.14);
   --ansi-black:#5d6573; --ansi-red:#fb5a6a; --ansi-green:#34d27b; --ansi-yellow:#ffb13d; --ansi-blue:#7c9cff; --ansi-magenta:#c792ea; --ansi-cyan:#56d4dd; --ansi-white:#c4c9d4;
   --ansi-bright-black:#8a93a1; --ansi-bright-red:#ff8087; --ansi-bright-green:#66e0a3; --ansi-bright-yellow:#ffca6a; --ansi-bright-blue:#a3b8ff; --ansi-bright-magenta:#e0aaff; --ansi-bright-cyan:#8be9fd; --ansi-bright-white:#ffffff;
   --ansi-bold-font-weight:700; --ansi-dim-opacity:.6;
@@ -21,6 +22,7 @@ const LIGHT = `
   --st-passed:#16a34a; --st-failed:#e23744; --st-skipped:#697381; --st-todo:#3f63d6; --st-running:#bf7400; --st-queued:#97a0ad;
   --soft-passed:rgba(22,163,74,.12); --soft-failed:rgba(226,55,68,.10); --soft-skipped:rgba(105,115,129,.12); --soft-todo:rgba(63,99,214,.11); --soft-running:rgba(191,116,0,.13); --soft-queued:rgba(151,160,173,.14);
   --fail-tint:rgba(226,55,68,.05);
+  --carry-fg:#586170; --carry-bg:rgba(17,24,33,.05); --carry-border:rgba(17,24,33,.14);
   --ansi-black:#161b22; --ansi-red:#e23744; --ansi-green:#16a34a; --ansi-yellow:#bf7400; --ansi-blue:#3f63d6; --ansi-magenta:#9333ea; --ansi-cyan:#0e7490; --ansi-white:#5a636f;
   --ansi-bright-black:#697381; --ansi-bright-red:#dc2626; --ansi-bright-green:#15803d; --ansi-bright-yellow:#a16207; --ansi-bright-blue:#2947c0; --ansi-bright-magenta:#7e22ce; --ansi-bright-cyan:#0891b2; --ansi-bright-white:#161b22;
   --ansi-bold-font-weight:700; --ansi-dim-opacity:.6;
@@ -127,6 +129,7 @@ button { font-family: inherit; } input { font-family: inherit; }
 .search svg { position: absolute; left: 11px; color: var(--faint); pointer-events: none; }
 .search input { background: var(--panel-2); border: 1px solid var(--line); color: var(--fg); font-size: 13px; padding: 8px 12px 8px 32px; border-radius: 10px; width: 188px; outline: none; }
 .btn { display: inline-flex; align-items: center; gap: 6px; background: var(--panel-2); border: 1px solid var(--line); color: var(--dim); border-radius: 10px; padding: 8px 11px; font-size: 12px; cursor: pointer; transition: background .13s, color .13s, transform .13s; }
+.btn[data-on="true"] { color: var(--fg); border-color: var(--line-2); background: var(--raise); }
 .btn:hover { background: var(--raise); color: var(--fg); }
 .btn:active { transform: scale(.97); }
 .hdr-bar-row { padding: 0 18px 13px; display: flex; align-items: center; gap: 14px; }
@@ -155,7 +158,13 @@ button { font-family: inherit; } input { font-family: inherit; }
 .spacer { flex: 1; min-width: 10px; }
 .pills { display: inline-flex; gap: 5px; flex: none; margin-right: 9px; }
 .pill { font-size: 11px; font-weight: 700; border-radius: 999px; padding: 1px 8px; font-variant-numeric: tabular-nums; }
+.carry-gut { flex: none; min-width: 44px; display: flex; justify-content: flex-end; }
+.carry-chip { position: relative; display: inline-flex; align-items: center; gap: 3px; color: var(--carry-fg); background: var(--carry-bg); border: 1px solid var(--carry-border); border-radius: 999px; padding: 1px 7px; font-size: 10.5px; font-weight: 600; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.carry-chip::after { content: attr(data-tip); position: absolute; right: 0; bottom: calc(100% + 6px); z-index: 5; white-space: nowrap; background: var(--raise); color: var(--fg); border: 1px solid var(--line-2); border-radius: 8px; padding: 4px 9px; font-size: 11px; font-weight: 500; font-family: var(--sans); opacity: 0; pointer-events: none; transition: opacity .12s; }
+.carry-chip:hover::after { opacity: 1; }
+.carry-sum { flex: none; font-size: 11px; color: var(--dim); font-variant-numeric: tabular-nums; }
 .dur { flex: none; color: var(--faint); font-size: 11.5px; font-family: var(--mono); min-width: 54px; text-align: right; font-variant-numeric: tabular-nums; }
+.dur[data-carried="true"] { font-style: italic; }
 
 /* diagnostics */
 .diag { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--panel-2); }

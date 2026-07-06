@@ -183,7 +183,7 @@ export interface Matches {
  * match is actually on screen; a leaf that only inherited its ancestor's name
  * match doesn't force anything open.
  */
-export function computeMatches(files: TestNode[], query: string, statuses: ReadonlySet<TestStatus> = new Set()): Matches {
+export function computeMatches(files: TestNode[], query: string, statuses: ReadonlySet<TestStatus> = new Set(), onlyRerun = false): Matches {
   const visible = new Set<string>();
   const force = new Set<string>();
   const statusOk = (node: TestNode): boolean => statuses.size === 0 || statuses.has(node.status);
@@ -197,7 +197,8 @@ export function computeMatches(files: TestNode[], query: string, statuses: Reado
       descVis ||= r.vis;
       descOwn ||= r.own;
     }
-    const leafMatch = node.children.length === 0 && textOk && statusOk(node);
+    const leafMatch = node.children.length === 0 && textOk && statusOk(node)
+      && (!onlyRerun || node.passedOnAttempt == null);
     if (leafMatch || descVis) {
       visible.add(node.key);
       for (const a of ancestors) visible.add(a);
@@ -217,11 +218,12 @@ export interface BuildOptions {
   overrides: Map<string, boolean>;
   query: string;
   statuses?: ReadonlySet<TestStatus>;
+  onlyRerun?: boolean;
   matches: Matches | null;
 }
 
 function filtering(opts: BuildOptions): boolean {
-  return opts.query !== '' || (opts.statuses?.size ?? 0) > 0;
+  return opts.query !== '' || (opts.statuses?.size ?? 0) > 0 || opts.onlyRerun === true;
 }
 
 export function isExpanded(node: TestNode, opts: BuildOptions): boolean {

@@ -44,6 +44,8 @@ export function toWireEvent(event: TestEvent): TestEvent {
       passed: d.details.passed,
       error: flattenError(d.details.error) as Error | undefined,
     };
+    if (d.details.attempt != null) data.details.attempt = d.details.attempt;
+    if (d.details.passed_on_attempt != null) data.details.passed_on_attempt = d.details.passed_on_attempt;
   }
   return t != null ? { type: event.type, t, data } : { type: event.type, data };
 }

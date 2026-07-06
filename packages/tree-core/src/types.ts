@@ -28,6 +28,7 @@ export interface Counts {
   todo: number;
   running: number;
   queued: number;
+  carried: number;
   total: number;
 }
 
@@ -54,6 +55,9 @@ export interface TestNode {
   tags?: string[];
   todo?: boolean | string;
   skip?: boolean | string;
+  /** Attempt this test last actually passed on (0-based). Present ⇔ the test
+   *  was carried — reported passed without executing this attempt. */
+  passedOnAttempt?: number;
   counts: Counts;
 }
 
@@ -68,6 +72,8 @@ export interface TreeSnapshot {
   root: TestNode;
   counts: Counts;
   summary?: SummaryData;
+  /** Current attempt (0-based) under --test-rerun-failures; absent otherwise. */
+  attempt?: number;
   /** Stamp range of the run so far — the run's elapsed wall-clock is
    *  `lastT - firstT`, independent of when a viewer joined. `firstT` reaches
    *  before the first stamped line when a finish-first node's backdated start
@@ -97,6 +103,8 @@ export interface TestEventData {
     error?: unknown;
     type?: string;
     passed?: boolean;
+    attempt?: number;
+    passed_on_attempt?: number;
   };
   counts?: Record<string, number>;
   duration_ms?: number;

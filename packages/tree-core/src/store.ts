@@ -38,6 +38,7 @@ interface InternalNode {
   tags?: string[];
   todo?: boolean | string;
   skip?: boolean | string;
+  passedOnAttempt?: number;
   childKeys: string[];
 }
 
@@ -120,6 +121,7 @@ export function createTreeStore(): TreeStore {
   let autoId = 0;
   let sawFileWrapper = false;
   let summary: SummaryData | undefined;
+  let runAttempt: number | undefined;
   // Wall-clock stamps from the writer (`event.t`). `currentT` is the stamp of
   // the event being applied, so the helpers that mark a node running can record
   // when it actually started without threading it through every signature.
@@ -396,10 +398,18 @@ export function createTreeStore(): TreeStore {
   // already underway, so it widens the stream's stamp range too — the header
   // must never read less than a row it contains.
   function backdateStart(node: InternalNode, data: TestEventData): void {
+    // A carried test's duration is a prior attempt's measurement, not evidence
+    // of when this run began.
+    if (data.details?.passed_on_attempt != null) return;
     if (node.startedAt == null && currentT != null && data.details?.duration_ms != null) {
       node.startedAt = currentT - data.details.duration_ms;
       if (firstT == null || node.startedAt < firstT) firstT = node.startedAt;
     }
+  }
+
+  function noteAttempt(node: InternalNode, data: TestEventData): void {
+    if (data.details?.attempt != null) runAttempt = data.details.attempt;
+    if (data.details?.passed_on_attempt != null) node.passedOnAttempt = data.details.passed_on_attempt;
   }
 
   function declFinalize(status: TestStatus, data: TestEventData): void {
@@ -410,6 +420,7 @@ export function createTreeStore(): TreeStore {
     const matchesOpen = openNode && openNode.testId === data.testId && openNode.name === data.name;
     const node = matchesOpen ? openNode : eagerInstance(gk, data.testId!, data);
     backdateStart(node, data);
+    noteAttempt(node, data);
     assignFields(node, data);
     node.status = status;
     if (data.details?.duration_ms != null) node.durationMs = data.details.duration_ms;
@@ -476,6 +487,7 @@ export function createTreeStore(): TreeStore {
       node.startedAt = undefined;
       backdateStart(node, data);
     }
+    noteAttempt(node, data);
     assignFields(node, data);
     node.status = status;
     if (data.details?.duration_ms != null) node.durationMs = data.details.duration_ms;
@@ -558,6 +570,7 @@ export function createTreeStore(): TreeStore {
         const status = statusFromComplete(data);
         upsertFromTestEvent(data, (node) => {
           backdateStart(node, data);
+          noteAttempt(node, data);
           node.status = status;
           if (data.details?.duration_ms != null) node.durationMs = data.details.duration_ms;
           if (data.details?.type != null) node.type = data.details.type === 'suite' ? 'suite' : 'test';
@@ -633,7 +646,7 @@ export function createTreeStore(): TreeStore {
   }
 
   function emptyCounts(): Counts {
-    return { passed: 0, failed: 0, skipped: 0, todo: 0, running: 0, queued: 0, total: 0 };
+    return { passed: 0, failed: 0, skipped: 0, todo: 0, running: 0, queued: 0, carried: 0, total: 0 };
   }
 
   function addCounts(into: Counts, from: Counts): void {
@@ -643,6 +656,7 @@ export function createTreeStore(): TreeStore {
     into.todo += from.todo;
     into.running += from.running;
     into.queued += from.queued;
+    into.carried += from.carried;
     into.total += from.total;
   }
 
@@ -668,6 +682,7 @@ export function createTreeStore(): TreeStore {
     if (children.length === 0 && internal.type !== 'file' && internal.type !== 'root') {
       counts.total = 1;
       counts[internal.status] += 1;
+      if (internal.passedOnAttempt != null && internal.status === 'passed') counts.carried = 1;
     } else {
       for (const child of children) addCounts(counts, child.counts);
     }
@@ -701,6 +716,7 @@ export function createTreeStore(): TreeStore {
       tags: internal.tags,
       todo: internal.todo,
       skip: internal.skip,
+      passedOnAttempt: internal.passedOnAttempt,
       counts,
     };
   }
@@ -713,6 +729,7 @@ export function createTreeStore(): TreeStore {
       root: rootNode,
       counts: rootNode.counts,
       summary,
+      ...(runAttempt != null ? { attempt: runAttempt } : {}),
       // firstT and lastT are always set together (same stamped event).
       ...(firstT != null ? { clock: { firstT, lastT: lastT! } } : {}),
     };
