@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/MoLow/reporters/compare/live-v1.1.0...live-v1.2.0) (2026-07-06)
+
+
+### Features
+
+* **tree-core:** report a passing todo as passed, reserving todo for failing ones ([#227](https://github.com/MoLow/reporters/issues/227)) ([46a9c87](https://github.com/MoLow/reporters/commit/46a9c874d88b2ae68aff80b50b286ea5e11e2a45))
+
 ## [1.1.0](https://github.com/MoLow/reporters/compare/live-v1.0.0...live-v1.1.0) (2026-07-02)
 
 
