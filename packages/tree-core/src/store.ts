@@ -28,6 +28,7 @@ interface InternalNode {
   type: NodeType;
   status: TestStatus;
   durationMs?: number;
+  startedAt?: number;
   error?: SerializedError;
   diagnostics: TestNode['diagnostics'];
   stdout: string[];
@@ -119,6 +120,12 @@ export function createTreeStore(): TreeStore {
   let autoId = 0;
   let sawFileWrapper = false;
   let summary: SummaryData | undefined;
+  // Wall-clock stamps from the writer (`event.t`). `currentT` is the stamp of
+  // the event being applied, so the helpers that mark a node running can record
+  // when it actually started without threading it through every signature.
+  let firstT: number | undefined;
+  let lastT: number | undefined;
+  let currentT: number | undefined;
   let dirty = true;
   let version = 0;
   let cached: TreeSnapshot | null = null;
@@ -357,7 +364,10 @@ export function createTreeStore(): TreeStore {
     if (!settled) placeInDeclOrder(node);
     settleGroup(node.parentKey!);
     assignFields(node, data);
-    if (!TERMINAL.has(node.status)) node.status = 'running';
+    if (!TERMINAL.has(node.status)) {
+      node.status = 'running';
+      node.startedAt ??= currentT;
+    }
     declOpen.set(nesting, node.key);
     for (const level of [...declOpen.keys()]) if (level > nesting) declOpen.delete(level);
     const nestingMap = lastByGroupNesting.get(gk) ?? new Map<number, string>();
@@ -367,6 +377,18 @@ export function createTreeStore(): TreeStore {
     recordLastStarted(data, node.key);
   }
 
+  // A finish for a test whose start was never seen (head-truncated log,
+  // mid-run attach) still pins its start: the finish stamp minus the measured
+  // duration is when it really began. That start is evidence the run was
+  // already underway, so it widens the stream's stamp range too — the header
+  // must never read less than a row it contains.
+  function backdateStart(node: InternalNode, data: TestEventData): void {
+    if (node.startedAt == null && currentT != null && data.details?.duration_ms != null) {
+      node.startedAt = currentT - data.details.duration_ms;
+      if (firstT == null || node.startedAt < firstT) firstT = node.startedAt;
+    }
+  }
+
   function declFinalize(status: TestStatus, data: TestEventData): void {
     const gk = groupKey(data);
     const nesting = data.nesting ?? 0;
@@ -374,6 +396,7 @@ export function createTreeStore(): TreeStore {
     const openNode = openKey ? nodes.get(openKey) : undefined;
     const matchesOpen = openNode && openNode.testId === data.testId && openNode.name === data.name;
     const node = matchesOpen ? openNode : eagerInstance(gk, data.testId!, data);
+    backdateStart(node, data);
     assignFields(node, data);
     node.status = status;
     if (data.details?.duration_ms != null) node.durationMs = data.details.duration_ms;
@@ -408,6 +431,7 @@ export function createTreeStore(): TreeStore {
     settleGroup(node.parentKey!);
     assignFields(node, data);
     node.status = 'running';
+    node.startedAt = currentT; // freshly created above — never stamped yet
 
     open.set(nesting, key);
     lastByNesting.set(nesting, key);
@@ -427,7 +451,18 @@ export function createTreeStore(): TreeStore {
     const gk = groupKey(data);
     const nesting = data.nesting ?? 0;
     const key = pendingByGroupNesting.get(gk)?.get(nesting)?.shift();
-    const node = (key && nodes.get(key)) || stackStart(data);
+    let node = key ? nodes.get(key) : undefined;
+    if (!node) {
+      // No matching open node: this finish IS the first sight of the test, so
+      // the start stamp stackStart put on it (the finish event's clock) is a
+      // duration too late — backdate it. And the node is finished the moment
+      // it's born: take back the pending-queue slot stackStart just pushed,
+      // or the NEXT first-sighting finish would merge into this node.
+      node = stackStart(data);
+      pendingByGroupNesting.get(gk)!.get(nesting)!.pop();
+      node.startedAt = undefined;
+      backdateStart(node, data);
+    }
     assignFields(node, data);
     node.status = status;
     if (data.details?.duration_ms != null) node.durationMs = data.details.duration_ms;
@@ -445,6 +480,11 @@ export function createTreeStore(): TreeStore {
 
   function apply(event: TestEvent): void {
     const { type, data } = event;
+    currentT = event.t;
+    if (event.t != null) {
+      firstT = firstT == null ? event.t : Math.min(firstT, event.t);
+      lastT = lastT == null ? event.t : Math.max(lastT, event.t);
+    }
     // The wrapper's relative `name` is the spelling stdout/stderr events use for
     // `file`; map it to the resolved absolute path so both group together.
     if (isFileLevel(data) && data.name !== data.file) fileAlias.set(data.name!, data.file!);
@@ -475,6 +515,7 @@ export function createTreeStore(): TreeStore {
         upsertFromTestEvent(data, (node) => {
           if (TERMINAL.has(node.status)) return;
           node.status = type === 'test:dequeue' ? 'running' : 'queued';
+          if (node.status === 'running') node.startedAt ??= currentT;
         });
         break;
       case 'test:start':
@@ -503,6 +544,7 @@ export function createTreeStore(): TreeStore {
         if (data.testId == null) break;
         const status = statusFromComplete(data);
         upsertFromTestEvent(data, (node) => {
+          backdateStart(node, data);
           node.status = status;
           if (data.details?.duration_ms != null) node.durationMs = data.details.duration_ms;
           if (data.details?.type != null) node.type = data.details.type === 'suite' ? 'suite' : 'test';
@@ -635,6 +677,7 @@ export function createTreeStore(): TreeStore {
       type: internal.type,
       status,
       durationMs: internal.durationMs,
+      startedAt: internal.startedAt,
       error: internal.error,
       diagnostics: internal.diagnostics,
       stdout: internal.stdout,
@@ -653,7 +696,12 @@ export function createTreeStore(): TreeStore {
     if (!dirty && cached) return cached;
     const rootNode = build(ROOT_KEY);
     cached = {
-      version: ++version, root: rootNode, counts: rootNode.counts, summary,
+      version: ++version,
+      root: rootNode,
+      counts: rootNode.counts,
+      summary,
+      // firstT and lastT are always set together (same stamped event).
+      ...(firstT != null ? { clock: { firstT, lastT: lastT! } } : {}),
     };
     dirty = false;
     return cached;

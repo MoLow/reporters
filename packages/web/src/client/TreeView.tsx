@@ -5,7 +5,7 @@ import {
   formatDuration, todoLabel, type Counts, type TestNode, type TestStatus, type TreeSnapshot,
 } from '@reporters/tree-core';
 import {
-  buildRows, collectContainerKeys, computeMatches, displayName, isContainer, isSectionOpen, liveNodeDuration, reasonOf, realError, type FlatRow,
+  buildRows, collectContainerKeys, computeMatches, displayName, isContainer, isSectionOpen, liveNodeDuration, reasonOf, realError, type FlatRow, type LiveClock,
 } from './rowModel.ts';
 
 // node:test captures colored output verbatim; render the ANSI SGR codes as real
@@ -467,10 +467,12 @@ interface RowViewProps {
   /** Shared clock (performance.now) + per-node running-start map, for live duration ticking. */
   now: number;
   since: Map<string, number>;
+  /** The stream's stamp clock, when the log carries writer stamps. */
+  clock: LiveClock | null;
 }
 
 function RowView({
-  row, toggle, enter, now, since,
+  row, toggle, enter, now, since, clock,
 }: RowViewProps) {
   const {
     node, depth, status, expandable, expanded, hasDiag,
@@ -544,7 +546,7 @@ function RowView({
           ))}
         </span>
       ) : null}
-      <span className="dur">{formatDuration(liveNodeDuration(node, now, since)) || '—'}</span>
+      <span className="dur">{formatDuration(liveNodeDuration(node, now, since, clock)) || '—'}</span>
     </div>
   );
 }
@@ -613,9 +615,11 @@ export function TreeView({
   // Rows already painted at least once — so we only play the enter animation for
   // rows that newly arrive during a live run, never on every re-render.
   const seenRef = useRef<Set<string>>(new Set());
-  // Client clock (performance.now) at which each node was first seen running, so
-  // running durations tick live between polls.
+  // Client clock (performance.now) at which each node was first seen running —
+  // the live-tick fallback for streams without writer stamps.
   const sinceRef = useRef<Map<string, number>>(new Map());
+  // The newest writer stamp and when it arrived, for stamped streams.
+  const clockRef = useRef<LiveClock | null>(null);
   // A steadily-incrementing tick that drives live duration re-renders.
   const [, setTick] = useState(0);
 
@@ -662,10 +666,26 @@ export function TreeView({
   }, [inProgress]);
   const now = performance.now();
   const since = sinceRef.current;
-  // The run summary carries the real wall-clock; while still running, fall back
-  // to aggregating the files (running leaves count live elapsed, so the header
-  // ticks with the run).
-  const duration = snapshot.summary?.durationMs ?? liveNodeDuration(snapshot.root, now, since);
+  // Fix the stream's stamp clock to the client clock each time a newer stamp
+  // arrives; between polls the pair projects the writer's "now" so counters
+  // tick smoothly without ever measuring against the client's own timeline.
+  if (snapshot.clock && snapshot.clock.lastT !== clockRef.current?.lastT) {
+    clockRef.current = { lastT: snapshot.clock.lastT, receivedAt: now };
+  }
+  const clock = clockRef.current;
+  // The run summary carries the real wall-clock; while still running, the
+  // stream's stamp range IS the run's elapsed time — first stamp to the
+  // projected "now" (stamp-less logs fall back to aggregating files, which
+  // ticks with the run). Project past the last stamp only while something is
+  // running, so the header ticks exactly when some row ticks: a stream that
+  // dies idle freezes at its last stamp. One that dies mid-test keeps ticking
+  // with its running rows — from the client there is no telling that apart
+  // from a long quiet test. The freeze during a zero-running gap (isolation
+  // spawning the next file) lasts a process spawn and reads as a pause.
+  const headerLead = counts.running > 0 && clock ? now - clock.receivedAt : 0;
+  const duration = snapshot.summary?.durationMs
+    ?? (snapshot.clock && clock ? clock.lastT + headerLead - snapshot.clock.firstT
+      : liveNodeDuration(snapshot.root, now, since, clock));
 
   // Enter-animation bookkeeping: play only for rows first seen during a live run,
   // staggered within each file so a file "unfurls" rather than popping as a slab.
@@ -788,6 +808,7 @@ export function TreeView({
               enter={enterMap.has(rowKey(row)) ? enterMap.get(rowKey(row))! : null}
               now={now}
               since={since}
+              clock={clock}
             />
           )))
         ) : q || statuses.size > 0 ? (

@@ -324,3 +324,104 @@ test('testId-free results settle the node type from details.type (v22-shaped)', 
   assert.strictEqual(group.type, 'suite');
   assert.deepStrictEqual(group.children.map((c) => [c.name, c.type]), [['leaf', 'test']]);
 });
+
+test('stamped events record when each test started and the stream clock', () => {
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:enqueue', t: 1000, data: { name: 'a.test.js', file: '/a.test.js', nesting: 0, testId: 1, parentId: 0 } },
+    { type: 'test:dequeue', t: 1005, data: { name: 'a.test.js', file: '/a.test.js', nesting: 0, testId: 1, parentId: 0 } },
+    { type: 'test:enqueue', t: 1010, data: { name: 'slow', file: '/a.test.js', nesting: 0, testId: 2, parentId: 0 } },
+    { type: 'test:dequeue', t: 2000, data: { name: 'slow', file: '/a.test.js', nesting: 0, testId: 2, parentId: 0 } },
+  ]);
+  const snapshot = store.getSnapshot();
+  assert.deepStrictEqual(snapshot.clock, { firstT: 1000, lastT: 2000 });
+  const leaf = snapshot.root.children[0].children[0];
+  assert.strictEqual(leaf.name, 'slow');
+  assert.strictEqual(leaf.status, 'running');
+  assert.strictEqual(leaf.startedAt, 2000, 'startedAt is the stamp of the event that set it running');
+});
+
+test('a buffered declaration start never moves startedAt off the eager dequeue stamp', () => {
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:dequeue', t: 500, data: { name: 't', file: '/a.test.js', nesting: 0, testId: 2, parentId: 0 } },
+    { type: 'test:start', t: 9000, data: { name: 't', file: '/a.test.js', nesting: 0, testId: 2, parentId: 0 } },
+  ]);
+  const leaf = store.getSnapshot().root.children[0].children[0];
+  assert.strictEqual(leaf.startedAt, 500);
+});
+
+test('a replayed dequeue (re-read stream) keeps the original start stamp', () => {
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:dequeue', t: 500, data: { name: 't', file: '/a.test.js', nesting: 0, testId: 2, parentId: 0 } },
+    { type: 'test:dequeue', t: 900, data: { name: 't', file: '/a.test.js', nesting: 0, testId: 2, parentId: 0 } },
+  ]);
+  const leaf = store.getSnapshot().root.children[0].children[0];
+  assert.strictEqual(leaf.startedAt, 500);
+});
+
+test('a finish whose start was never seen backdates startedAt by its duration', () => {
+  // testId-free result with no prior start (head-truncated log / mid-run attach).
+  const stackStore = createTreeStore();
+  apply(stackStore, [
+    { type: 'test:pass', t: 5000, data: { name: 't', nesting: 0, file: '/a.test.js', details: { duration_ms: 1200, type: 'test' } } },
+  ]);
+  assert.strictEqual(stackStore.getSnapshot().root.children[0].children[0].startedAt, 3800);
+
+  // Same for an execution-ordered completion that is the test's first sighting.
+  const completeStore = createTreeStore();
+  apply(completeStore, [
+    { type: 'test:complete', t: 5000, data: { name: 't', nesting: 0, file: '/a.test.js', testId: 2, parentId: 0, details: { duration_ms: 1200, passed: true, type: 'test' } } },
+  ]);
+  assert.strictEqual(completeStore.getSnapshot().root.children[0].children[0].startedAt, 3800);
+});
+
+test('consecutive first-sighting finishes stay distinct tests', () => {
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:pass', t: 5000, data: { name: 'alpha', nesting: 0, file: '/a.test.js', details: { duration_ms: 1200, type: 'test' } } },
+    { type: 'test:pass', t: 5300, data: { name: 'beta', nesting: 0, file: '/a.test.js', details: { duration_ms: 300, type: 'test' } } },
+  ]);
+  const leaves = store.getSnapshot().root.children[0].children;
+  assert.deepStrictEqual(
+    leaves.map((n) => [n.name, n.startedAt, n.durationMs]),
+    [['alpha', 3800, 1200], ['beta', 5000, 300]],
+  );
+});
+
+test('a backdated start widens the stream clock so the run never reads shorter than a test', () => {
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:pass', t: 5000, data: { name: 't', nesting: 0, file: '/a.test.js', details: { duration_ms: 1200, type: 'test' } } },
+  ]);
+  assert.deepStrictEqual(store.getSnapshot().clock, { firstT: 3800, lastT: 5000 });
+});
+
+test('a first-sighting finish without a measured duration stays unstamped', () => {
+  const store = createTreeStore();
+  apply(store, [
+    // No nesting either — top-level is the default.
+    { type: 'test:pass', t: 5000, data: { name: 't', file: '/a.test.js', details: { type: 'test' } } },
+  ]);
+  assert.strictEqual(store.getSnapshot().root.children[0].children[0].startedAt, undefined);
+});
+
+test('stackStart stamps testId-free starts (v22-shaped streams)', () => {
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:start', t: 700, data: { name: 'leaf', nesting: 0, file: '/a.test.js' } },
+  ]);
+  const leaf = store.getSnapshot().root.children[0].children[0];
+  assert.strictEqual(leaf.startedAt, 700);
+});
+
+test('unstamped events leave startedAt and the stream clock unset', () => {
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:dequeue', data: { name: 't', file: '/a.test.js', nesting: 0, testId: 2, parentId: 0 } },
+  ]);
+  const snapshot = store.getSnapshot();
+  assert.strictEqual(snapshot.clock, undefined);
+  assert.strictEqual(snapshot.root.children[0].children[0].startedAt, undefined);
+});
