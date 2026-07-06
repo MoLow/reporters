@@ -418,7 +418,7 @@ export function createTreeStore(): TreeStore {
     settleGroup(node.parentKey!);
     assignFields(node, data);
     node.status = 'running';
-    node.startedAt ??= currentT;
+    node.startedAt = currentT; // freshly created above — never stamped yet
 
     open.set(nesting, key);
     lastByNesting.set(nesting, key);
@@ -458,8 +458,8 @@ export function createTreeStore(): TreeStore {
     const { type, data } = event;
     currentT = event.t;
     if (event.t != null) {
-      if (firstT == null || event.t < firstT) firstT = event.t;
-      if (lastT == null || event.t > lastT) lastT = event.t;
+      firstT = firstT == null ? event.t : Math.min(firstT, event.t);
+      lastT = lastT == null ? event.t : Math.max(lastT, event.t);
     }
     // The wrapper's relative `name` is the spelling stdout/stderr events use for
     // `file`; map it to the resolved absolute path so both group together.
@@ -675,7 +675,8 @@ export function createTreeStore(): TreeStore {
       root: rootNode,
       counts: rootNode.counts,
       summary,
-      ...(firstT != null && lastT != null ? { clock: { firstT, lastT } } : {}),
+      // firstT and lastT are always set together (same stamped event).
+      ...(firstT != null ? { clock: { firstT, lastT: lastT! } } : {}),
     };
     dirty = false;
     return cached;

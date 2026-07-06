@@ -351,6 +351,25 @@ test('a buffered declaration start never moves startedAt off the eager dequeue s
   assert.strictEqual(leaf.startedAt, 500);
 });
 
+test('a replayed dequeue (re-read stream) keeps the original start stamp', () => {
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:dequeue', t: 500, data: { name: 't', file: '/a.test.js', nesting: 0, testId: 2, parentId: 0 } },
+    { type: 'test:dequeue', t: 900, data: { name: 't', file: '/a.test.js', nesting: 0, testId: 2, parentId: 0 } },
+  ]);
+  const leaf = store.getSnapshot().root.children[0].children[0];
+  assert.strictEqual(leaf.startedAt, 500);
+});
+
+test('stackStart stamps testId-free starts (v22-shaped streams)', () => {
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:start', t: 700, data: { name: 'leaf', nesting: 0, file: '/a.test.js' } },
+  ]);
+  const leaf = store.getSnapshot().root.children[0].children[0];
+  assert.strictEqual(leaf.startedAt, 700);
+});
+
 test('unstamped events leave startedAt and the stream clock unset', () => {
   const store = createTreeStore();
   apply(store, [

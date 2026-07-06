@@ -278,6 +278,25 @@ test('a stamped container span covers finished children and keeps ticking with r
   assert.strictEqual(liveNodeDuration(file, 400, new Map(), clock), 9_400, 'ticks between polls');
 });
 
+test('a stamped span skips stampless children and ends abandoned nodes at their start', () => {
+  // A skipped/aborted node carries a start stamp but no measured duration; a
+  // stampless sibling (older-writer line mixed in) contributes nothing.
+  const abandoned = node({ key: 's', status: 'skipped', startedAt: 4_000 });
+  const stampless = node({ key: 'x', status: 'passed', durationMs: 500 });
+  const running = node({ key: 'r', status: 'running', startedAt: 1_000 });
+  const file = node({ key: 'f', type: 'file', children: [abandoned, stampless, running] });
+  const clock = { lastT: 9_000, receivedAt: 0 };
+  assert.strictEqual(liveNodeDuration(file, 0, new Map(), clock), 8_000);
+});
+
+test('a container with a clock but no stamped descendants falls back to summing', () => {
+  const a = node({ key: 'a', durationMs: 300 });
+  const b = node({ key: 'b', durationMs: 400 });
+  const suite = node({ key: 's', type: 'suite', children: [a, b] });
+  const clock = { lastT: 9_000, receivedAt: 0 };
+  assert.strictEqual(liveNodeDuration(suite, 0, new Map(), clock), 700);
+});
+
 test('without stamps the clock is ignored and the legacy client anchor applies', () => {
   const since = new Map<string, number>();
   const leaf = node({ key: 'r', status: 'running' });
