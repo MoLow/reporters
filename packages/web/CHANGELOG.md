@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1](https://github.com/MoLow/reporters/compare/web-v1.5.0...web-v1.5.1) (2026-07-06)
+
+
+### Bug Fixes
+
+* **web:** one consistent stat-chip tooltip format ([#244](https://github.com/MoLow/reporters/issues/244)) ([42d189a](https://github.com/MoLow/reporters/commit/42d189a53ca1f60f6925dec49d8c2f44108869d7))
+
 ## [1.5.0](https://github.com/MoLow/reporters/compare/web-v1.4.1...web-v1.5.0) (2026-07-06)
 
 
