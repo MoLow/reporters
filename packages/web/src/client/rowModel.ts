@@ -96,15 +96,13 @@ export interface FlatRow {
   node: TestNode;
   depth: number;
   status: TestStatus;
-  /** 'node' = a file/suite/test row; 'output' = its nested own-output header row. */
+  /** 'node' = a file/suite/test row; 'output' = its nested own-output panel slot. */
   kind: 'node' | 'output';
   /** The row has a region to reveal: children and/or its own output. */
   expandable: boolean;
   expanded: boolean;
   /** Node rows: the node carries its own output (drives the passive badge). */
   hasDiag: boolean;
-  /** Output rows: the panel below the header is open. */
-  diagOpen: boolean;
 }
 
 export interface Matches {
@@ -167,18 +165,19 @@ export function isExpanded(node: TestNode, opts: BuildOptions): boolean {
   return overrides.has(node.key) ? overrides.get(node.key)! : defaultExpanded(node);
 }
 
-export function isDiagOpen(node: TestNode, overrides: Map<string, boolean>): boolean {
-  const key = `${node.key}::diag`;
+/** Open state of one panel section inside a node's output region. Only an
+ *  Error section (which exists only on a failed leaf) opens by default —
+ *  failures surface with zero clicks, everything else is one deliberate click. */
+export function isSectionOpen(node: TestNode, blockKey: string, overrides: Map<string, boolean>): boolean {
+  const key = `${node.key}::diag:${blockKey}`;
   if (overrides.has(key)) return overrides.get(key)!;
-  // Only a failed *leaf* auto-opens; a container's aggregated output stays
-  // closed until asked, so it can't bury the tree.
-  return !isContainer(node) && node.status === 'failed';
+  return blockKey === 'error';
 }
 
 // One disclosure per row: expanding a node reveals ONE region holding its own
-// output (as a nested, collapsed-by-default header row) followed by its child
-// rows. A pure leaf reveals only its output; a pure container only children;
-// a both-node reveals output then children.
+// output (boxed panel sections, never tree rows) followed by its child rows.
+// A pure leaf reveals only its output; a pure container only children; a
+// both-node reveals output then children.
 export function buildRows(files: TestNode[], opts: BuildOptions): FlatRow[] {
   const rows: FlatRow[] = [];
   const push = (node: TestNode, depth: number): void => {
@@ -188,13 +187,12 @@ export function buildRows(files: TestNode[], opts: BuildOptions): FlatRow[] {
     const expanded = expandable && isExpanded(node, opts);
     const status = rollup(node);
     rows.push({
-      node, depth, status, kind: 'node', expandable, expanded, hasDiag: diag, diagOpen: false,
+      node, depth, status, kind: 'node', expandable, expanded, hasDiag: diag,
     });
     if (!expanded) return;
     if (diag) {
-      const open = isDiagOpen(node, opts.overrides);
       rows.push({
-        node, depth: depth + 1, status, kind: 'output', expandable: true, expanded: open, hasDiag: true, diagOpen: open,
+        node, depth: depth + 1, status, kind: 'output', expandable: false, expanded: false, hasDiag: true,
       });
     }
     for (const child of node.children) push(child, depth + 1);

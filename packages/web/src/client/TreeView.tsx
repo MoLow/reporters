@@ -5,7 +5,7 @@ import {
   formatDuration, todoLabel, type Counts, type TestNode, type TestStatus, type TreeSnapshot,
 } from '@reporters/tree-core';
 import {
-  buildRows, collectContainerKeys, computeMatches, displayName, isContainer, isPassingTodo, liveNodeDuration, reasonOf, realError, type FlatRow,
+  buildRows, collectContainerKeys, computeMatches, displayName, isContainer, isPassingTodo, isSectionOpen, liveNodeDuration, reasonOf, realError, type FlatRow,
 } from './rowModel.ts';
 
 // node:test captures colored output verbatim; render the ANSI SGR codes as real
@@ -269,16 +269,25 @@ function CopyButton({ text }: { text: string }) {
  *  (§10a). A settled log opens at the top — logs read top-to-bottom; only a
  *  still-running log tail-follows, and stops the moment the reader scrolls up
  *  or the test settles (§11a). */
+/** One boxed panel section (design demo): its header is the disclosure for
+ *  just this section — caret + name on the left, the toolbar on the right —
+ *  and the capped log body collapses beneath it. */
 function DiagSection({
-  block, running, onCollapse, onModal,
+  block, node, open, onToggle,
 }: {
-  block: DiagBlock; running: boolean; onCollapse: () => void; onModal: () => void;
+  block: DiagBlock; node: TestNode; open: boolean; onToggle: () => void;
 }) {
+  const [modal, setModal] = useState(false);
   const bodyRef = useRef<HTMLDivElement>(null);
   const pinned = useRef(false);
+  // Lazy-mount the body, but keep it once opened so collapse animates and
+  // scroll survives.
+  const everOpen = useRef(open);
+  if (open) everOpen.current = true;
+  const running = node.status === 'running';
   useEffect(() => {
     const el = bodyRef.current;
-    if (!el || !running) return;
+    if (!el || !running || !open) return;
     const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 48;
     if (!pinned.current || nearBottom) { el.scrollTop = el.scrollHeight; pinned.current = true; }
   });
@@ -288,27 +297,57 @@ function DiagSection({
   };
   const long = (block.lines?.length ?? block.items?.length ?? 0) > 20;
   return (
-    <div className="diag-sec">
+    <div className="diag-sec" data-open={open ? 'true' : undefined}>
       <span className="diag-bar" data-stf={block.sev} />
       <div className="diag-body">
-        <div className="diag-head">
+        <div
+          className="diag-head"
+          role="button"
+          tabIndex={0}
+          aria-expanded={open}
+          aria-label={`${open ? 'Hide' : 'Show'} ${block.title.toLowerCase()} of ${displayName(node)}`}
+          onClick={onToggle}
+          onMouseDown={(e) => e.preventDefault()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle(); }
+            else if (e.key === 'ArrowRight' && !open) { e.preventDefault(); onToggle(); }
+            else if (e.key === 'ArrowLeft' && open) { e.preventDefault(); onToggle(); }
+          }}
+        >
+          <span className="caret" data-open={open ? 'true' : undefined}>▸</span>
           <span className="diag-icon" data-stc={block.sev}>{block.icon}</span>
-          <span className="diag-title">{block.title}</span>
+          <span className="diag-title">{block.chip ?? block.title}</span>
           {block.count ? <span className="diag-count">· {formatCount(block.count.n)} {block.count.unit}</span> : null}
-          <div className="diag-tools">
-            {long ? (
+          <div
+            className="diag-tools"
+            // Toolbar clicks act on the section, never toggle it.
+            // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events
+            onClick={(e) => e.stopPropagation()}
+          >
+            {open && long ? (
               <>
                 <button type="button" className="hbtn" onClick={() => jump(false)} title="Jump to top">⤒</button>
                 <button type="button" className="hbtn" onClick={() => jump(true)} title="Jump to end">⤓</button>
               </>
             ) : null}
             <CopyButton text={block.copyText} />
-            <button type="button" className="hbtn" onClick={onModal} title="Open full log">⤢ Full log</button>
-            <button type="button" className="hbtn" onClick={onCollapse} title="Collapse this panel">Collapse</button>
+            <button type="button" className="hbtn" onClick={() => setModal(true)} title="Open full log">⤢ Full log</button>
+            {open ? (
+              <button type="button" className="hbtn" onClick={onToggle} title="Collapse this section">Collapse</button>
+            ) : null}
           </div>
         </div>
-        <div className="log-body" ref={bodyRef}><BlockContent block={block} /></div>
+        <div className={`collapsible${open ? ' open' : ''}`}>
+          <div className="inner">
+            {everOpen.current ? (
+              <div className="log-body" ref={bodyRef}><BlockContent block={block} /></div>
+            ) : null}
+          </div>
+        </div>
       </div>
+      {modal ? (
+        <LogModal title={`${block.title} — ${displayName(node)}`} block={block} onClose={() => setModal(false)} />
+      ) : null}
     </div>
   );
 }
@@ -361,30 +400,38 @@ function LogModal({ title, block, onClose }: { title: string; block: DiagBlock; 
   );
 }
 
-function Diagnostics({
-  node, indent, onCollapse, modalNonce = 0,
+/** A node's own-output region (design demo): a stack of boxed, independently
+ *  collapsible panel sections — a panel, never a tree node. */
+function OutputPanel({
+  row, overrides, toggle, enter,
 }: {
-  node: TestNode; indent: string; onCollapse: () => void; modalNonce?: number;
+  row: FlatRow;
+  overrides: Map<string, boolean>;
+  toggle: (key: string, current: boolean) => void;
+  enter: number | null;
 }) {
-  const [modal, setModal] = useState<DiagBlock | null>(null);
-  useEffect(() => {
-    if (modalNonce > 0) setModal(diagBlocks(node)[0] ?? null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [modalNonce]);
+  const { node, depth } = row;
+  const blocks = diagBlocks(node).filter((b) => !(b.key === 'reason' && isPassingTodo(node)));
+  const style: React.CSSProperties = {
+    margin: `4px 12px 7px ${depth * 20 + 18}px`,
+    ...(enter !== null ? { animationDelay: `${Math.min(enter, 8) * 18}ms` } : {}),
+  };
   return (
-    <div className="diag" role="group" aria-label={`Output of ${displayName(node)}`} style={{ margin: `5px 12px 11px ${indent}` }}>
-      {diagBlocks(node).map((block) => (
+    <div
+      className={`diag${enter !== null ? ' row-enter' : ''}`}
+      role="group"
+      aria-label={`Output of ${displayName(node)}`}
+      style={style}
+    >
+      {blocks.map((block) => (
         <DiagSection
           block={block}
-          running={node.status === 'running'}
-          onCollapse={onCollapse}
-          onModal={() => setModal(block)}
+          node={node}
+          open={isSectionOpen(node, block.key, overrides)}
+          onToggle={() => toggle(`${node.key}::diag:${block.key}`, isSectionOpen(node, block.key, overrides))}
           key={block.key}
         />
       ))}
-      {modal ? (
-        <LogModal title={`${modal.title} — ${displayName(node)}`} block={modal} onClose={() => setModal(null)} />
-      ) : null}
     </div>
   );
 }
@@ -418,82 +465,6 @@ interface RowViewProps {
   /** Shared clock (performance.now) + per-node running-start map, for live duration ticking. */
   now: number;
   since: Map<string, number>;
-}
-
-/** The nested own-output header row (design ruling): the single sub-disclosure
- *  for a node's Error / Output / Diagnostics, sitting first inside the node's
- *  expanded region. */
-function OutputRow({
-  row, toggle, enter,
-}: {
-  row: FlatRow; toggle: (key: string, current: boolean) => void; enter: number | null;
-}) {
-  const { node, depth, diagOpen } = row;
-  // Mount the panel lazily (a closed panel of a 10k-line log costs nothing),
-  // but keep it mounted once opened so collapse animates and scroll survives.
-  const everOpen = useRef(diagOpen);
-  if (diagOpen) everOpen.current = true;
-  const toggleDiag = () => toggle(`${node.key}::diag`, diagOpen);
-  // Double-click accelerator: straight to the full-log modal. Never the only
-  // path — the panel header's Full log button is the discoverable one.
-  const [modalNonce, setModalNonce] = useState(0);
-  const onDoubleClick = () => {
-    if (!diagOpen) toggleDiag();
-    setModalNonce((n) => n + 1);
-  };
-  const blocks = diagBlocks(node).filter((b) => !(b.key === 'reason' && isPassingTodo(node)));
-  const rowClass = `row out-row${enter !== null ? ' row-enter' : ''}`;
-  const rowStyle = enter !== null ? { animationDelay: `${Math.min(enter, 8) * 18}ms` } : undefined;
-  return (
-    <div>
-      <div
-        className={rowClass}
-        style={rowStyle}
-        role="treeitem"
-        aria-expanded={diagOpen}
-        aria-label={`${diagOpen ? 'Hide' : 'Show'} ${blocks.map((b) => b.title.toLowerCase()).join(', ')} of ${displayName(node)}`}
-        tabIndex={0}
-        data-clickable="true"
-        onClick={toggleDiag}
-        onDoubleClick={onDoubleClick}
-        onMouseDown={(e) => e.preventDefault()}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleDiag(); }
-          else if (e.key === 'ArrowRight' && !diagOpen) { e.preventDefault(); toggleDiag(); }
-          else if (e.key === 'ArrowLeft' && diagOpen) { e.preventDefault(); toggleDiag(); }
-        }}
-      >
-        <span className="guides">
-          {Array.from({ length: depth }, (_, i) => <span className="guide" key={i} />)}
-        </span>
-        <span className="caret" data-open={diagOpen ? 'true' : undefined}>▸</span>
-        {blocks.map((block) => (
-          <span
-            className="affch"
-            data-soft={block.sev}
-            data-quiet={block.key === 'error' ? undefined : 'true'}
-            key={block.key}
-          >
-            {block.icon} {block.chip ?? block.title}
-            {block.count ? ` · ${formatCount(block.count.n)} ${block.count.unit}` : ''}
-          </span>
-        ))}
-        <span className="spacer" />
-      </div>
-      <div className={`collapsible${diagOpen ? ' open' : ''}`}>
-        <div className="inner">
-          {everOpen.current ? (
-            <Diagnostics
-              node={node}
-              indent={`${depth * 20 + 38}px`}
-              onCollapse={toggleDiag}
-              modalNonce={modalNonce}
-            />
-          ) : null}
-        </div>
-      </div>
-    </div>
-  );
 }
 
 function RowView({
@@ -552,6 +523,12 @@ function RowView({
         <span className="cglyph indicator" data-stc={status} data-spin={status === 'running' ? 'true' : undefined}>{GLYPH[status]}</span>
       )}
       <span className="name" data-kind={node.type} style={{ color: nameColor }}>{displayName(node)}</span>
+      {hasDiag ? (
+        // Passive badge (never a control): output exists inside this node.
+        <span className="outbadge" data-stc={hasError ? 'failed' : undefined} title="Has output">
+          {hasError ? '✕' : '◇'}
+        </span>
+      ) : null}
       {isPassingTodo(node) ? (
         <span className="todotag" data-soft="todo"># {todoLabel(node)}</span>
       ) : null}
@@ -561,12 +538,6 @@ function RowView({
           {STATUS_ORDER.filter((s) => counts[s] > 0).map((s) => (
             <span className="pill" data-soft={s} key={s}>{counts[s]}</span>
           ))}
-        </span>
-      ) : null}
-      {hasDiag ? (
-        // Passive badge (never a control): output exists inside this node.
-        <span className="outbadge" data-stc={hasError ? 'failed' : undefined} title="Has output">
-          {hasError ? '✕' : '◇'}
         </span>
       ) : null}
       <span className="dur">{formatDuration(liveNodeDuration(node, now, since)) || '—'}</span>
@@ -794,9 +765,10 @@ export function TreeView({
       <div className="tree" role="tree" aria-label="Test results">
         {rows.length > 0 ? (
           rows.map((row) => (row.kind === 'output' ? (
-            <OutputRow
+            <OutputPanel
               key={rowKey(row)}
               row={row}
+              overrides={overrides}
               toggle={toggle}
               enter={enterMap.has(rowKey(row)) ? enterMap.get(rowKey(row))! : null}
             />

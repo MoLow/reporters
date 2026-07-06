@@ -145,15 +145,9 @@ button { font-family: inherit; } input { font-family: inherit; }
 .name[data-kind="file"] { font-family: var(--mono); font-weight: 700; }
 .name[data-kind="suite"] { font-weight: 600; }
 .name[data-kind="test"] { font-weight: 450; }
-/* the nested own-output header row (design ruling): one sub-disclosure inside
-   a node's region. Its labels name what's inside; Error stays loud, the rest
-   sit quiet until the row is hovered. */
-.out-row { min-height: 28px; }
-.affch { flex: none; font-size: 10px; font-weight: 600; border-radius: 999px; padding: 1px 8px; white-space: nowrap; }
-.out-row:not(:hover) .affch[data-quiet] { background: transparent; color: var(--dim); border: 1px solid var(--line); }
-.out-row .affch[data-quiet] { border: 1px solid transparent; }
-/* passive badge on a node row: output exists inside (never a control) */
-.outbadge { flex: none; color: var(--faint); font-size: 11px; font-weight: 700; margin-right: 2px; }
+/* passive badge on a node row (right after the name): output exists inside
+   this node — never a control */
+.outbadge { flex: none; color: var(--faint); font-size: 11px; font-weight: 700; margin-left: 2px; }
 .todotag { flex: none; font-size: 10px; font-weight: 600; border-radius: 6px; padding: 1px 6px; }
 .spacer { flex: 1; min-width: 10px; }
 .pills { display: inline-flex; gap: 5px; flex: none; margin-right: 9px; }
@@ -166,8 +160,10 @@ button { font-family: inherit; } input { font-family: inherit; }
 .diag-sec + .diag-sec { border-top: 1px solid var(--line); }
 .diag-bar { width: 3px; flex: none; }
 .diag-body { flex: 1; min-width: 0; }
-/* the header sticks inside the tree scroller, so Collapse is reachable at any depth (§10d) */
-.diag-head { display: flex; align-items: center; gap: 7px; padding: 8px 13px; position: sticky; top: 0; z-index: 1; background: var(--panel-2); }
+/* the section header is the disclosure for just its panel; it sticks inside
+   the tree scroller, so Collapse is reachable at any depth (§10d) */
+.diag-head { display: flex; align-items: center; gap: 7px; padding: 6px 13px 6px 6px; position: sticky; top: 0; z-index: 1; background: var(--panel-2); cursor: pointer; min-height: 32px; }
+.diag-head:hover { background: var(--raise); }
 .diag-icon { font-weight: 800; font-size: 12px; }
 .diag-title { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--dim); }
 .diag-count { font-size: 10.5px; font-weight: 600; color: var(--faint); font-variant-numeric: tabular-nums; }

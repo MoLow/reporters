@@ -4,7 +4,7 @@ import { createTreeStore } from '@reporters/tree-core';
 import type { Counts, TestEvent, TestNode } from '@reporters/tree-core';
 import {
   buildRows, collectContainerKeys, computeMatches, displayName, hasDiagnostics,
-  isDiagOpen, isExpanded, isPassingTodo, liveNodeDuration, nodeDuration, reasonOf, realError, rollup,
+  isExpanded, isPassingTodo, isSectionOpen, liveNodeDuration, nodeDuration, reasonOf, realError, rollup,
 } from '../src/client/rowModel.ts';
 
 const zeroCounts = (): Counts => ({
@@ -57,16 +57,13 @@ test('buildRows nests an output header row inside an expanded node with output',
   assert.strictEqual(outRow.node.key, file.key, 'the output row belongs to the file node');
   assert.strictEqual(outRow.depth, fileRow.depth + 1, 'own output is indented one level, before children');
   assert.strictEqual(rows.indexOf(outRow), rows.indexOf(fileRow) + 1, 'output comes first inside the region');
-  assert.strictEqual(outRow.diagOpen, false, 'a passing node opens with its output header closed');
 });
 
-test('a collapsed node hides its output row; the ::diag override opens the panel', () => {
+test('a collapsed node hides its output panel slot', () => {
   const file = fileNode();
   const collapsed = buildRows([file], { overrides: new Map([[file.key, false]]), query: '', matches: null });
-  assert.strictEqual(collapsed.some((r) => r.kind === 'output'), false, 'collapsed region hides the output header');
+  assert.strictEqual(collapsed.some((r) => r.kind === 'output'), false, 'collapsed region hides the output panel');
   assert.strictEqual(collapsed[0].hasDiag, true, 'the badge still marks that output exists');
-  const open = buildRows([file], { overrides: new Map([[`${file.key}::diag`, true]]), query: '', matches: null });
-  assert.strictEqual(open.find((r) => r.kind === 'output')!.diagOpen, true);
 });
 
 test('a pure leaf with output is expandable and reveals only its output row', () => {
@@ -81,8 +78,8 @@ test('a pure leaf with output is expandable and reveals only its output row', ()
   const leafRow = rows.find((r) => r.kind === 'node' && r.node.key === 'f/t')!;
   assert.strictEqual(leafRow.expandable, true, 'a leaf with output can be expanded');
   assert.strictEqual(leafRow.expanded, true, 'a failed node defaults to expanded');
-  const outRow = rows.find((r) => r.kind === 'output' && r.node.key === 'f/t')!;
-  assert.strictEqual(outRow.diagOpen, true, 'a failed leaf opens with its error visible');
+  assert.ok(rows.some((r) => r.kind === 'output' && r.node.key === 'f/t'), 'its output panel slot is present');
+  assert.strictEqual(isSectionOpen(leaf, 'error', new Map()), true, 'a failed leaf opens with its error visible');
 });
 
 test('displayName shows the basename for files and the raw name otherwise', () => {
@@ -163,15 +160,13 @@ test('isExpanded honors query force, overrides, then per-type defaults', () => {
   assert.strictEqual(isExpanded(node({ key: 't', type: 'test' }), opts()), false);
 });
 
-test('isDiagOpen defaults to open only for failed leaves, but an override wins', () => {
-  assert.strictEqual(isDiagOpen(node({ key: 'a', status: 'failed' }), new Map()), true);
-  assert.strictEqual(isDiagOpen(node({ key: 'a', status: 'passed' }), new Map()), false);
-  assert.strictEqual(isDiagOpen(node({ key: 'a', status: 'failed' }), new Map([['a::diag', false]])), false);
-  assert.strictEqual(isDiagOpen(node({ key: 'a', status: 'passed' }), new Map([['a::diag', true]])), true);
-  // containers never auto-open their own output, even when failed (§10f)
-  const failedContainer = node({ key: 'a', status: 'failed', children: [node({ key: 'a/b' })] });
-  assert.strictEqual(isDiagOpen(failedContainer, new Map()), false);
-  assert.strictEqual(isDiagOpen(failedContainer, new Map([['a::diag', true]])), true);
+test('isSectionOpen defaults open only for the error section, overrides win', () => {
+  const n = node({ key: 'a', status: 'failed' });
+  assert.strictEqual(isSectionOpen(n, 'error', new Map()), true, 'the error section surfaces with zero clicks');
+  assert.strictEqual(isSectionOpen(n, 'diag', new Map()), false, 'other sections need a deliberate click');
+  assert.strictEqual(isSectionOpen(n, 'output', new Map()), false);
+  assert.strictEqual(isSectionOpen(n, 'error', new Map([['a::diag:error', false]])), false);
+  assert.strictEqual(isSectionOpen(n, 'diag', new Map([['a::diag:diag', true]])), true);
 });
 
 test('collectContainerKeys includes leaves that carry their own output', () => {
