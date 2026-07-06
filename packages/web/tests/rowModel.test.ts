@@ -163,7 +163,8 @@ test('isExpanded honors query force, overrides, then per-type defaults', () => {
 test('isSectionOpen defaults open only for the error section, overrides win', () => {
   const n = node({ key: 'a', status: 'failed' });
   assert.strictEqual(isSectionOpen(n, 'error', new Map()), true, 'the error section surfaces with zero clicks');
-  assert.strictEqual(isSectionOpen(n, 'diag', new Map()), false, 'other sections need a deliberate click');
+  assert.strictEqual(isSectionOpen(n, 'reason', new Map()), true, 'the one-line skip/todo reason is cheap — open it');
+  assert.strictEqual(isSectionOpen(n, 'diag', new Map()), false, 'heavy sections need a deliberate click');
   assert.strictEqual(isSectionOpen(n, 'output', new Map()), false);
   assert.strictEqual(isSectionOpen(n, 'error', new Map([['a::diag:error', false]])), false);
   assert.strictEqual(isSectionOpen(n, 'diag', new Map([['a::diag:diag', true]])), true);

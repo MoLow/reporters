@@ -165,13 +165,13 @@ export function isExpanded(node: TestNode, opts: BuildOptions): boolean {
   return overrides.has(node.key) ? overrides.get(node.key)! : defaultExpanded(node);
 }
 
-/** Open state of one panel section inside a node's output region. Only an
- *  Error section (which exists only on a failed leaf) opens by default —
- *  failures surface with zero clicks, everything else is one deliberate click. */
+/** Open state of one panel section inside a node's output region. Error opens
+ *  by default (failures surface with zero clicks) and so does the one-line
+ *  skip/todo reason; heavy Output/Diagnostics need a deliberate click. */
 export function isSectionOpen(node: TestNode, blockKey: string, overrides: Map<string, boolean>): boolean {
   const key = `${node.key}::diag:${blockKey}`;
   if (overrides.has(key)) return overrides.get(key)!;
-  return blockKey === 'error';
+  return blockKey === 'error' || blockKey === 'reason';
 }
 
 // One disclosure per row: expanding a node reveals ONE region holding its own

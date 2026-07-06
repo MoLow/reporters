@@ -5,7 +5,7 @@ import {
   formatDuration, todoLabel, type Counts, type TestNode, type TestStatus, type TreeSnapshot,
 } from '@reporters/tree-core';
 import {
-  buildRows, collectContainerKeys, computeMatches, displayName, isContainer, isPassingTodo, isSectionOpen, liveNodeDuration, reasonOf, realError, type FlatRow,
+  buildRows, collectContainerKeys, computeMatches, displayName, isContainer, isSectionOpen, liveNodeDuration, reasonOf, realError, type FlatRow,
 } from './rowModel.ts';
 
 // node:test captures colored output verbatim; render the ANSI SGR codes as real
@@ -411,7 +411,7 @@ function OutputPanel({
   enter: number | null;
 }) {
   const { node, depth } = row;
-  const blocks = diagBlocks(node).filter((b) => !(b.key === 'reason' && isPassingTodo(node)));
+  const blocks = diagBlocks(node);
   const style: React.CSSProperties = {
     margin: `4px 12px 7px ${depth * 20 + 18}px`,
     ...(enter !== null ? { animationDelay: `${Math.min(enter, 8) * 18}ms` } : {}),
@@ -452,6 +452,8 @@ function useSettle(status: TestStatus): boolean {
   }, [status]);
   return settled;
 }
+
+const trimTag = (s: string): string => (s.length > 32 ? `${s.slice(0, 31)}…` : s);
 
 /** Stable identity for enter-animation bookkeeping and React keys — a node row
  *  and its nested output row share a node but are distinct rows. */
@@ -529,8 +531,10 @@ function RowView({
           {hasError ? '✕' : '◇'}
         </span>
       ) : null}
-      {isPassingTodo(node) ? (
-        <span className="todotag" data-soft="todo"># {todoLabel(node)}</span>
+      {todoLabel(node) ? (
+        <span className="todotag" data-soft="todo"># {trimTag(todoLabel(node)!)}</span>
+      ) : typeof node.skip === 'string' && node.skip ? (
+        <span className="todotag" data-soft="skipped">⊘ {trimTag(node.skip)}</span>
       ) : null}
       <span className="spacer" />
       {container && !expanded ? (
