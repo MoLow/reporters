@@ -2,7 +2,7 @@ import React, {
   useEffect, useMemo, useRef, useState,
 } from 'react';
 import {
-  formatDuration, todoLabel, type Counts, type TestNode, type TestStatus, type TreeSnapshot,
+  carriedAttempt, formatDuration, isCarried, todoLabel, type Counts, type TestNode, type TestStatus, type TreeSnapshot,
 } from '@reporters/tree-core';
 import {
   buildRows, collectContainerKeys, computeMatches, displayName, isContainer, isSectionOpen, liveNodeDuration, reasonOf, realError, type FlatRow, type LiveClock,
@@ -217,6 +217,13 @@ const SearchIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
     <circle cx="11" cy="11" r="7" />
     <line x1="21" y1="21" x2="16.5" y2="16.5" />
+  </svg>
+);
+
+const CarryIcon = () => (
+  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 12a9 9 0 1 0 2.6-6.4" />
+    <path d="M3 4v5h5" />
   </svg>
 );
 
@@ -479,10 +486,14 @@ interface RowViewProps {
   since: Map<string, number>;
   /** The stream's stamp clock, when the log carries writer stamps. */
   clock: LiveClock | null;
+  /** The run has carried tests — reserve the attempt gutter on every row. */
+  carriedRun: boolean;
+  /** The only-re-run filter is active (collapsed pills show re-run counts). */
+  onlyRerun: boolean;
 }
 
 function RowView({
-  row, toggle, enter, now, since, clock,
+  row, toggle, enter, now, since, clock, carriedRun, onlyRerun,
 }: RowViewProps) {
   const {
     node, depth, status, expandable, expanded, hasDiag,
@@ -503,6 +514,14 @@ function RowView({
   const nameColor = isTest && status === 'failed' ? 'var(--st-failed)'
     : isTest && (status === 'skipped' || status === 'todo' || status === 'queued') ? 'var(--dim)'
       : 'var(--fg)';
+  const carried = isTest && !container && node.passedOnAttempt != null;
+  const rollupMark = container && isCarried(node);
+  const markAttempt = carried ? node.passedOnAttempt : rollupMark ? carriedAttempt(node) : undefined;
+  const carryTip = carried
+    ? `Carried from attempt ${node.passedOnAttempt! + 1} · not executed this run`
+    : rollupMark
+      ? `All ${counts.carried} tests carried${markAttempt != null ? ` from attempt ${markAttempt + 1}` : ''} · not run this attempt`
+      : undefined;
 
   const rowClass = `row${enter !== null ? ' row-enter' : ''}${settled ? ` settle-${status}` : ''}`;
   const rowStyle = enter !== null ? { animationDelay: `${Math.min(enter, 8) * 18}ms` } : undefined;
@@ -551,12 +570,22 @@ function RowView({
       <span className="spacer" />
       {container && !expanded ? (
         <span className="pills">
-          {STATUS_ORDER.filter((s) => counts[s] > 0).map((s) => (
-            <span className="pill" data-soft={s} key={s}>{counts[s]}</span>
+          {STATUS_ORDER.filter((s) => (s === 'passed' && onlyRerun ? counts.passed - counts.carried : counts[s]) > 0).map((s) => (
+            <span className="pill" data-soft={s} key={s}>{s === 'passed' && onlyRerun ? counts.passed - counts.carried : counts[s]}</span>
           ))}
         </span>
       ) : null}
-      <span className="dur">{formatDuration(liveNodeDuration(node, now, since, clock)) || '—'}</span>
+      {carriedRun ? (
+        <span className="carry-gut">
+          {carryTip ? (
+            <span className="carry-chip" data-tip={carryTip} title={carryTip} aria-label={carryTip}>
+              <CarryIcon />
+              {markAttempt != null ? markAttempt + 1 : null}
+            </span>
+          ) : null}
+        </span>
+      ) : null}
+      <span className="dur" data-carried={carried || rollupMark ? 'true' : undefined}>{formatDuration(liveNodeDuration(node, now, since, clock)) || '—'}</span>
     </div>
   );
 }
@@ -633,19 +662,25 @@ export function TreeView({
   // A steadily-incrementing tick that drives live duration re-renders.
   const [, setTick] = useState(0);
 
+  const [onlyRerun, setOnlyRerun] = useState(false);
+
   const files = snapshot.root.children;
   const { counts } = snapshot;
   const q = query.trim().toLowerCase();
+  const carriedRun = counts.carried > 0;
+  const freshCount = counts.total - counts.carried;
+  const runAttempt = snapshot.attempt;
+  const summaryAttempt = carriedRun ? carriedAttempt(snapshot.root) : undefined;
 
   const matches = useMemo(
-    () => (q || statuses.size > 0 ? computeMatches(files, q, statuses) : null),
-    [files, q, statuses],
+    () => (q || statuses.size > 0 || onlyRerun ? computeMatches(files, q, statuses, onlyRerun) : null),
+    [files, q, statuses, onlyRerun],
   );
   const rows = useMemo(
     () => buildRows(files, {
-      overrides, query: q, statuses, matches,
+      overrides, query: q, statuses, matches, onlyRerun,
     }),
-    [files, overrides, q, statuses, matches],
+    [files, overrides, q, statuses, matches, onlyRerun],
   );
 
   const toggle = (key: string, current: boolean) => {
@@ -757,6 +792,12 @@ export function TreeView({
               </button>
             ))}
           </div>
+          {carriedRun ? (
+            <span className="carry-sum">
+              {runAttempt != null ? `attempt ${runAttempt + 1} of ${runAttempt + 1} · ` : ''}
+              {freshCount} re-run · {counts.carried} carried{summaryAttempt != null ? ` from attempt ${summaryAttempt + 1}` : ''}
+            </span>
+          ) : null}
           <div className="tools">
             <div className="search">
               <SearchIcon />
@@ -767,6 +808,18 @@ export function TreeView({
                 aria-label="Filter tests"
               />
             </div>
+            {carriedRun ? (
+              <button
+                type="button"
+                className="btn"
+                data-on={onlyRerun ? 'true' : undefined}
+                aria-pressed={onlyRerun}
+                onClick={() => setOnlyRerun(!onlyRerun)}
+                title={onlyRerun ? 'Show carried-over tests again' : 'Show only tests that actually executed this attempt'}
+              >
+                Only re-run
+              </button>
+            ) : null}
             <button
               type="button"
               className="btn"
@@ -823,9 +876,11 @@ export function TreeView({
               now={now}
               since={since}
               clock={clock}
+              carriedRun={carriedRun}
+              onlyRerun={onlyRerun}
             />
           )))
-        ) : q || statuses.size > 0 ? (
+        ) : q || statuses.size > 0 || onlyRerun ? (
           <CenteredState
             icon="⌕"
             iconStatus="skipped"
@@ -833,12 +888,13 @@ export function TreeView({
           >
             <div className="state-sub">
               {q ? 'Try a shorter query, or search by file name.'
-                : 'No test has any of the selected statuses.'}
+                : statuses.size > 0 ? 'No test has any of the selected statuses.'
+                  : 'Every test was carried over — nothing executed this attempt.'}
             </div>
             <button
               type="button"
               className="btn-primary"
-              onClick={() => { setQuery(''); setStatuses(new Set()); }}
+              onClick={() => { setQuery(''); setStatuses(new Set()); setOnlyRerun(false); }}
             >
               Clear filters
             </button>
