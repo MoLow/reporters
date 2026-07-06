@@ -112,6 +112,80 @@ test('same-testId helper subtests from different processes stay distinct nodes',
   });
 });
 
+test('an ambiguous eager parentId parks the subtest under its helper group instead of guessing', () => {
+  // Live phase of a real run (Desktop/report.ndjson, 2026-07-06): three
+  // concurrent processes each have an open testId 2 at nesting 1 when a helper
+  // subtest with parentId 2 enqueues. Nothing in the event says which process
+  // it came from, so it must wait under the helper-file group — attaching it to
+  // whichever candidate happens to win a tie-break showed "restore GCE VM"
+  // under a DynamoDB test for 20 minutes.
+  const F3 = '/x/tests/gce.test.ts';
+  const store = createTreeStore();
+  for (const event of [
+    ev('test:enqueue', { name: 's3 backup', nesting: 1, file: ENTRY, testId: 2, parentId: 0, type: 'test' }),
+    ev('test:dequeue', { name: 's3 backup', nesting: 1, file: ENTRY, testId: 2, parentId: 0, type: 'test' }),
+    ev('test:enqueue', { name: 'ddb backup', nesting: 1, file: OTHER, testId: 2, parentId: 0, type: 'test' }),
+    ev('test:dequeue', { name: 'ddb backup', nesting: 1, file: OTHER, testId: 2, parentId: 0, type: 'test' }),
+    ev('test:enqueue', { name: 'gce backup', nesting: 1, file: F3, testId: 2, parentId: 0, type: 'test' }),
+    ev('test:dequeue', { name: 'gce backup', nesting: 1, file: F3, testId: 2, parentId: 0, type: 'test' }),
+    ev('test:enqueue', { name: 'restore VM', nesting: 2, file: HELPER, testId: 3, parentId: 2, type: 'test' }),
+    ev('test:dequeue', { name: 'restore VM', nesting: 2, file: HELPER, testId: 3, parentId: 2, type: 'test' }),
+  ]) store.apply(event);
+
+  const live = store.getSnapshot();
+  const { path } = findOne(live.root, 'restore VM');
+  assert.deepStrictEqual(path, ['', HELPER], `ambiguous subtest stays under the helper group, got path: ${JSON.stringify(path)}`);
+
+  // The declaration-ordered block later reveals the real parent; the parked
+  // node must move under it and the helper group husk must disappear.
+  for (const event of [
+    ev('test:start', { name: 'gce backup', nesting: 1, file: F3, testId: 2, parentId: 0 }),
+    ev('test:start', { name: 'restore VM', nesting: 2, file: HELPER, testId: 3, parentId: 2 }),
+    ev('test:pass', { name: 'restore VM', nesting: 2, file: HELPER, testId: 3, parentId: 2, details: done }),
+    ev('test:pass', { name: 'gce backup', nesting: 1, file: F3, testId: 2, parentId: 0, details: done }),
+  ]) store.apply(event);
+
+  const { root } = store.getSnapshot();
+  const { path: settled } = findOne(root, 'restore VM');
+  assert.ok(settled.includes('gce backup'), `subtest settles under its real parent, got path: ${JSON.stringify(settled)}`);
+  const helperGroups = root.children.filter((n) => n.file === HELPER);
+  assert.deepStrictEqual(helperGroups, [], 'emptied helper group is pruned');
+});
+
+test('an eager parentId with a single open candidate still resolves immediately', () => {
+  // Parking is only for genuine ambiguity — with one candidate the live tree
+  // must keep showing helper subtests under their parent right away.
+  const store = createTreeStore();
+  for (const event of [
+    ev('test:enqueue', { name: 'backup', nesting: 1, file: ENTRY, testId: 2, parentId: 0, type: 'test' }),
+    ev('test:dequeue', { name: 'backup', nesting: 1, file: ENTRY, testId: 2, parentId: 0, type: 'test' }),
+    ev('test:enqueue', { name: 'restore VM', nesting: 2, file: HELPER, testId: 3, parentId: 2, type: 'test' }),
+    ev('test:dequeue', { name: 'restore VM', nesting: 2, file: HELPER, testId: 3, parentId: 2, type: 'test' }),
+  ]) store.apply(event);
+
+  const { path } = findOne(store.getSnapshot().root, 'restore VM');
+  assert.ok(path.includes('backup'), `unambiguous subtest attaches live, got path: ${JSON.stringify(path)}`);
+});
+
+test('a parked subtest is adopted as soon as the collision clears', () => {
+  // Two open candidates → parked. One of them completes → the next eager event
+  // for the child re-resolves against a single open candidate and promotes the
+  // child out of the helper group without waiting for the declaration block.
+  const store = createTreeStore();
+  for (const event of [
+    ev('test:enqueue', { name: 's3 backup', nesting: 1, file: ENTRY, testId: 2, parentId: 0, type: 'test' }),
+    ev('test:dequeue', { name: 's3 backup', nesting: 1, file: ENTRY, testId: 2, parentId: 0, type: 'test' }),
+    ev('test:enqueue', { name: 'ddb backup', nesting: 1, file: OTHER, testId: 2, parentId: 0, type: 'test' }),
+    ev('test:dequeue', { name: 'ddb backup', nesting: 1, file: OTHER, testId: 2, parentId: 0, type: 'test' }),
+    ev('test:enqueue', { name: 'restore VM', nesting: 2, file: HELPER, testId: 3, parentId: 2, type: 'test' }),
+    ev('test:complete', { name: 's3 backup', nesting: 1, file: ENTRY, testId: 2, parentId: 0, details: done }),
+    ev('test:dequeue', { name: 'restore VM', nesting: 2, file: HELPER, testId: 3, parentId: 2, type: 'test' }),
+  ]) store.apply(event);
+
+  const { path } = findOne(store.getSnapshot().root, 'restore VM');
+  assert.ok(path.includes('ddb backup'), `child promotes to the surviving candidate, got path: ${JSON.stringify(path)}`);
+});
+
 test('a mid-stream child with an unknown parentId anchors to a placeholder until its block resolves it', () => {
   // Tailing a stream mid-run: the child's eager events arrive but its parent
   // was enqueued before we started listening. The child needs a live anchor

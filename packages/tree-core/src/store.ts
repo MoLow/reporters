@@ -219,20 +219,28 @@ export function createTreeStore(): TreeStore {
   }
 
   // A subtest defined in a shared helper reports the helper as its `file`, so
-  // its parentId points at a test in ANOTHER group. Resolve it to a still-open
-  // (non-terminal) node with that testId: under process isolation testIds
-  // collide across files, and only the still-open candidate can be the real
-  // parent — a collided one from a file that already finished cannot.
-  function findOpenParent(parentId: number, childNesting: number | undefined): InternalNode | undefined {
-    let open: InternalNode | undefined;
-    let nestingMatch: InternalNode | undefined;
+  // its parentId points at a test in ANOTHER group. Candidates are the
+  // still-open (non-terminal) nodes with that testId: under process isolation
+  // testIds collide across files, and only a still-open candidate can be the
+  // real parent — a collided one from a file that already finished cannot. A
+  // real parent always sits one nesting level above its child, so when any
+  // candidate matches that, the ones that don't are ruled out.
+  // TODO(nodejs/node#64309): once events carry `entryFile`, (entryFile,
+  // parentId) resolves the parent exactly — no candidate search needed (and
+  // instances can be keyed by (entryFile, testId), retiring instancesByBase
+  // splitting). Requires passing entryFile through toWireEvent in wire.ts.
+  function findOpenParents(parentId: number, childNesting: number | undefined): InternalNode[] {
+    const open: InternalNode[] = [];
     for (const node of nodes.values()) {
       if (node.testId !== parentId || TERMINAL.has(node.status)) continue;
       if (node.type !== 'test' && node.type !== 'suite') continue;
-      open = node;
-      if (childNesting != null && node.nesting === childNesting - 1) nestingMatch = node;
+      open.push(node);
     }
-    return nestingMatch ?? open;
+    if (childNesting != null) {
+      const exact = open.filter((n) => n.nesting === childNesting - 1);
+      if (exact.length > 0) return exact;
+    }
+    return open;
   }
 
   function resolveParentKey(data: TestEventData, gk: string): string {
@@ -242,8 +250,13 @@ export function createTreeStore(): TreeStore {
       if (data.parentId === 0) return group.key;
       const local = instancesOf(gk, data.parentId).filter((n) => !TERMINAL.has(n.status)).pop();
       if (local) return local.key;
-      const openParent = findOpenParent(data.parentId, data.nesting);
-      if (openParent) return openParent.key;
+      const candidates = findOpenParents(data.parentId, data.nesting);
+      if (candidates.length === 1) return candidates[0].key;
+      // Several concurrent processes have an open test with this id — the
+      // event doesn't say which one is the parent, so don't guess: park under
+      // the helper group. A later event re-resolves once the collision clears,
+      // and the declaration-ordered block settles it for good.
+      if (candidates.length > 1) return group.key;
       return newInstance(gk, data.parentId, data.file).key;
     }
     // Fallback for Node builds that don't emit parentId: use the nesting stack.
