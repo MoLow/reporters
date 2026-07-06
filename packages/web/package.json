@@ -1,6 +1,6 @@
 {
   "name": "@reporters/web",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "A self-contained, interactive HTML tree reporter for `node:test`",
   "type": "module",
   "keywords": [

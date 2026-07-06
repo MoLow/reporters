@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.4.0](https://github.com/MoLow/reporters/compare/web-v1.3.0...web-v1.4.0) (2026-07-06)
+
+
+### Features
+
+* **tree-core:** report a passing todo as passed, reserving todo for failing ones ([#227](https://github.com/MoLow/reporters/issues/227)) ([46a9c87](https://github.com/MoLow/reporters/commit/46a9c874d88b2ae68aff80b50b286ea5e11e2a45))
+* **web:** bounded log viewer — capped panels, full-log modal, named affordances ([#233](https://github.com/MoLow/reporters/issues/233)) ([f30d492](https://github.com/MoLow/reporters/commit/f30d49254394fb97f820b9202c055cd78b815000))
+* **web:** clickable header status chips filter the tree ([#231](https://github.com/MoLow/reporters/issues/231)) ([bdf4f4e](https://github.com/MoLow/reporters/commit/bdf4f4e8efd3e8c03fe2c458a83d1d637b592f5f))
+* **web:** distinct loading state before the first log fetch resolves ([#235](https://github.com/MoLow/reporters/issues/235)) ([5d1eb6c](https://github.com/MoLow/reporters/commit/5d1eb6ca77b3447a3304d8fc655eaf3a33d1c27f))
+* **web:** richer diagnostics rendering in the viewer ([#232](https://github.com/MoLow/reporters/issues/232)) ([b7eb565](https://github.com/MoLow/reporters/commit/b7eb56506e5776a4231aef631a857512800df3ea))
+
+
+### Bug Fixes
+
+* **web:** keep the http server alive until the viewer reads the whole log ([#230](https://github.com/MoLow/reporters/issues/230)) ([ba7de4d](https://github.com/MoLow/reporters/commit/ba7de4d8035afb5ec4bece56b737cce607d0fa2c))
+* **web:** show real wall-clock durations instead of summing concurrent tests ([#225](https://github.com/MoLow/reporters/issues/225)) ([e80ad8b](https://github.com/MoLow/reporters/commit/e80ad8b55a9c3b3aa2317763487f4185a0a5d9cf))
+
 ## [1.3.0](https://github.com/MoLow/reporters/compare/web-v1.2.0...web-v1.3.0) (2026-07-02)
 
 
