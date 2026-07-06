@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.5.0](https://github.com/MoLow/reporters/compare/web-v1.4.1...web-v1.5.0) (2026-07-06)
+
+
+### Features
+
+* carried-over (rerun) test annotation in the web viewer ([#242](https://github.com/MoLow/reporters/issues/242)) ([da83597](https://github.com/MoLow/reporters/commit/da83597a6c1b11c88bed808658863ff40064625a))
+* **web:** mobile-friendly viewer layout and header polish ([#239](https://github.com/MoLow/reporters/issues/239)) ([61de320](https://github.com/MoLow/reporters/commit/61de320597de08f76290a840fc195bed9f5d08d5))
+* **web:** shared body-level tooltip engine and full tooltip coverage ([#243](https://github.com/MoLow/reporters/issues/243)) ([1b63da1](https://github.com/MoLow/reporters/commit/1b63da13900352105274856babb5e1c474c43be5))
+
 ## [1.4.1](https://github.com/MoLow/reporters/compare/web-v1.4.0...web-v1.4.1) (2026-07-06)
 
 
