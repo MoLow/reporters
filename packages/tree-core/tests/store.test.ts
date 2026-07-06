@@ -377,10 +377,32 @@ test('a finish whose start was never seen backdates startedAt by its duration', 
   assert.strictEqual(completeStore.getSnapshot().root.children[0].children[0].startedAt, 3800);
 });
 
+test('consecutive first-sighting finishes stay distinct tests', () => {
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:pass', t: 5000, data: { name: 'alpha', nesting: 0, file: '/a.test.js', details: { duration_ms: 1200, type: 'test' } } },
+    { type: 'test:pass', t: 5300, data: { name: 'beta', nesting: 0, file: '/a.test.js', details: { duration_ms: 300, type: 'test' } } },
+  ]);
+  const leaves = store.getSnapshot().root.children[0].children;
+  assert.deepStrictEqual(
+    leaves.map((n) => [n.name, n.startedAt, n.durationMs]),
+    [['alpha', 3800, 1200], ['beta', 5000, 300]],
+  );
+});
+
+test('a backdated start widens the stream clock so the run never reads shorter than a test', () => {
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:pass', t: 5000, data: { name: 't', nesting: 0, file: '/a.test.js', details: { duration_ms: 1200, type: 'test' } } },
+  ]);
+  assert.deepStrictEqual(store.getSnapshot().clock, { firstT: 3800, lastT: 5000 });
+});
+
 test('a first-sighting finish without a measured duration stays unstamped', () => {
   const store = createTreeStore();
   apply(store, [
-    { type: 'test:pass', t: 5000, data: { name: 't', nesting: 0, file: '/a.test.js', details: { type: 'test' } } },
+    // No nesting either — top-level is the default.
+    { type: 'test:pass', t: 5000, data: { name: 't', file: '/a.test.js', details: { type: 'test' } } },
   ]);
   assert.strictEqual(store.getSnapshot().root.children[0].children[0].startedAt, undefined);
 });

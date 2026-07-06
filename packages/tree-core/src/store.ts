@@ -379,10 +379,13 @@ export function createTreeStore(): TreeStore {
 
   // A finish for a test whose start was never seen (head-truncated log,
   // mid-run attach) still pins its start: the finish stamp minus the measured
-  // duration is when it really began.
+  // duration is when it really began. That start is evidence the run was
+  // already underway, so it widens the stream's stamp range too — the header
+  // must never read less than a row it contains.
   function backdateStart(node: InternalNode, data: TestEventData): void {
     if (node.startedAt == null && currentT != null && data.details?.duration_ms != null) {
       node.startedAt = currentT - data.details.duration_ms;
+      if (firstT == null || node.startedAt < firstT) firstT = node.startedAt;
     }
   }
 
@@ -452,8 +455,11 @@ export function createTreeStore(): TreeStore {
     if (!node) {
       // No matching open node: this finish IS the first sight of the test, so
       // the start stamp stackStart put on it (the finish event's clock) is a
-      // duration too late — backdate it.
+      // duration too late — backdate it. And the node is finished the moment
+      // it's born: take back the pending-queue slot stackStart just pushed,
+      // or the NEXT first-sighting finish would merge into this node.
       node = stackStart(data);
+      pendingByGroupNesting.get(gk)!.get(nesting)!.pop();
       node.startedAt = undefined;
       backdateStart(node, data);
     }

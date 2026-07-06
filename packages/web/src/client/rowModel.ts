@@ -44,13 +44,15 @@ export interface LiveClock {
 }
 
 /**
- * A descendant that would count toward a duration (running, or measured) but
- * carries no stamp — a mixed old/new-writer log. A span would silently drop
- * it, so its container must fall back to summing instead.
+ * A descendant that would count toward a duration but carries no stamp — a
+ * mixed old/new-writer log. A span would silently drop it, so its container
+ * must fall back to summing instead. Anything measured counts (suites too);
+ * `running` only on leaves, since containers derive that status from children
+ * and files never carry a stamp of their own.
  */
 function hasUnstampedContributor(node: TestNode): boolean {
-  if (node.startedAt == null && !isContainer(node)
-    && (node.status === 'running' || node.durationMs != null)) return true;
+  if (node.startedAt == null
+    && (node.durationMs != null || (!isContainer(node) && node.status === 'running'))) return true;
   return node.children.some(hasUnstampedContributor);
 }
 

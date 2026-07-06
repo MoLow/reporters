@@ -299,6 +299,17 @@ test('a measured stampless child disqualifies the span — the container sums in
   assert.strictEqual(liveNodeDuration(file, 0, new Map(), clock), 302_000);
 });
 
+test('a measured stampless suite disqualifies its ancestor span too', () => {
+  // Same failure one level up: the suite carries the measurement itself and
+  // its skipped children trip no leaf predicate.
+  const skipped = node({ key: 'k', status: 'skipped' });
+  const suite = node({ key: 's', type: 'suite', status: 'passed', durationMs: 300_000, children: [skipped] });
+  const stamped = node({ key: 'r', status: 'running', startedAt: 7_000 });
+  const file = node({ key: 'f', type: 'file', children: [suite, stamped] });
+  const clock = { lastT: 9_000, receivedAt: 0 };
+  assert.strictEqual(liveNodeDuration(file, 0, new Map(), clock), 302_000);
+});
+
 test('a container with a clock but no stamped descendants falls back to summing', () => {
   const a = node({ key: 'a', durationMs: 300 });
   const b = node({ key: 'b', durationMs: 400 });
