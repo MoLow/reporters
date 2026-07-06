@@ -307,6 +307,26 @@ export function createTreeStore(): TreeStore {
     return resolveParentKey(data, gk);
   }
 
+  // Declaration starts arrive in declaration order, so a node that decl-starts
+  // must sit after every previously decl-placed sibling — an eager mis-link
+  // (ambiguous parentId) can otherwise leave it appended out of order once the
+  // decl re-link lands. Move it the minimal distance: nodes already past that
+  // point, and eager-only siblings (position provisional, no decl anchor yet),
+  // stay exactly where they are.
+  function placeInDeclOrder(node: InternalNode): void {
+    const parent = node.parentKey ? nodes.get(node.parentKey) : undefined;
+    if (!parent) return;
+    let lastDecl = -1;
+    for (let i = 0; i < parent.childKeys.length; i += 1) {
+      const key = parent.childKeys[i];
+      if (key !== node.key && nodes.get(key)?.declPlaced) lastDecl = i;
+    }
+    if (parent.childKeys.indexOf(node.key) > lastDecl) return;
+    const keys = parent.childKeys.filter((k) => k !== node.key);
+    keys.splice(lastDecl, 0, node.key);
+    parent.childKeys = keys;
+  }
+
   function declStart(data: TestEventData): void {
     const gk = groupKey(data);
     const nesting = data.nesting ?? 0;
@@ -320,6 +340,7 @@ export function createTreeStore(): TreeStore {
       ?? newInstance(gk, data.testId!, data.file);
     link(node, parentKey);
     node.declPlaced = true;
+    placeInDeclOrder(node);
     assignFields(node, data);
     if (!TERMINAL.has(node.status)) node.status = 'running';
     declOpen.set(nesting, node.key);
@@ -419,7 +440,14 @@ export function createTreeStore(): TreeStore {
         // they start — grouped by file, they don't collide across files. The
         // terminal-status guard in upsert keeps this idempotent and lets the
         // later start/pass/fail settle the final state.
-        if (isFileLevel(data)) { sawFileWrapper = true; break; }
+        if (isFileLevel(data)) {
+          sawFileWrapper = true;
+          // The runner enqueues the file wrappers up front, in the order the
+          // files will report. Claim the group slots now so file order doesn't
+          // depend on which process happens to emit a test event first.
+          ensureGroupNode(groupKey(data), data.file);
+          break;
+        }
         if (data.testId == null) break;
         // Note: don't record "last started" here — enqueue/dequeue are eager, so
         // it would mis-attribute diagnostics. That's recorded on test:start,
