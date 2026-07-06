@@ -569,13 +569,15 @@ function Verdict({ counts, inProgress, duration }: { counts: Counts; inProgress:
 }
 
 function CenteredState({
-  icon, iconStatus, pulse, title, children,
+  icon, iconStatus, pulse, spin, title, children,
 }: {
-  icon: string; iconStatus: TestStatus; pulse?: boolean; title: string; children?: React.ReactNode;
+  icon: string; iconStatus: TestStatus; pulse?: boolean; spin?: boolean; title: string; children?: React.ReactNode;
 }) {
   return (
     <div className="state">
-      <div className="state-icon" data-soft={iconStatus} data-pulse={pulse ? 'true' : undefined}>{icon}</div>
+      <div className="state-icon" data-soft={iconStatus} data-pulse={pulse ? 'true' : undefined}>
+        {spin ? <span data-spin="true">{icon}</span> : icon}
+      </div>
       <div className="state-title">{title}</div>
       {children}
     </div>
@@ -586,13 +588,15 @@ export interface TreeViewProps {
   snapshot: TreeSnapshot;
   /** The viewer is still polling a live log (no final summary yet). */
   streaming?: boolean;
+  /** The first fetch of the log hasn't resolved yet — we don't know if there are results. */
+  pending?: boolean;
   /** The viewer's `?src=` is missing or unreachable. */
   loadError?: boolean;
   onRetry?: () => void;
 }
 
 export function TreeView({
-  snapshot, streaming = false, loadError = false, onRetry,
+  snapshot, streaming = false, pending = false, loadError = false, onRetry,
 }: TreeViewProps) {
   const [theme, toggleTheme] = useTheme();
   const [query, setQuery] = useState('');
@@ -804,6 +808,8 @@ export function TreeView({
               Clear filters
             </button>
           </CenteredState>
+        ) : pending ? (
+          <CenteredState icon="◐" iconStatus="running" spin title="Loading test log…" />
         ) : (
           <CenteredState icon="◴" iconStatus="queued" pulse title="Waiting for the first results">
             <div className="state-sub">
@@ -818,9 +824,10 @@ export function TreeView({
         <span className="brand">@reporters/web</span>
         <span>·</span>
         <span>
-          {inProgress ? 'Live · streaming results'
-            : snapshot.summary ? 'Run complete'
-              : rows.length === 0 ? 'Awaiting run' : 'Run complete'}
+          {pending ? 'Loading…'
+            : inProgress ? 'Live · streaming results'
+              : snapshot.summary ? 'Run complete'
+                : rows.length === 0 ? 'Awaiting run' : 'Run complete'}
         </span>
         <span className="legend">
           {STATUS_ORDER.map((s) => (
