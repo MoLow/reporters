@@ -377,6 +377,15 @@ export function createTreeStore(): TreeStore {
     recordLastStarted(data, node.key);
   }
 
+  // A finish for a test whose start was never seen (head-truncated log,
+  // mid-run attach) still pins its start: the finish stamp minus the measured
+  // duration is when it really began.
+  function backdateStart(node: InternalNode, data: TestEventData): void {
+    if (node.startedAt == null && currentT != null && data.details?.duration_ms != null) {
+      node.startedAt = currentT - data.details.duration_ms;
+    }
+  }
+
   function declFinalize(status: TestStatus, data: TestEventData): void {
     const gk = groupKey(data);
     const nesting = data.nesting ?? 0;
@@ -384,6 +393,7 @@ export function createTreeStore(): TreeStore {
     const openNode = openKey ? nodes.get(openKey) : undefined;
     const matchesOpen = openNode && openNode.testId === data.testId && openNode.name === data.name;
     const node = matchesOpen ? openNode : eagerInstance(gk, data.testId!, data);
+    backdateStart(node, data);
     assignFields(node, data);
     node.status = status;
     if (data.details?.duration_ms != null) node.durationMs = data.details.duration_ms;
@@ -438,7 +448,15 @@ export function createTreeStore(): TreeStore {
     const gk = groupKey(data);
     const nesting = data.nesting ?? 0;
     const key = pendingByGroupNesting.get(gk)?.get(nesting)?.shift();
-    const node = (key && nodes.get(key)) || stackStart(data);
+    let node = key ? nodes.get(key) : undefined;
+    if (!node) {
+      // No matching open node: this finish IS the first sight of the test, so
+      // the start stamp stackStart put on it (the finish event's clock) is a
+      // duration too late — backdate it.
+      node = stackStart(data);
+      node.startedAt = undefined;
+      backdateStart(node, data);
+    }
     assignFields(node, data);
     node.status = status;
     if (data.details?.duration_ms != null) node.durationMs = data.details.duration_ms;
@@ -520,6 +538,7 @@ export function createTreeStore(): TreeStore {
         if (data.testId == null) break;
         const status = statusFromComplete(data);
         upsertFromTestEvent(data, (node) => {
+          backdateStart(node, data);
           node.status = status;
           if (data.details?.duration_ms != null) node.durationMs = data.details.duration_ms;
           if (data.details?.type != null) node.type = data.details.type === 'suite' ? 'suite' : 'test';

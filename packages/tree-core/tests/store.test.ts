@@ -361,6 +361,30 @@ test('a replayed dequeue (re-read stream) keeps the original start stamp', () =>
   assert.strictEqual(leaf.startedAt, 500);
 });
 
+test('a finish whose start was never seen backdates startedAt by its duration', () => {
+  // testId-free result with no prior start (head-truncated log / mid-run attach).
+  const stackStore = createTreeStore();
+  apply(stackStore, [
+    { type: 'test:pass', t: 5000, data: { name: 't', nesting: 0, file: '/a.test.js', details: { duration_ms: 1200, type: 'test' } } },
+  ]);
+  assert.strictEqual(stackStore.getSnapshot().root.children[0].children[0].startedAt, 3800);
+
+  // Same for an execution-ordered completion that is the test's first sighting.
+  const completeStore = createTreeStore();
+  apply(completeStore, [
+    { type: 'test:complete', t: 5000, data: { name: 't', nesting: 0, file: '/a.test.js', testId: 2, parentId: 0, details: { duration_ms: 1200, passed: true, type: 'test' } } },
+  ]);
+  assert.strictEqual(completeStore.getSnapshot().root.children[0].children[0].startedAt, 3800);
+});
+
+test('a first-sighting finish without a measured duration stays unstamped', () => {
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:pass', t: 5000, data: { name: 't', nesting: 0, file: '/a.test.js', details: { type: 'test' } } },
+  ]);
+  assert.strictEqual(store.getSnapshot().root.children[0].children[0].startedAt, undefined);
+});
+
 test('stackStart stamps testId-free starts (v22-shaped streams)', () => {
   const store = createTreeStore();
   apply(store, [

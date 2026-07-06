@@ -44,6 +44,17 @@ export interface LiveClock {
 }
 
 /**
+ * A descendant that would count toward a duration (running, or measured) but
+ * carries no stamp — a mixed old/new-writer log. A span would silently drop
+ * it, so its container must fall back to summing instead.
+ */
+function hasUnstampedContributor(node: TestNode): boolean {
+  if (node.startedAt == null && !isContainer(node)
+    && (node.status === 'running' || node.durationMs != null)) return true;
+  return node.children.some(hasUnstampedContributor);
+}
+
+/**
  * Wall-clock span of a stamped subtree: earliest descendant start to latest
  * descendant end, where a still-running descendant ends at the projected
  * stream "now". Null when nothing in the subtree carries a stamp.
@@ -91,7 +102,7 @@ export function liveNodeDuration(
   }
   if (node.durationMs != null) return node.durationMs;
   if (!isContainer(node)) return 0;
-  if (streamNow != null) {
+  if (streamNow != null && !hasUnstampedContributor(node)) {
     const span = stampedSpan(node, streamNow);
     if (span) return Math.max(0, span.end - span.start);
   }

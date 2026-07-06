@@ -674,9 +674,12 @@ export function TreeView({
   }
   const clock = clockRef.current;
   // The run summary carries the real wall-clock; while still running, the
-  // stamped span of the whole tree is the run's true elapsed time (stamp-less
-  // logs fall back to aggregating files, which ticks with the run).
-  const duration = snapshot.summary?.durationMs ?? liveNodeDuration(snapshot.root, now, since, clock);
+  // stream's stamp range IS the run's elapsed time — first stamp to the
+  // projected "now" (stamp-less logs fall back to aggregating files, which
+  // ticks with the run).
+  const duration = snapshot.summary?.durationMs
+    ?? (snapshot.clock && clock ? clock.lastT + (now - clock.receivedAt) - snapshot.clock.firstT
+      : liveNodeDuration(snapshot.root, now, since, clock));
 
   // Enter-animation bookkeeping: play only for rows first seen during a live run,
   // staggered within each file so a file "unfurls" rather than popping as a slab.

@@ -278,15 +278,25 @@ test('a stamped container span covers finished children and keeps ticking with r
   assert.strictEqual(liveNodeDuration(file, 400, new Map(), clock), 9_400, 'ticks between polls');
 });
 
-test('a stamped span skips stampless children and ends abandoned nodes at their start', () => {
+test('a stamped span skips durationless stampless children and ends abandoned nodes at their start', () => {
   // A skipped/aborted node carries a start stamp but no measured duration; a
-  // stampless sibling (older-writer line mixed in) contributes nothing.
+  // stampless sibling with nothing measured contributes nothing either way.
   const abandoned = node({ key: 's', status: 'skipped', startedAt: 4_000 });
-  const stampless = node({ key: 'x', status: 'passed', durationMs: 500 });
+  const stampless = node({ key: 'x', status: 'passed' });
   const running = node({ key: 'r', status: 'running', startedAt: 1_000 });
   const file = node({ key: 'f', type: 'file', children: [abandoned, stampless, running] });
   const clock = { lastT: 9_000, receivedAt: 0 };
   assert.strictEqual(liveNodeDuration(file, 0, new Map(), clock), 8_000);
+});
+
+test('a measured stampless child disqualifies the span — the container sums instead', () => {
+  // Mixed old/new-writer log: a span would silently drop the 5-minute
+  // unstamped test while its own row still shows 5m. Fall back to summing.
+  const unstampedSlow = node({ key: 'x', status: 'passed', durationMs: 300_000 });
+  const stamped = node({ key: 'r', status: 'running', startedAt: 7_000 });
+  const file = node({ key: 'f', type: 'file', children: [unstampedSlow, stamped] });
+  const clock = { lastT: 9_000, receivedAt: 0 };
+  assert.strictEqual(liveNodeDuration(file, 0, new Map(), clock), 302_000);
 });
 
 test('a container with a clock but no stamped descendants falls back to summing', () => {

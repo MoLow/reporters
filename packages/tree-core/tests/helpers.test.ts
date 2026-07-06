@@ -78,6 +78,11 @@ test('a pre-stamped event keeps its own clock through the wire', () => {
   assert.strictEqual(toWireEvent({ type: 'test:pass', t: 777, data: {} }).t, 777);
 });
 
+test('an explicit undefined t still gets a fresh stamp', () => {
+  const line = serializeWireLine({ type: 'test:pass', t: undefined, data: { name: 't', testId: 1, nesting: 0 } });
+  assert.strictEqual(typeof JSON.parse(line).t, 'number');
+});
+
 test('parseWireLines parses NDJSON and skips blank or truncated lines', () => {
   const text = [
     '{"type":"test:start","data":{"name":"a"}}',

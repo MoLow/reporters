@@ -51,7 +51,8 @@ export function toWireEvent(event: TestEvent): TestEvent {
 /** Serialize one event as an NDJSON line, stamping the writer wall-clock so
  *  viewers can compute real elapsed times however late they join the stream. */
 export function serializeWireLine(event: TestEvent): string {
-  return `${JSON.stringify(toWireEvent({ t: Date.now(), ...event }))}\n`;
+  const stamped = event.t != null ? event : { ...event, t: Date.now() };
+  return `${JSON.stringify(toWireEvent(stamped))}\n`;
 }
 
 export function parseWireLines(text: string): TestEvent[] {
