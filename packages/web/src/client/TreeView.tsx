@@ -5,14 +5,14 @@ import {
   formatDuration, todoLabel, type Counts, type TestNode, type TestStatus, type TreeSnapshot,
 } from '@reporters/tree-core';
 import {
-  buildRows, collectContainerKeys, computeMatches, displayName, isContainer, isPassingTodo, liveNodeDuration, reasonOf, realError, type FlatRow,
+  buildRows, collectContainerKeys, collectDiagKeys, computeMatches, displayName, isContainer, isPassingTodo, liveNodeDuration, reasonOf, realError, type FlatRow,
 } from './rowModel.ts';
 
 // node:test captures colored output verbatim; render the ANSI SGR codes as real
 // colors (mapped to the theme's --ansi-* vars) rather than stripping them.
 import { AnsiHtml } from 'fancy-ansi/react';
 import {
-  classifyFrame, classifyStack, extractLevel, levelSeverity, splitUrls, type StackLine,
+  classifyFrame, classifyStack, extractLevel, formatCount, levelSeverity, splitUrls, stripAnsi, type StackLine,
 } from './format.ts';
 
 const GLYPH: Record<TestStatus, string> = {
@@ -23,15 +23,6 @@ const STATUS_LABEL: Record<TestStatus, string> = {
   passed: 'passed', failed: 'failed', skipped: 'skipped', todo: 'todo', running: 'running', queued: 'queued',
 };
 
-/** Severity of a test's diagnostics, for the row badge tint. */
-function diagSeverity(node: TestNode): TestStatus {
-  if (realError(node) || node.stderr.length > 0) return 'failed';
-  const sevs = node.diagnostics.map((d) => levelSeverity(extractLevel(d.message) ?? d.level));
-  if (sevs.includes('failed')) return 'failed';
-  if (sevs.includes('running')) return 'running';
-  return 'skipped';
-}
-
 interface OutLine { stream: 'out' | 'err'; text: string; }
 
 interface DiagBlock {
@@ -40,6 +31,10 @@ interface DiagBlock {
   icon: string;
   sev: TestStatus;
   kind: 'error' | 'output' | 'list' | 'text';
+  /** Header count (`Output · 1.9k lines`), also surfaced on the row chip. */
+  count?: { n: number; unit: string };
+  /** ANSI-stripped plain text for the Copy button. */
+  copyText: string;
   message?: string;
   stack?: string;
   text?: string;
@@ -135,35 +130,53 @@ function Stack({ stack }: { stack: string }) {
 // At most three sections per test — Error, Output, Diagnostics (plus a reason
 // for skipped/todo). stdout+stderr collapse into one Output block; text keeps
 // its ANSI (colored at render); synthetic container rollups never render an Error.
-function diagBlocks(node: TestNode): DiagBlock[] {
+function computeDiagBlocks(node: TestNode): DiagBlock[] {
   const blocks: DiagBlock[] = [];
   const error = realError(node);
   if (error) {
+    const stack = error.stack ?? error.message;
     blocks.push({
       key: 'error', title: 'Error', icon: '✕', sev: 'failed', kind: 'error',
-      message: error.message, stack: error.stack ?? error.message,
+      message: error.message, stack, copyText: stripAnsi(stack),
     });
   }
   const lines = outputLines(node);
   if (lines.length > 0) {
-    blocks.push({ key: 'output', title: 'Output', icon: '›', sev: 'skipped', kind: 'output', lines });
+    blocks.push({
+      key: 'output', title: 'Output', icon: '›', sev: 'skipped', kind: 'output', lines,
+      count: { n: lines.length, unit: lines.length === 1 ? 'line' : 'lines' },
+      copyText: stripAnsi(lines.map((l) => l.text).join('\n')),
+    });
   }
   if (node.diagnostics.length > 0) {
+    const items = node.diagnostics.map((d) => {
+      const level = extractLevel(d.message) ?? d.level;
+      return { level, sev: levelSeverity(level), text: d.message };
+    });
+    const sev: TestStatus = items.some((i) => i.sev === 'failed') ? 'failed'
+      : items.some((i) => i.sev === 'running') ? 'running' : 'skipped';
     blocks.push({
-      key: 'diag', title: 'Diagnostics', icon: '◇', sev: 'skipped', kind: 'list',
-      items: node.diagnostics.map((d) => {
-        const level = extractLevel(d.message) ?? d.level;
-        return { level, sev: levelSeverity(level), text: d.message };
-      }),
+      key: 'diag', title: 'Diagnostics', icon: '◇', sev, kind: 'list', items,
+      count: { n: items.length, unit: items.length === 1 ? 'note' : 'notes' },
+      copyText: stripAnsi(node.diagnostics.map((d) => d.message).join('\n')),
     });
   }
   const reason = reasonOf(node);
   if (reason) {
     blocks.push({
       key: 'reason', title: node.status === 'skipped' ? 'why skipped' : 'why todo',
-      icon: '⊘', sev: 'skipped', kind: 'text', text: reason,
+      icon: '⊘', sev: 'skipped', kind: 'text', text: reason, copyText: stripAnsi(reason),
     });
   }
+  return blocks;
+}
+
+// Blocks are needed by both the row chips and the open panel; splitting a huge
+// log into lines twice per render would hurt, so cache per snapshot node.
+const blocksCache = new WeakMap<TestNode, DiagBlock[]>();
+function diagBlocks(node: TestNode): DiagBlock[] {
+  let blocks = blocksCache.get(node);
+  if (!blocks) { blocks = computeDiagBlocks(node); blocksCache.set(node, blocks); }
   return blocks;
 }
 
@@ -200,7 +213,117 @@ const SearchIcon = () => (
   </svg>
 );
 
-function Diagnostics({ node, indent }: { node: TestNode; indent: string }) {
+function BlockContent({ block }: { block: DiagBlock }) {
+  return (
+    <>
+      {block.kind === 'error' ? (
+        <>
+          <div className="diag-msg" data-stc="failed"><Ansi text={block.message!} /></div>
+          <Stack stack={block.stack!} />
+        </>
+      ) : null}
+      {block.kind === 'output' ? (
+        <div className="out">
+          {block.lines!.map((line, i) => (
+            // eslint-disable-next-line react/no-array-index-key
+            <div className="out-line" data-err={line.stream === 'err' ? 'true' : undefined} key={i}>
+              <Ansi text={line.text === '' ? ' ' : line.text} />
+            </div>
+          ))}
+        </div>
+      ) : null}
+      {block.kind === 'text' ? (
+        <pre className="text"><Ansi text={block.text!} /></pre>
+      ) : null}
+      {block.kind === 'list' ? (
+        <div className="diag-list">
+          {block.items!.map((item, i) => (
+            // eslint-disable-next-line react/no-array-index-key
+            <div className="diag-item" key={i}>
+              <span className="diag-level" data-soft={item.sev}>{item.level}</span>
+              <span className="txt"><Ansi text={item.text} /></span>
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </>
+  );
+}
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = () => {
+    void navigator.clipboard?.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1200);
+    });
+  };
+  return <button type="button" className="hbtn" onClick={copy} title="Copy to clipboard">{copied ? 'Copied' : '⧉ Copy'}</button>;
+}
+
+/** The capped scroll region (§10a): every line stays reachable, the tree stays
+ *  visible around it. A failed node opens scrolled to the tail — the failure is
+ *  usually last. */
+function LogBody({ block, failed }: { block: DiagBlock; failed: boolean }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (el && failed) el.scrollTop = el.scrollHeight;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return <div className="log-body" ref={ref}><BlockContent block={block} /></div>;
+}
+
+function LogModal({ title, block, onClose }: { title: string; block: DiagBlock; onClose: () => void }) {
+  const [wrap, setWrap] = useState(true);
+  const boxRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const prev = document.activeElement as HTMLElement | null;
+    boxRef.current?.focus();
+    return () => prev?.focus?.();
+  }, []);
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') { e.stopPropagation(); onClose(); return; }
+    if (e.key !== 'Tab') return;
+    const focusables = boxRef.current?.querySelectorAll<HTMLElement>('button, a[href], input');
+    if (!focusables || focusables.length === 0) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  };
+  return (
+    // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events
+    <div className="modal-backdrop" onClick={onClose}>
+      <div
+        className={`modal${wrap ? ' wrap' : ''}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        ref={boxRef}
+        tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={onKeyDown}
+      >
+        <div className="modal-head">
+          <span className="diag-icon" data-stc={block.sev}>{block.icon}</span>
+          <span className="modal-title">{title}</span>
+          {block.count ? <span className="diag-count">{formatCount(block.count.n)} {block.count.unit}</span> : null}
+          <div className="diag-tools">
+            <CopyButton text={block.copyText} />
+            <button type="button" className="hbtn" data-on={wrap ? 'true' : undefined} onClick={() => setWrap(!wrap)} title="Toggle line wrapping">Wrap</button>
+            <button type="button" className="hbtn" onClick={onClose} aria-label="Close">✕</button>
+          </div>
+        </div>
+        <div className="modal-body"><BlockContent block={block} /></div>
+      </div>
+    </div>
+  );
+}
+
+function Diagnostics({ node, indent, onCollapse }: { node: TestNode; indent: string; onCollapse: () => void }) {
+  const [modal, setModal] = useState<DiagBlock | null>(null);
+  const failed = node.status === 'failed';
   return (
     <div className="diag" style={{ margin: `5px 12px 11px ${indent}` }}>
       {diagBlocks(node).map((block) => (
@@ -210,39 +333,20 @@ function Diagnostics({ node, indent }: { node: TestNode; indent: string }) {
             <div className="diag-head">
               <span className="diag-icon" data-stc={block.sev}>{block.icon}</span>
               <span className="diag-title">{block.title}</span>
+              {block.count ? <span className="diag-count">· {formatCount(block.count.n)} {block.count.unit}</span> : null}
+              <div className="diag-tools">
+                <CopyButton text={block.copyText} />
+                <button type="button" className="hbtn" onClick={() => setModal(block)} title="Open full log">⤢ Full log</button>
+                <button type="button" className="hbtn" onClick={onCollapse} title="Collapse this panel">Collapse</button>
+              </div>
             </div>
-            {block.kind === 'error' ? (
-              <>
-                <div className="diag-msg" data-stc="failed"><Ansi text={block.message!} /></div>
-                <Stack stack={block.stack!} />
-              </>
-            ) : null}
-            {block.kind === 'output' ? (
-              <div className="out">
-                {block.lines!.map((line, i) => (
-                  // eslint-disable-next-line react/no-array-index-key
-                  <div className="out-line" data-err={line.stream === 'err' ? 'true' : undefined} key={i}>
-                    <Ansi text={line.text === '' ? ' ' : line.text} />
-                  </div>
-                ))}
-              </div>
-            ) : null}
-            {block.kind === 'text' ? (
-              <pre className="text"><Ansi text={block.text!} /></pre>
-            ) : null}
-            {block.kind === 'list' ? (
-              <div className="diag-list">
-                {block.items!.map((item, i) => (
-                  <div className="diag-item" key={i}>
-                    <span className="diag-level" data-soft={item.sev}>{item.level}</span>
-                    <span className="txt"><Ansi text={item.text} /></span>
-                  </div>
-                ))}
-              </div>
-            ) : null}
+            <LogBody block={block} failed={failed} />
           </div>
         </div>
       ))}
+      {modal ? (
+        <LogModal title={`${modal.title} — ${displayName(node)}`} block={modal} onClose={() => setModal(null)} />
+      ) : null}
     </div>
   );
 }
@@ -281,6 +385,10 @@ function RowView({
     node, depth, status, container, expanded, hasDiag, diagOpen,
   } = row;
   const settled = useSettle(status);
+  // Mount the panel lazily (a closed panel of a 10k-line log costs nothing),
+  // but keep it mounted once opened so collapse animates and scroll survives.
+  const everOpen = useRef(diagOpen);
+  if (diagOpen) everOpen.current = true;
   const clickable = container || hasDiag;
   const toggleDiag = () => toggle(`${node.key}::diag`, diagOpen);
   const activate = () => {
@@ -335,26 +443,29 @@ function RowView({
           <span className="todotag" data-soft="todo"># {todoLabel(node)}</span>
         ) : null}
         {hasDiag ? (
-          // On a container the row click expands children, so the badge is its
-          // own control for the node's own output; on a leaf the row already
-          // toggles diagnostics, so the badge is just a label.
-          container ? (
-            <span
-              className="diagbadge"
-              role="button"
-              tabIndex={0}
-              aria-expanded={diagOpen}
-              data-soft={diagSeverity(node)}
-              onClick={(e) => { e.stopPropagation(); toggleDiag(); }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); toggleDiag(); }
-              }}
-            >
-              {diagOpen ? 'Hide' : 'Details'}
-            </span>
-          ) : (
-            <span className="diagbadge" data-soft={diagSeverity(node)}>{diagOpen ? 'Hide' : 'Details'}</span>
-          )
+          // Named, severity-tinted affordances (§10e): what's inside and how
+          // much of it, not a generic "Details". On a container the row click
+          // expands children, so the chip group is its own control for the
+          // node's own output; on a leaf the row already toggles diagnostics,
+          // so the chips are labels.
+          <span
+            className="affs"
+            role={container ? 'button' : undefined}
+            tabIndex={container ? 0 : undefined}
+            aria-expanded={container ? diagOpen : undefined}
+            data-active={diagOpen ? 'true' : undefined}
+            onClick={container ? (e) => { e.stopPropagation(); toggleDiag(); } : undefined}
+            onKeyDown={container ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); toggleDiag(); }
+            } : undefined}
+          >
+            {diagBlocks(node).map((block) => (
+              <span className="affch" data-soft={block.sev} key={block.key}>
+                {block.icon} {block.title}
+                {block.count ? ` · ${formatCount(block.count.n)} ${block.count.unit}` : ''}
+              </span>
+            ))}
+          </span>
         ) : null}
         <span className="spacer" />
         {container && !expanded ? (
@@ -368,7 +479,9 @@ function RowView({
       </div>
       {hasDiag ? (
         <div className={`collapsible${diagOpen ? ' open' : ''}`}>
-          <div className="inner"><Diagnostics node={node} indent={indent} /></div>
+          <div className="inner">
+            {everOpen.current ? <Diagnostics node={node} indent={indent} onCollapse={toggleDiag} /> : null}
+          </div>
         </div>
       ) : null}
     </div>
@@ -463,10 +576,15 @@ export function TreeView({
   const toggleAll = () => {
     const keys: string[] = [];
     collectContainerKeys(files, keys);
+    const diagKeys: string[] = [];
+    collectDiagKeys(files, diagKeys);
     const expand = allCollapsed; // currently collapsed -> expand; else collapse
     setOverrides((prev) => {
       const next = new Map(prev);
       for (const key of keys) next.set(key, expand);
+      // Collapse All also folds every open output panel (§10d); expanding
+      // clears those overrides so failed leaves reopen by default.
+      for (const key of diagKeys) { if (expand) next.delete(key); else next.set(key, false); }
       return next;
     });
     setAllCollapsed(!allCollapsed);

@@ -3,7 +3,7 @@ import assert from 'node:assert';
 import { createTreeStore } from '@reporters/tree-core';
 import type { Counts, TestEvent, TestNode } from '@reporters/tree-core';
 import {
-  buildRows, collectContainerKeys, computeMatches, displayName, hasDiagnostics,
+  buildRows, collectContainerKeys, collectDiagKeys, computeMatches, displayName, hasDiagnostics,
   isDiagOpen, isExpanded, isPassingTodo, liveNodeDuration, nodeDuration, reasonOf, realError, rollup,
 } from '../src/client/rowModel.ts';
 
@@ -134,11 +134,31 @@ test('isExpanded honors query force, overrides, then per-type defaults', () => {
   assert.strictEqual(isExpanded(node({ key: 't', type: 'test' }), opts()), false);
 });
 
-test('isDiagOpen defaults to open only for failures, but an override wins', () => {
+test('isDiagOpen defaults to open only for failed leaves, but an override wins', () => {
   assert.strictEqual(isDiagOpen(node({ key: 'a', status: 'failed' }), new Map()), true);
   assert.strictEqual(isDiagOpen(node({ key: 'a', status: 'passed' }), new Map()), false);
   assert.strictEqual(isDiagOpen(node({ key: 'a', status: 'failed' }), new Map([['a::diag', false]])), false);
   assert.strictEqual(isDiagOpen(node({ key: 'a', status: 'passed' }), new Map([['a::diag', true]])), true);
+  // containers never auto-open their own output, even when failed (§10f)
+  const failedContainer = node({ key: 'a', status: 'failed', children: [node({ key: 'a/b' })] });
+  assert.strictEqual(isDiagOpen(failedContainer, new Map()), false);
+  assert.strictEqual(isDiagOpen(failedContainer, new Map([['a::diag', true]])), true);
+});
+
+test('collectDiagKeys gathers ::diag keys for nodes that have output', () => {
+  const file = node({
+    key: 'f',
+    type: 'file',
+    stdout: ['hi\n'],
+    children: [
+      node({ key: 'f/t1', error: { message: 'boom' }, status: 'failed' }),
+      node({ key: 'f/t2' }),
+    ],
+    counts: { ...zeroCounts(), failed: 1, passed: 1, total: 2 },
+  });
+  const keys: string[] = [];
+  collectDiagKeys([file], keys);
+  assert.deepStrictEqual(keys, ['f::diag', 'f/t1::diag']);
 });
 
 test('buildRows drops nodes filtered out by an active query', () => {

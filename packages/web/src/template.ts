@@ -145,7 +145,10 @@ button { font-family: inherit; } input { font-family: inherit; }
 .name[data-kind="file"] { font-family: var(--mono); font-weight: 700; }
 .name[data-kind="suite"] { font-weight: 600; }
 .name[data-kind="test"] { font-weight: 450; }
-.diagbadge { flex: none; font-size: 10px; font-weight: 600; border-radius: 6px; padding: 1px 6px; }
+/* named output affordances (§10e): what's inside, tinted by severity */
+.affs { display: inline-flex; gap: 5px; flex: none; align-items: center; border-radius: 7px; }
+.affch { flex: none; font-size: 10px; font-weight: 600; border-radius: 6px; padding: 1px 7px; white-space: nowrap; border: 1px solid transparent; }
+.affs[data-active] .affch { border-color: currentColor; }
 .todotag { flex: none; font-size: 10px; font-weight: 600; border-radius: 6px; padding: 1px 6px; }
 .spacer { flex: 1; min-width: 10px; }
 .pills { display: inline-flex; gap: 5px; flex: none; margin-right: 9px; }
@@ -158,26 +161,48 @@ button { font-family: inherit; } input { font-family: inherit; }
 .diag-sec + .diag-sec { border-top: 1px solid var(--line); }
 .diag-bar { width: 3px; flex: none; }
 .diag-body { flex: 1; min-width: 0; }
-.diag-head { display: flex; align-items: center; gap: 7px; padding: 8px 13px; }
+/* the header sticks inside the tree scroller, so Collapse is reachable at any depth (§10d) */
+.diag-head { display: flex; align-items: center; gap: 7px; padding: 8px 13px; position: sticky; top: 0; z-index: 1; background: var(--panel-2); }
 .diag-icon { font-weight: 800; font-size: 12px; }
 .diag-title { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--dim); }
+.diag-count { font-size: 10.5px; font-weight: 600; color: var(--faint); font-variant-numeric: tabular-nums; }
+.diag-tools { margin-left: auto; display: flex; gap: 6px; align-items: center; }
+.hbtn { background: transparent; border: 1px solid var(--line); color: var(--dim); border-radius: 7px; padding: 2px 8px; font-size: 10.5px; font-weight: 600; cursor: pointer; transition: background .13s, color .13s; }
+.hbtn:hover { background: var(--raise); color: var(--fg); }
+.hbtn[data-on] { color: var(--accent); border-color: var(--accent); }
+/* the capped scroll region (§10a): the panel never grows past ~1 screen; long
+   and wide content scrolls in here, never the page */
+.log-body { max-height: 260px; overflow: auto; overscroll-behavior: contain; }
 .diag-msg { padding: 0 14px; }
 .diag-msg span { font-size: 13px; font-weight: 600; }
 .diag pre { margin: 0; font-family: var(--mono); font-size: 11.5px; line-height: 1.55; }
-.diag pre.stack { padding: 2px 14px 13px; color: var(--fg); overflow-x: auto; white-space: pre; }
+.diag pre.stack { padding: 2px 14px 13px; color: var(--fg); white-space: pre; }
 .stack-line[data-kind="internal"], .frame[data-kind="internal"] { color: var(--faint); }
 .stack-loc { color: var(--ansi-cyan); }
-.diag pre.text { padding: 2px 14px 13px; color: var(--fg); overflow-x: auto; white-space: pre-wrap; word-break: break-word; }
+.diag pre.text { padding: 2px 14px 13px; color: var(--fg); white-space: pre-wrap; word-break: break-word; }
 /* merged stdout+stderr: one block, per-line stream tagging */
 .out { padding: 4px 14px 12px; }
 .out-line { position: relative; padding-left: 12px; font-family: var(--mono); font-size: 11.5px; line-height: 1.55; color: var(--fg); white-space: pre-wrap; word-break: break-word; }
 .out-line[data-err]::before { content: ""; position: absolute; left: 0; top: 3px; bottom: 3px; width: 2px; border-radius: 1px; background: var(--st-failed); }
 .diag-list { padding: 2px 14px 12px; display: flex; flex-direction: column; gap: 6px; }
 .diag-item { font-size: 12.5px; color: var(--fg); display: flex; gap: 9px; align-items: baseline; }
+/* huge logs stay smooth: offscreen lines skip layout/paint but remain scrollable (§10b) */
+.out-line, .diag-item { content-visibility: auto; contain-intrinsic-size: auto 19px; }
 .diag-level { font-size: 9.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; flex: none; border-radius: 5px; padding: 1px 6px; }
 .diag-item .txt { font-family: var(--mono); font-size: 12px; white-space: pre-wrap; word-break: break-word; }
 .diag a { color: var(--st-todo); text-decoration: underline; text-underline-offset: 2px; word-break: break-all; }
 .diag a:hover { filter: brightness(1.15); }
+
+/* full-log modal (§10c) */
+@keyframes modalIn { from { opacity: 0; transform: translateY(6px) scale(.985); } to { opacity: 1; transform: none; } }
+.modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 50; display: flex; align-items: center; justify-content: center; padding: 4vh 4vw; }
+.modal { background: var(--panel); border: 1px solid var(--line-2); border-radius: 16px; box-shadow: 0 24px 64px rgba(0,0,0,.45); width: min(1100px, 100%); max-height: 88vh; display: flex; flex-direction: column; outline: none; animation: modalIn 180ms var(--ease-out) both; }
+.modal-head { display: flex; align-items: center; gap: 8px; padding: 11px 16px; border-bottom: 1px solid var(--line); }
+.modal-title { font-size: 12.5px; font-weight: 700; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.modal-body { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 8px 4px; }
+.modal-body pre, .modal-body .out-line, .modal-body .diag-item .txt { white-space: pre; word-break: normal; }
+.modal.wrap .modal-body pre, .modal.wrap .modal-body .out-line, .modal.wrap .modal-body .diag-item .txt { white-space: pre-wrap; word-break: break-word; }
+@media (prefers-reduced-motion: reduce) { .modal { animation: none; } }
 
 /* full-tree states */
 .state { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 13px; padding: 66px 20px; text-align: center; }

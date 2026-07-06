@@ -160,7 +160,10 @@ export function isExpanded(node: TestNode, opts: BuildOptions): boolean {
 
 export function isDiagOpen(node: TestNode, overrides: Map<string, boolean>): boolean {
   const key = `${node.key}::diag`;
-  return overrides.has(key) ? overrides.get(key)! : node.status === 'failed';
+  if (overrides.has(key)) return overrides.get(key)!;
+  // Only a failed *leaf* auto-opens; a container's aggregated output stays
+  // closed until asked, so it can't bury the tree.
+  return !isContainer(node) && node.status === 'failed';
 }
 
 export function buildRows(files: TestNode[], opts: BuildOptions): FlatRow[] {
@@ -194,5 +197,12 @@ export function buildRows(files: TestNode[], opts: BuildOptions): FlatRow[] {
 export function collectContainerKeys(nodes: TestNode[], into: string[]): void {
   for (const node of nodes) {
     if (isContainer(node)) { into.push(node.key); collectContainerKeys(node.children, into); }
+  }
+}
+
+export function collectDiagKeys(nodes: TestNode[], into: string[]): void {
+  for (const node of nodes) {
+    if (hasDiagnostics(node)) into.push(`${node.key}::diag`);
+    collectDiagKeys(node.children, into);
   }
 }

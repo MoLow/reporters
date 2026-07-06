@@ -1,8 +1,16 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
 import {
-  classifyFrame, classifyStack, extractLevel, levelSeverity, splitUrls, stripAnsi,
+  classifyFrame, classifyStack, extractLevel, formatCount, levelSeverity, splitUrls, stripAnsi,
 } from '../src/client/format.ts';
+
+test('formatCount: exact under 1000, compact k above', () => {
+  assert.strictEqual(formatCount(0), '0');
+  assert.strictEqual(formatCount(999), '999');
+  assert.strictEqual(formatCount(1000), '1k');
+  assert.strictEqual(formatCount(1948), '1.9k');
+  assert.strictEqual(formatCount(12400), '12.4k');
+});
 
 test('stripAnsi removes SGR codes', () => {
   assert.strictEqual(stripAnsi('[32mINFO[39m: hi'), 'INFO: hi');
