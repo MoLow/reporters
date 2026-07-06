@@ -145,15 +145,18 @@ button { font-family: inherit; } input { font-family: inherit; }
 .name[data-kind="file"] { font-family: var(--mono); font-weight: 700; }
 .name[data-kind="suite"] { font-weight: 600; }
 .name[data-kind="test"] { font-weight: 450; }
-/* named output affordances (§10e): what's inside, tinted by severity — the
-   whole group is the diagnostics toggle on every row */
-.affs { display: inline-flex; gap: 5px; flex: none; align-items: center; border-radius: 7px; cursor: pointer; padding: 1px 3px; }
-.affs:hover { background: var(--row-hover); }
-.affs:hover .affch { filter: brightness(1.12); }
-.affch { flex: none; font-size: 10px; font-weight: 600; border-radius: 6px; padding: 1px 7px; white-space: nowrap; border: 1px solid transparent; }
-.affs[data-active] .affch { border-color: currentColor; }
-.affcaret { color: var(--faint); font-size: 9px; transition: transform 160ms var(--ease-out); }
-.affcaret[data-open] { transform: rotate(180deg); }
+/* named output affordances (§10e + design ruling): a bordered, left-chevron
+   pill group — the disclosure trigger for the row's output panel. Error is
+   loud (filled failed tint); the rest are quiet outline pills until hover;
+   open reads as pressed. */
+.affs { display: inline-flex; gap: 5px; flex: none; align-items: center; border-radius: 999px; cursor: pointer; padding: 2px 8px 2px 6px; min-height: 24px; border: 1px solid var(--line); background: transparent; transition: border-color .13s, background-color .13s; }
+.affs:hover { border-color: var(--line-2); background: var(--row-hover); }
+.affs[data-active] { border-color: var(--line-2); background: var(--panel-2); }
+.affch { flex: none; font-size: 10px; font-weight: 600; border-radius: 999px; padding: 1px 7px; white-space: nowrap; border: 1px solid transparent; }
+/* quiet chips sit neutral until the group is hovered or open */
+.affs:not(:hover):not([data-active]) .affch[data-quiet] { background: transparent; color: var(--dim); }
+.affcaret { color: var(--faint); font-size: 9px; line-height: 1; transition: transform 160ms var(--ease-out); }
+.affcaret[data-open] { transform: rotate(90deg); }
 .todotag { flex: none; font-size: 10px; font-weight: 600; border-radius: 6px; padding: 1px 6px; }
 .spacer { flex: 1; min-width: 10px; }
 .pills { display: inline-flex; gap: 5px; flex: none; margin-right: 9px; }

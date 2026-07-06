@@ -165,9 +165,10 @@ function computeDiagBlocks(node: TestNode): DiagBlock[] {
   const reason = reasonOf(node);
   if (reason) {
     const plain = stripAnsi(reason).replace(/\s+/g, ' ').trim();
+    const label = `${node.status === 'skipped' ? 'Skipped' : 'Todo'}: ${plain}`;
     blocks.push({
       key: 'reason', title: node.status === 'skipped' ? 'why skipped' : 'why todo',
-      chip: plain.length > 32 ? `${plain.slice(0, 31)}…` : plain,
+      chip: label.length > 40 ? `${label.slice(0, 39)}…` : label,
       icon: '⊘', sev: 'skipped', kind: 'text', text: reason, copyText: stripAnsi(reason),
     });
   }
@@ -360,10 +361,18 @@ function LogModal({ title, block, onClose }: { title: string; block: DiagBlock; 
   );
 }
 
-function Diagnostics({ node, indent, onCollapse }: { node: TestNode; indent: string; onCollapse: () => void }) {
+function Diagnostics({
+  node, indent, onCollapse, modalNonce = 0,
+}: {
+  node: TestNode; indent: string; onCollapse: () => void; modalNonce?: number;
+}) {
   const [modal, setModal] = useState<DiagBlock | null>(null);
+  useEffect(() => {
+    if (modalNonce > 0) setModal(diagBlocks(node)[0] ?? null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modalNonce]);
   return (
-    <div className="diag" style={{ margin: `5px 12px 11px ${indent}` }}>
+    <div className="diag" role="group" aria-label={`Output of ${displayName(node)}`} style={{ margin: `5px 12px 11px ${indent}` }}>
       {diagBlocks(node).map((block) => (
         <DiagSection
           block={block}
@@ -420,6 +429,14 @@ function RowView({
   if (diagOpen) everOpen.current = true;
   const clickable = container || hasDiag;
   const toggleDiag = () => toggle(`${node.key}::diag`, diagOpen);
+  // Double-click accelerator (design ruling Q4): straight to the full-log
+  // modal. Never the only path — the panel header's Full log button is the
+  // discoverable one.
+  const [modalNonce, setModalNonce] = useState(0);
+  const onDoubleClick = !container && hasDiag ? () => {
+    if (!diagOpen) toggleDiag();
+    setModalNonce((n) => n + 1);
+  } : undefined;
   const activate = () => {
     if (container) toggle(node.key, expanded);
     else if (hasDiag) toggleDiag();
@@ -454,6 +471,7 @@ function RowView({
         data-fail={isTest && status === 'failed'}
         data-running={status === 'running' ? 'true' : undefined}
         onClick={clickable ? activate : undefined}
+        onDoubleClick={onDoubleClick}
         // A pointer click shouldn't paint the keyboard focus ring on the row
         // (Safari matches :focus-visible on clicked tabindex elements).
         onMouseDown={(e) => e.preventDefault()}
@@ -475,15 +493,16 @@ function RowView({
           <span className="todotag" data-soft="todo"># {todoLabel(node)}</span>
         ) : null}
         {hasDiag ? (
-          // Named, severity-tinted affordances (§10e): what's inside and how
-          // much of it, not a generic "Details". The chip group is the
-          // diagnostics toggle on every row — one consistent control whether
-          // or not the row also expands children.
+          // A bordered, left-chevron pill group naming what's inside (§10e +
+          // design ruling): the disclosure trigger for this row's output panel.
+          // On a leaf the row click does the same; on a container this is the
+          // only trigger, since the row click is spoken for by the children.
           <span
             className="affs"
             role="button"
             tabIndex={0}
             aria-expanded={diagOpen}
+            aria-label={`${diagOpen ? 'Hide' : 'Show'} ${diagBlocks(node).map((b) => b.title.toLowerCase()).join(', ')}`}
             data-active={diagOpen ? 'true' : undefined}
             onMouseDown={(e) => e.preventDefault()}
             onClick={(e) => { e.stopPropagation(); toggleDiag(); }}
@@ -491,16 +510,21 @@ function RowView({
               if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); toggleDiag(); }
             }}
           >
+            <span className="affcaret" data-open={diagOpen ? 'true' : undefined}>▸</span>
             {diagBlocks(node)
               // The passing-todo tag already names the reason — don't repeat it.
               .filter((block) => !(block.key === 'reason' && isPassingTodo(node)))
               .map((block) => (
-                <span className="affch" data-soft={block.sev} key={block.key}>
-                  {block.icon} {block.chip ?? block.title}
+                <span
+                  className="affch"
+                  data-soft={block.sev}
+                  data-quiet={block.key === 'error' ? undefined : 'true'}
+                  key={block.key}
+                >
+                  {block.chip ?? block.title}
                   {block.count ? ` · ${formatCount(block.count.n)} ${block.count.unit}` : ''}
                 </span>
               ))}
-            <span className="affcaret" data-open={diagOpen ? 'true' : undefined}>▾</span>
           </span>
         ) : null}
         <span className="spacer" />
@@ -516,7 +540,9 @@ function RowView({
       {hasDiag ? (
         <div className={`collapsible${diagOpen ? ' open' : ''}`}>
           <div className="inner">
-            {everOpen.current ? <Diagnostics node={node} indent={indent} onCollapse={toggleDiag} /> : null}
+            {everOpen.current ? (
+              <Diagnostics node={node} indent={indent} onCollapse={toggleDiag} modalNonce={modalNonce} />
+            ) : null}
           </div>
         </div>
       ) : null}
