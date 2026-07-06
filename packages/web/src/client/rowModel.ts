@@ -32,18 +32,70 @@ export function nodeDuration(node: TestNode): number {
 }
 
 /**
- * Like `nodeDuration`, but a still-running leaf counts the time elapsed since
- * the client first saw it running (`since`), so its counter ticks live between
- * polls instead of sitting at 0 until the run settles.
+ * The client's fix on the stream's clock: `lastT` is the newest writer stamp
+ * seen, `receivedAt` the client clock (performance.now) when it arrived. The
+ * pair projects the writer's "now" between polls, so live counters tick
+ * smoothly yet always measure writer-stamp against writer-stamp — a viewer
+ * that joins (or reloads) mid-run still shows true elapsed times.
  */
-export function liveNodeDuration(node: TestNode, now: number, since: Map<string, number>): number {
+export interface LiveClock {
+  lastT: number;
+  receivedAt: number;
+}
+
+/**
+ * Wall-clock span of a stamped subtree: earliest descendant start to latest
+ * descendant end, where a still-running descendant ends at the projected
+ * stream "now". Null when nothing in the subtree carries a stamp.
+ */
+function stampedSpan(node: TestNode, streamNow: number): { start: number; end: number } | null {
+  let span: { start: number; end: number } | null = null;
+  const fold = (start: number, end: number) => {
+    if (!span) span = { start, end };
+    else {
+      span.start = Math.min(span.start, start);
+      span.end = Math.max(span.end, end);
+    }
+  };
+  if (node.startedAt != null) {
+    const end = node.status === 'running' ? streamNow
+      : node.durationMs != null ? node.startedAt + node.durationMs : node.startedAt;
+    fold(node.startedAt, end);
+  }
+  for (const child of node.children) {
+    const s = stampedSpan(child, streamNow);
+    if (s) fold(s.start, s.end);
+  }
+  return span;
+}
+
+/**
+ * Like `nodeDuration`, but live: a running leaf measures from its own start
+ * stamp against the projected stream "now", and an unmeasured container spans
+ * its stamped descendants' wall-clock instead of summing them (concurrent
+ * children overlap — 80 running tests summed would tick 80× real time).
+ * Stamp-less streams (older writers) fall back to anchoring on when the client
+ * first saw each leaf running (`since`) and summing unmeasured containers.
+ */
+export function liveNodeDuration(
+  node: TestNode,
+  now: number,
+  since: Map<string, number>,
+  clock?: LiveClock | null,
+): number {
+  const streamNow = clock ? clock.lastT + (now - clock.receivedAt) : null;
   if (!isContainer(node) && node.status === 'running') {
+    if (streamNow != null && node.startedAt != null) return Math.max(0, streamNow - node.startedAt);
     if (!since.has(node.key)) since.set(node.key, now); // first sight: start the clock
     return Math.max(0, now - since.get(node.key)!);
   }
   if (node.durationMs != null) return node.durationMs;
   if (!isContainer(node)) return 0;
-  return node.children.reduce((total, child) => total + liveNodeDuration(child, now, since), 0);
+  if (streamNow != null) {
+    const span = stampedSpan(node, streamNow);
+    if (span) return Math.max(0, span.end - span.start);
+  }
+  return node.children.reduce((total, child) => total + liveNodeDuration(child, now, since, clock), 0);
 }
 
 /** Container status = the worst status among descendants (severity order). */

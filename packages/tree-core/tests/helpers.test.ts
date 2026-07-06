@@ -63,6 +63,21 @@ test('serializeWireLine produces one parseable JSON line per event', () => {
   assert.strictEqual(JSON.parse(line).type, 'test:pass');
 });
 
+test('serializeWireLine stamps the event with the writer wall-clock', () => {
+  const before = Date.now();
+  const line = serializeWireLine({ type: 'test:pass', data: { name: 't', testId: 1, nesting: 0 } });
+  const after = Date.now();
+  const { t } = JSON.parse(line);
+  assert.strictEqual(typeof t, 'number');
+  assert.ok(t >= before && t <= after);
+});
+
+test('a pre-stamped event keeps its own clock through the wire', () => {
+  const line = serializeWireLine({ type: 'test:pass', t: 12345, data: { name: 't', testId: 1, nesting: 0 } });
+  assert.strictEqual(JSON.parse(line).t, 12345);
+  assert.strictEqual(toWireEvent({ type: 'test:pass', t: 777, data: {} }).t, 777);
+});
+
 test('parseWireLines parses NDJSON and skips blank or truncated lines', () => {
   const text = [
     '{"type":"test:start","data":{"name":"a"}}',

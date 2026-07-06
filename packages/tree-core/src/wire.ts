@@ -19,6 +19,7 @@ function flattenError(raw: unknown): unknown {
 export function toWireEvent(event: TestEvent): TestEvent {
   const d = event.data ?? {};
   const data: TestEventData = {};
+  const t = event.t;
   if (d.name != null) data.name = d.name;
   if (d.nesting != null) data.nesting = d.nesting;
   if (d.file != null) data.file = d.file;
@@ -44,11 +45,13 @@ export function toWireEvent(event: TestEvent): TestEvent {
       error: flattenError(d.details.error) as Error | undefined,
     };
   }
-  return { type: event.type, data };
+  return t != null ? { type: event.type, t, data } : { type: event.type, data };
 }
 
+/** Serialize one event as an NDJSON line, stamping the writer wall-clock so
+ *  viewers can compute real elapsed times however late they join the stream. */
 export function serializeWireLine(event: TestEvent): string {
-  return `${JSON.stringify(toWireEvent(event))}\n`;
+  return `${JSON.stringify(toWireEvent({ t: Date.now(), ...event }))}\n`;
 }
 
 export function parseWireLines(text: string): TestEvent[] {

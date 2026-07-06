@@ -251,6 +251,41 @@ test('liveNodeDuration ticks running leaves but keeps measured containers fixed'
   assert.strictEqual(liveNodeDuration(node({ key: 'q', status: 'queued' }), 9999, since), 0, 'an unmeasured, not-running leaf has no duration');
 });
 
+test('a stamped running leaf measures from its own start, immune to client resets', () => {
+  const leaf = node({ key: 'r', status: 'running', startedAt: 1_000 });
+  const clock = { lastT: 61_000, receivedAt: 5_000 };
+  assert.strictEqual(liveNodeDuration(leaf, 5_250, new Map(), clock), 60_250);
+  // A page reload throws away every client-side anchor; the stamps still give
+  // the same answer — the counter never restarts from zero.
+  assert.strictEqual(liveNodeDuration(leaf, 5_500, new Map(), clock), 60_500);
+});
+
+test('a stamped container spans wall-clock instead of summing concurrent children', () => {
+  const early = node({ key: 'a', status: 'running', startedAt: 1_000 });
+  const late = node({ key: 'b', status: 'running', startedAt: 31_000 });
+  const file = node({ key: 'f', type: 'file', children: [early, late] });
+  const clock = { lastT: 61_000, receivedAt: 500 };
+  // Two concurrent leaves 60s and 30s in: the file has been running 60s, not 90s.
+  assert.strictEqual(liveNodeDuration(file, 500, new Map(), clock), 60_000);
+});
+
+test('a stamped container span covers finished children and keeps ticking with running ones', () => {
+  const done = node({ key: 'd', status: 'passed', startedAt: 1_000, durationMs: 2_000 });
+  const running = node({ key: 'r', status: 'running', startedAt: 2_000 });
+  const file = node({ key: 'f', type: 'file', children: [done, running] });
+  const clock = { lastT: 10_000, receivedAt: 0 };
+  assert.strictEqual(liveNodeDuration(file, 0, new Map(), clock), 9_000);
+  assert.strictEqual(liveNodeDuration(file, 400, new Map(), clock), 9_400, 'ticks between polls');
+});
+
+test('without stamps the clock is ignored and the legacy client anchor applies', () => {
+  const since = new Map<string, number>();
+  const leaf = node({ key: 'r', status: 'running' });
+  const clock = { lastT: 61_000, receivedAt: 5_000 };
+  assert.strictEqual(liveNodeDuration(leaf, 1_000, since, clock), 0, 'first sight starts at zero');
+  assert.strictEqual(liveNodeDuration(leaf, 1_300, since, clock), 300);
+});
+
 test('isPassingTodo flags only a passed leaf that still carries the todo directive', () => {
   assert.strictEqual(isPassingTodo(node({ status: 'passed', todo: true })), true);
   assert.strictEqual(isPassingTodo(node({ status: 'passed', todo: 'evaluating' })), true);

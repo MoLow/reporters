@@ -324,3 +324,39 @@ test('testId-free results settle the node type from details.type (v22-shaped)', 
   assert.strictEqual(group.type, 'suite');
   assert.deepStrictEqual(group.children.map((c) => [c.name, c.type]), [['leaf', 'test']]);
 });
+
+test('stamped events record when each test started and the stream clock', () => {
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:enqueue', t: 1000, data: { name: 'a.test.js', file: '/a.test.js', nesting: 0, testId: 1, parentId: 0 } },
+    { type: 'test:dequeue', t: 1005, data: { name: 'a.test.js', file: '/a.test.js', nesting: 0, testId: 1, parentId: 0 } },
+    { type: 'test:enqueue', t: 1010, data: { name: 'slow', file: '/a.test.js', nesting: 0, testId: 2, parentId: 0 } },
+    { type: 'test:dequeue', t: 2000, data: { name: 'slow', file: '/a.test.js', nesting: 0, testId: 2, parentId: 0 } },
+  ]);
+  const snapshot = store.getSnapshot();
+  assert.deepStrictEqual(snapshot.clock, { firstT: 1000, lastT: 2000 });
+  const leaf = snapshot.root.children[0].children[0];
+  assert.strictEqual(leaf.name, 'slow');
+  assert.strictEqual(leaf.status, 'running');
+  assert.strictEqual(leaf.startedAt, 2000, 'startedAt is the stamp of the event that set it running');
+});
+
+test('a buffered declaration start never moves startedAt off the eager dequeue stamp', () => {
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:dequeue', t: 500, data: { name: 't', file: '/a.test.js', nesting: 0, testId: 2, parentId: 0 } },
+    { type: 'test:start', t: 9000, data: { name: 't', file: '/a.test.js', nesting: 0, testId: 2, parentId: 0 } },
+  ]);
+  const leaf = store.getSnapshot().root.children[0].children[0];
+  assert.strictEqual(leaf.startedAt, 500);
+});
+
+test('unstamped events leave startedAt and the stream clock unset', () => {
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:dequeue', data: { name: 't', file: '/a.test.js', nesting: 0, testId: 2, parentId: 0 } },
+  ]);
+  const snapshot = store.getSnapshot();
+  assert.strictEqual(snapshot.clock, undefined);
+  assert.strictEqual(snapshot.root.children[0].children[0].startedAt, undefined);
+});

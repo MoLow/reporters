@@ -41,6 +41,9 @@ export interface TestNode {
   type: NodeType;
   status: TestStatus;
   durationMs?: number;
+  /** Writer wall-clock (`t` of the event that set it running); viewers diff
+   *  stamps against each other, never against their own clock. */
+  startedAt?: number;
   error?: SerializedError;
   diagnostics: Diagnostic[];
   stdout: string[];
@@ -65,6 +68,10 @@ export interface TreeSnapshot {
   root: TestNode;
   counts: Counts;
   summary?: SummaryData;
+  /** Stamp range of the stream so far — the run's elapsed wall-clock is
+   *  `lastT - firstT`, independent of when a viewer joined. Absent when the
+   *  stream carries no stamps (logs from older writers). */
+  clock?: { firstT: number; lastT: number };
 }
 
 /** The fields of a `node:test` reporter event that the store consumes. */
@@ -96,6 +103,8 @@ export interface TestEventData {
 
 export interface TestEvent {
   type: string;
+  /** Writer wall-clock (epoch ms), stamped when the event is serialized. */
+  t?: number;
   data: TestEventData;
 }
 

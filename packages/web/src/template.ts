@@ -111,7 +111,7 @@ button { font-family: inherit; } input { font-family: inherit; }
 .verdict-glyph { font-size: 17px; font-weight: 800; line-height: 1; }
 .verdict-text { display: flex; flex-direction: column; line-height: 1.15; }
 .verdict-main { font-size: 15px; font-weight: 700; letter-spacing: .01em; }
-.verdict-sub { font-size: 11px; opacity: .85; }
+.verdict-sub { font-size: 11px; opacity: .85; font-variant-numeric: tabular-nums; }
 .chips { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
 .chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; border: 1px solid transparent; cursor: pointer; font-family: inherit; }
 .chip:hover { filter: brightness(1.12); }

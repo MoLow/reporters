@@ -28,6 +28,7 @@ interface InternalNode {
   type: NodeType;
   status: TestStatus;
   durationMs?: number;
+  startedAt?: number;
   error?: SerializedError;
   diagnostics: TestNode['diagnostics'];
   stdout: string[];
@@ -119,6 +120,12 @@ export function createTreeStore(): TreeStore {
   let autoId = 0;
   let sawFileWrapper = false;
   let summary: SummaryData | undefined;
+  // Wall-clock stamps from the writer (`event.t`). `currentT` is the stamp of
+  // the event being applied, so the helpers that mark a node running can record
+  // when it actually started without threading it through every signature.
+  let firstT: number | undefined;
+  let lastT: number | undefined;
+  let currentT: number | undefined;
   let dirty = true;
   let version = 0;
   let cached: TreeSnapshot | null = null;
@@ -357,7 +364,10 @@ export function createTreeStore(): TreeStore {
     if (!settled) placeInDeclOrder(node);
     settleGroup(node.parentKey!);
     assignFields(node, data);
-    if (!TERMINAL.has(node.status)) node.status = 'running';
+    if (!TERMINAL.has(node.status)) {
+      node.status = 'running';
+      node.startedAt ??= currentT;
+    }
     declOpen.set(nesting, node.key);
     for (const level of [...declOpen.keys()]) if (level > nesting) declOpen.delete(level);
     const nestingMap = lastByGroupNesting.get(gk) ?? new Map<number, string>();
@@ -408,6 +418,7 @@ export function createTreeStore(): TreeStore {
     settleGroup(node.parentKey!);
     assignFields(node, data);
     node.status = 'running';
+    node.startedAt ??= currentT;
 
     open.set(nesting, key);
     lastByNesting.set(nesting, key);
@@ -445,6 +456,11 @@ export function createTreeStore(): TreeStore {
 
   function apply(event: TestEvent): void {
     const { type, data } = event;
+    currentT = event.t;
+    if (event.t != null) {
+      if (firstT == null || event.t < firstT) firstT = event.t;
+      if (lastT == null || event.t > lastT) lastT = event.t;
+    }
     // The wrapper's relative `name` is the spelling stdout/stderr events use for
     // `file`; map it to the resolved absolute path so both group together.
     if (isFileLevel(data) && data.name !== data.file) fileAlias.set(data.name!, data.file!);
@@ -475,6 +491,7 @@ export function createTreeStore(): TreeStore {
         upsertFromTestEvent(data, (node) => {
           if (TERMINAL.has(node.status)) return;
           node.status = type === 'test:dequeue' ? 'running' : 'queued';
+          if (node.status === 'running') node.startedAt ??= currentT;
         });
         break;
       case 'test:start':
@@ -635,6 +652,7 @@ export function createTreeStore(): TreeStore {
       type: internal.type,
       status,
       durationMs: internal.durationMs,
+      startedAt: internal.startedAt,
       error: internal.error,
       diagnostics: internal.diagnostics,
       stdout: internal.stdout,
@@ -653,7 +671,11 @@ export function createTreeStore(): TreeStore {
     if (!dirty && cached) return cached;
     const rootNode = build(ROOT_KEY);
     cached = {
-      version: ++version, root: rootNode, counts: rootNode.counts, summary,
+      version: ++version,
+      root: rootNode,
+      counts: rootNode.counts,
+      summary,
+      ...(firstT != null && lastT != null ? { clock: { firstT, lastT } } : {}),
     };
     dirty = false;
     return cached;
