@@ -195,8 +195,9 @@ button { font-family: inherit; } input { font-family: inherit; }
 
 /* full-log modal (§10c) */
 @keyframes modalIn { from { opacity: 0; transform: translateY(6px) scale(.985); } to { opacity: 1; transform: none; } }
-.modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 50; display: flex; align-items: center; justify-content: center; padding: 4vh 4vw; }
-.modal { background: var(--panel); border: 1px solid var(--line-2); border-radius: 16px; box-shadow: 0 24px 64px rgba(0,0,0,.45); width: min(1100px, 100%); max-height: 88vh; display: flex; flex-direction: column; outline: none; animation: modalIn 180ms var(--ease-out) both; }
+.modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 50; display: flex; align-items: center; justify-content: center; }
+.modal { background: var(--panel); border: 1px solid var(--line-2); border-radius: 16px; box-shadow: 0 24px 64px rgba(0,0,0,.45); width: min(1100px, 92vw); height: min(80vh, 100%); display: flex; flex-direction: column; outline: none; animation: modalIn 180ms var(--ease-out) both; }
+@media (max-width: 640px) { .modal-backdrop { padding: 12px; } .modal { width: 100%; height: 100%; } }
 .modal-head { display: flex; align-items: center; gap: 8px; padding: 11px 16px; border-bottom: 1px solid var(--line); }
 .modal-title { font-size: 12.5px; font-weight: 700; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .modal-body { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 8px 4px; }

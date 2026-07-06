@@ -261,21 +261,57 @@ function CopyButton({ text }: { text: string }) {
   return <button type="button" className="hbtn" onClick={copy} title="Copy to clipboard">{copied ? 'Copied' : '⧉ Copy'}</button>;
 }
 
-/** The capped scroll region (§10a): every line stays reachable, the tree stays
- *  visible around it. A failed node opens scrolled to the tail — the failure is
- *  usually last. */
-function LogBody({ block, failed }: { block: DiagBlock; failed: boolean }) {
-  const ref = useRef<HTMLDivElement>(null);
+/** One section: sticky header with controls above the capped scroll region
+ *  (§10a). A settled log opens at the top — logs read top-to-bottom; only a
+ *  still-running log tail-follows, and stops the moment the reader scrolls up
+ *  or the test settles (§11a). */
+function DiagSection({
+  block, running, onCollapse, onModal,
+}: {
+  block: DiagBlock; running: boolean; onCollapse: () => void; onModal: () => void;
+}) {
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const pinned = useRef(false);
   useEffect(() => {
-    const el = ref.current;
-    if (el && failed) el.scrollTop = el.scrollHeight;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  return <div className="log-body" ref={ref}><BlockContent block={block} /></div>;
+    const el = bodyRef.current;
+    if (!el || !running) return;
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 48;
+    if (!pinned.current || nearBottom) { el.scrollTop = el.scrollHeight; pinned.current = true; }
+  });
+  const jump = (toEnd: boolean) => {
+    const el = bodyRef.current;
+    if (el) el.scrollTop = toEnd ? el.scrollHeight : 0;
+  };
+  const long = (block.count?.n ?? 0) > 20;
+  return (
+    <div className="diag-sec">
+      <span className="diag-bar" data-stf={block.sev} />
+      <div className="diag-body">
+        <div className="diag-head">
+          <span className="diag-icon" data-stc={block.sev}>{block.icon}</span>
+          <span className="diag-title">{block.title}</span>
+          {block.count ? <span className="diag-count">· {formatCount(block.count.n)} {block.count.unit}</span> : null}
+          <div className="diag-tools">
+            {long ? (
+              <>
+                <button type="button" className="hbtn" onClick={() => jump(false)} title="Jump to top">⤒</button>
+                <button type="button" className="hbtn" onClick={() => jump(true)} title="Jump to end">⤓</button>
+              </>
+            ) : null}
+            <CopyButton text={block.copyText} />
+            <button type="button" className="hbtn" onClick={onModal} title="Open full log">⤢ Full log</button>
+            <button type="button" className="hbtn" onClick={onCollapse} title="Collapse this panel">Collapse</button>
+          </div>
+        </div>
+        <div className="log-body" ref={bodyRef}><BlockContent block={block} /></div>
+      </div>
+    </div>
+  );
 }
 
 function LogModal({ title, block, onClose }: { title: string; block: DiagBlock; onClose: () => void }) {
-  const [wrap, setWrap] = useState(true);
+  // Lines stay whole by default — the modal exists for room; wrapping is opt-in (§11b).
+  const [wrap, setWrap] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const prev = document.activeElement as HTMLElement | null;
@@ -323,26 +359,16 @@ function LogModal({ title, block, onClose }: { title: string; block: DiagBlock; 
 
 function Diagnostics({ node, indent, onCollapse }: { node: TestNode; indent: string; onCollapse: () => void }) {
   const [modal, setModal] = useState<DiagBlock | null>(null);
-  const failed = node.status === 'failed';
   return (
     <div className="diag" style={{ margin: `5px 12px 11px ${indent}` }}>
       {diagBlocks(node).map((block) => (
-        <div className="diag-sec" key={block.key}>
-          <span className="diag-bar" data-stf={block.sev} />
-          <div className="diag-body">
-            <div className="diag-head">
-              <span className="diag-icon" data-stc={block.sev}>{block.icon}</span>
-              <span className="diag-title">{block.title}</span>
-              {block.count ? <span className="diag-count">· {formatCount(block.count.n)} {block.count.unit}</span> : null}
-              <div className="diag-tools">
-                <CopyButton text={block.copyText} />
-                <button type="button" className="hbtn" onClick={() => setModal(block)} title="Open full log">⤢ Full log</button>
-                <button type="button" className="hbtn" onClick={onCollapse} title="Collapse this panel">Collapse</button>
-              </div>
-            </div>
-            <LogBody block={block} failed={failed} />
-          </div>
-        </div>
+        <DiagSection
+          block={block}
+          running={node.status === 'running'}
+          onCollapse={onCollapse}
+          onModal={() => setModal(block)}
+          key={block.key}
+        />
       ))}
       {modal ? (
         <LogModal title={`${modal.title} — ${displayName(node)}`} block={modal} onClose={() => setModal(null)} />
@@ -573,21 +599,27 @@ export function TreeView({
     setOverrides((prev) => new Map(prev).set(key, !current));
   };
   const [allCollapsed, setAllCollapsed] = useState(false);
+  // Two independent collapse scopes (§11c): this folds the TREE (containers)
+  // only; open log panels are untouched and get their own "Close logs" control.
   const toggleAll = () => {
     const keys: string[] = [];
     collectContainerKeys(files, keys);
-    const diagKeys: string[] = [];
-    collectDiagKeys(files, diagKeys);
     const expand = allCollapsed; // currently collapsed -> expand; else collapse
     setOverrides((prev) => {
       const next = new Map(prev);
       for (const key of keys) next.set(key, expand);
-      // Collapse All also folds every open output panel (§10d); expanding
-      // clears those overrides so failed leaves reopen by default.
-      for (const key of diagKeys) { if (expand) next.delete(key); else next.set(key, false); }
       return next;
     });
     setAllCollapsed(!allCollapsed);
+  };
+  const closeLogs = () => {
+    const diagKeys: string[] = [];
+    collectDiagKeys(files, diagKeys);
+    setOverrides((prev) => {
+      const next = new Map(prev);
+      for (const key of diagKeys) next.set(key, false);
+      return next;
+    });
   };
 
   const inProgress = !snapshot.summary && (streaming || counts.running > 0 || counts.queued > 0);
@@ -687,10 +719,15 @@ export function TreeView({
               type="button"
               className="btn"
               onClick={toggleAll}
-              title={allCollapsed ? 'Expand all' : 'Collapse all'}
+              title={allCollapsed ? 'Expand all files and suites' : 'Collapse all files and suites'}
             >
-              {allCollapsed ? 'Expand' : 'Collapse'}
+              {allCollapsed ? 'Expand all' : 'Collapse all'}
             </button>
+            {rows.some((r) => r.diagOpen) ? (
+              <button type="button" className="btn" onClick={closeLogs} title="Close every open log panel">
+                Close logs
+              </button>
+            ) : null}
           </div>
         </div>
         <div className="hdr-bar-row">
