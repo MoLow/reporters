@@ -75,7 +75,8 @@ jobs:
         working-directory: packages/${{ steps.package-name.outputs.PACKAGE_NAME }}
 
   deploy-viewer:
-    if: ${{ github.event_name == 'push' || inputs.packages == '' }}
+    needs: release-please
+    if: ${{ always() && ((github.event_name == 'workflow_dispatch' && inputs.packages == '') || (needs.release-please.result == 'success' && contains(fromJson(needs.release-please.outputs.packages || '[]'), '@reporters/web'))) }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
