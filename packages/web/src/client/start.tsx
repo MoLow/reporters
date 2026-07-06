@@ -5,6 +5,7 @@ import { createNdjsonReader } from '../poll.ts';
 import { resolveReportSource, type ViewerOptions } from '../source.ts';
 import { STYLES } from '../template.ts';
 import { TreeView } from './TreeView.tsx';
+import { initTooltips } from './tooltip.ts';
 
 export type { ReportSource, ViewerOptions } from '../source.ts';
 export type { FetchLike } from '../poll.ts';
@@ -21,6 +22,7 @@ function injectStyles(): void {
 
 export async function startViewer(options: ViewerOptions = {}): Promise<void> {
   injectStyles();
+  initTooltips();
   const mount = document.getElementById('root');
   if (!mount) return;
   const root = createRoot(mount);

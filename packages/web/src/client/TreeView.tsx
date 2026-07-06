@@ -23,6 +23,39 @@ const STATUS_LABEL: Record<TestStatus, string> = {
   passed: 'passed', failed: 'failed', skipped: 'skipped', todo: 'todo', running: 'running', queued: 'queued',
 };
 
+function pct(n: number, total: number): string {
+  const tenths = Math.round((n / Math.max(total, 1)) * 1000) / 10;
+  return `${tenths % 1 === 0 ? tenths.toFixed(0) : tenths}%`;
+}
+
+function chipTip(s: TestStatus, n: number, total: number): string {
+  switch (s) {
+    case 'passed': return `${n} passed · ${pct(n, total)} of the run`;
+    case 'failed': return n === 0 ? '0 failed — nothing to triage' : `${n} failed — click to show only failures`;
+    case 'skipped': return `${n} skipped — expand a row to see why`;
+    case 'todo': return `${n} todo — planned, not yet implemented`;
+    case 'running': return `${n} running — results stream in live`;
+    default: return `${n} queued — waiting to run`;
+  }
+}
+
+function shortReason(reason: string): string {
+  const plain = stripAnsi(reason).replace(/\s+/g, ' ').trim();
+  return plain.length > 90 ? `${plain.slice(0, 89)}…` : plain;
+}
+
+function statusTip(node: TestNode, status: TestStatus, ms: number): string | undefined {
+  const reason = reasonOf(node);
+  switch (status) {
+    case 'passed': return `Passed in ${formatDuration(ms) || '—'}`;
+    case 'failed': return 'Failed';
+    case 'skipped': return reason ? `Skipped — ${shortReason(reason)}` : 'Skipped';
+    case 'todo': return reason ? `Todo — ${shortReason(reason)}` : 'Todo — not yet implemented';
+    case 'queued': return 'Queued — waiting to run';
+    default: return undefined;
+  }
+}
+
 interface OutLine { stream: 'out' | 'err'; text: string; }
 
 interface DiagBlock {
@@ -77,7 +110,7 @@ function linkifyDom(rootEl: HTMLElement): void {
         // Long URLs (presigned links, trace endpoints) would wrap across many
         // lines and bury the message — middle-truncate the label, keep the href.
         a.textContent = seg.text.length > 64 ? `${seg.text.slice(0, 42)}…${seg.text.slice(-18)}` : seg.text;
-        a.title = seg.text;
+        if (seg.text.length > 64) a.setAttribute('data-tip', seg.text);
         frag.appendChild(a);
       } else {
         frag.appendChild(document.createTextNode(seg.text));
@@ -273,7 +306,7 @@ function CopyButton({ text }: { text: string }) {
     });
   };
   return (
-    <button type="button" className="hbtn" onClick={copy} title="Copy to clipboard">
+    <button type="button" className="hbtn" onClick={copy} data-tip="Copy to clipboard" aria-label="Copy to clipboard">
       {copied ? '✓' : '⧉'}
       <span className="hbtn-label">{copied ? ' Copied' : ' Copy'}</span>
     </button>
@@ -341,14 +374,14 @@ function DiagSection({
           >
             {open && long ? (
               <>
-                <button type="button" className="hbtn" onClick={() => jump(false)} title="Jump to top">⤒</button>
-                <button type="button" className="hbtn" onClick={() => jump(true)} title="Jump to end">⤓</button>
+                <button type="button" className="hbtn" onClick={() => jump(false)} data-tip="Jump to top" aria-label="Jump to top">⤒</button>
+                <button type="button" className="hbtn" onClick={() => jump(true)} data-tip="Jump to end" aria-label="Jump to end">⤓</button>
               </>
             ) : null}
             <CopyButton text={block.copyText} />
-            <button type="button" className="hbtn" onClick={() => setModal(true)} title="Open full log">⤢<span className="hbtn-label"> Full log</span></button>
+            <button type="button" className="hbtn" onClick={() => setModal(true)} data-tip="Open full log" aria-label="Open full log">⤢<span className="hbtn-label"> Full log</span></button>
             {open ? (
-              <button type="button" className="hbtn hbtn-collapse" onClick={onToggle} title="Collapse this section">Collapse</button>
+              <button type="button" className="hbtn hbtn-collapse" onClick={onToggle} data-tip="Collapse this section">Collapse</button>
             ) : null}
           </div>
         </div>
@@ -407,7 +440,7 @@ function LogModal({ title, block, onClose }: { title: string; block: DiagBlock; 
           {block.count ? <span className="diag-count">{formatCount(block.count.n)} {block.count.unit}</span> : null}
           <div className="diag-tools">
             <CopyButton text={block.copyText} />
-            <button type="button" className="hbtn" data-on={wrap ? 'true' : undefined} onClick={() => setWrap(!wrap)} title="Toggle line wrapping">Wrap</button>
+            <button type="button" className="hbtn" data-on={wrap ? 'true' : undefined} onClick={() => setWrap(!wrap)} data-tip="Toggle line wrapping">Wrap</button>
             <button type="button" className="hbtn" onClick={onClose} aria-label="Close">✕</button>
           </div>
         </div>
@@ -526,6 +559,10 @@ function RowView({
   const rowClass = `row${enter !== null ? ' row-enter' : ''}${settled ? ` settle-${status}` : ''}`;
   const rowStyle = enter !== null ? { animationDelay: `${Math.min(enter, 8) * 18}ms` } : undefined;
   const hasError = hasDiag && diagBlocks(node).some((b) => b.key === 'error');
+  const ms = liveNodeDuration(node, now, since, clock);
+  const durTip = carried || rollupMark
+    ? `${formatDuration(ms) || '—'} — measured on ${markAttempt != null ? `attempt ${markAttempt + 1}` : 'an earlier attempt'}`
+    : status !== 'running' && ms >= 1000 ? `${Math.round(ms).toLocaleString('en-US')} ms` : undefined;
 
   return (
     <div
@@ -553,12 +590,12 @@ function RowView({
       ) : (
         // One visual language for pass/fail at every level: containers and leaf
         // tests both use the status glyph (design mobile-review ruling).
-        <span className="cglyph indicator" data-stc={status} data-spin={!isTest && status === 'running' ? 'true' : undefined}>{GLYPH[status]}</span>
+        <span className="cglyph indicator" data-stc={status} data-spin={!isTest && status === 'running' ? 'true' : undefined} data-tip={!container ? statusTip(node, status, ms) : undefined}>{GLYPH[status]}</span>
       )}
-      <span className="name" data-kind={node.type} style={{ color: nameColor }}>{displayName(node)}</span>
+      <span className="name" data-kind={node.type} data-tip-clipped={node.type === 'file' ? node.file ?? displayName(node) : displayName(node)} style={{ color: nameColor }}>{displayName(node)}</span>
       {hasDiag ? (
         // Passive badge (never a control): output exists inside this node.
-        <span className="outbadge" data-stc={hasError ? 'failed' : undefined} title="Has output">
+        <span className="outbadge" data-stc={hasError ? 'failed' : undefined} data-tip={hasError ? 'Has error output — expand the row to view' : 'Has output — expand the row to view'}>
           {hasError ? '✕' : '◇'}
         </span>
       ) : null}
@@ -571,21 +608,21 @@ function RowView({
       {container && !expanded ? (
         <span className="pills">
           {STATUS_ORDER.filter((s) => (s === 'passed' && onlyRerun ? counts.passed - counts.carried : counts[s]) > 0).map((s) => (
-            <span className="pill" data-soft={s} key={s}>{s === 'passed' && onlyRerun ? counts.passed - counts.carried : counts[s]}</span>
+            <span className="pill" data-soft={s} data-tip={`${s === 'passed' && onlyRerun ? counts.passed - counts.carried : counts[s]} ${STATUS_LABEL[s]}`} key={s}>{s === 'passed' && onlyRerun ? counts.passed - counts.carried : counts[s]}</span>
           ))}
         </span>
       ) : null}
       {carriedRun ? (
         <span className="carry-gut">
           {carryTip ? (
-            <span className="carry-chip" data-tip={carryTip} title={carryTip} aria-label={carryTip}>
+            <span className="carry-chip" data-tip={carryTip} aria-label={carryTip} tabIndex={0}>
               <CarryIcon />
               {markAttempt != null ? markAttempt + 1 : null}
             </span>
           ) : null}
         </span>
       ) : null}
-      <span className="dur" data-carried={carried || rollupMark ? 'true' : undefined}>{formatDuration(liveNodeDuration(node, now, since, clock)) || '—'}</span>
+      <span className="dur" data-carried={carried || rollupMark ? 'true' : undefined} data-tip={durTip}>{formatDuration(ms) || '—'}</span>
     </div>
   );
 }
@@ -593,8 +630,9 @@ function RowView({
 function Verdict({ counts, inProgress, duration }: { counts: Counts; inProgress: boolean; duration: number }) {
   const status: TestStatus = inProgress ? 'running' : counts.failed > 0 ? 'failed' : 'passed';
   const label = inProgress ? 'Running' : counts.failed > 0 ? 'Failing' : 'Passing';
+  const tip = `${counts.total} ${counts.total === 1 ? 'test' : 'tests'} · ${inProgress ? 'running for' : 'finished in'} ${formatDuration(duration) || '—'}`;
   return (
-    <div className="verdict" data-soft={status}>
+    <div className="verdict" data-soft={status} data-tip={tip} tabIndex={0}>
       <span className="verdict-glyph" data-spin={inProgress ? 'true' : undefined}>{GLYPH[status]}</span>
       <div className="verdict-text">
         <span className="verdict-main">{label}</span>
@@ -782,7 +820,7 @@ export function TreeView({
                 data-soft={s}
                 data-active={statuses.has(s) ? 'true' : undefined}
                 aria-pressed={statuses.has(s)}
-                title={statuses.has(s) ? `Stop filtering by ${STATUS_LABEL[s]}` : `Show only ${STATUS_LABEL[s]} tests`}
+                data-tip={statuses.has(s) ? `Stop filtering by ${STATUS_LABEL[s]}` : chipTip(s, counts[s], counts.total)}
                 onClick={() => toggleStatus(s)}
                 key={s}
               >
@@ -815,7 +853,7 @@ export function TreeView({
                 data-on={onlyRerun ? 'true' : undefined}
                 aria-pressed={onlyRerun}
                 onClick={() => setOnlyRerun(!onlyRerun)}
-                title={onlyRerun ? 'Show carried-over tests again' : 'Show only tests that actually executed this attempt'}
+                data-tip={onlyRerun ? 'Show carried-over tests again' : 'Show only tests that actually executed this attempt'}
               >
                 Only re-run
               </button>
@@ -824,7 +862,7 @@ export function TreeView({
               type="button"
               className="btn"
               onClick={toggleTheme}
-              title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+              data-tip={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
               aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
             >
               <ThemeIcon theme={theme} />
@@ -833,7 +871,7 @@ export function TreeView({
               type="button"
               className="btn"
               onClick={toggleAll}
-              title={allCollapsed ? 'Expand all files and suites' : 'Collapse all files and suites'}
+              data-tip={allCollapsed ? 'Expand every file and suite' : 'Collapse every file and suite'}
             >
               {allCollapsed ? 'Expand all' : 'Collapse all'}
             </button>
@@ -848,7 +886,7 @@ export function TreeView({
                 key={s}
                 data-stf={s}
                 data-pulse={s === 'running' ? 'true' : undefined}
-                title={`${counts[s]} ${STATUS_LABEL[s]}`}
+                data-tip={`${counts[s]} ${STATUS_LABEL[s]} · ${pct(counts[s], total)}`}
                 aria-label={`${counts[s]} ${STATUS_LABEL[s]}`}
                 style={{ flex: `${counts[s] / total} 0 6px` }}
               />
