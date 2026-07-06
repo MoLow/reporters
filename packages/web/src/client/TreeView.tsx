@@ -74,7 +74,10 @@ function linkifyDom(rootEl: HTMLElement): void {
         a.href = seg.text;
         a.target = '_blank';
         a.rel = 'noreferrer';
-        a.textContent = seg.text;
+        // Long URLs (presigned links, trace endpoints) would wrap across many
+        // lines and bury the message — middle-truncate the label, keep the href.
+        a.textContent = seg.text.length > 64 ? `${seg.text.slice(0, 42)}…${seg.text.slice(-18)}` : seg.text;
+        a.title = seg.text;
         frag.appendChild(a);
       } else {
         frag.appendChild(document.createTextNode(seg.text));
@@ -262,7 +265,12 @@ function CopyButton({ text }: { text: string }) {
       setTimeout(() => setCopied(false), 1200);
     });
   };
-  return <button type="button" className="hbtn" onClick={copy} title="Copy to clipboard">{copied ? 'Copied' : '⧉ Copy'}</button>;
+  return (
+    <button type="button" className="hbtn" onClick={copy} title="Copy to clipboard">
+      {copied ? '✓' : '⧉'}
+      <span className="hbtn-label">{copied ? ' Copied' : ' Copy'}</span>
+    </button>
+  );
 }
 
 /** One section: sticky header with controls above the capped scroll region
@@ -331,9 +339,9 @@ function DiagSection({
               </>
             ) : null}
             <CopyButton text={block.copyText} />
-            <button type="button" className="hbtn" onClick={() => setModal(true)} title="Open full log">⤢ Full log</button>
+            <button type="button" className="hbtn" onClick={() => setModal(true)} title="Open full log">⤢<span className="hbtn-label"> Full log</span></button>
             {open ? (
-              <button type="button" className="hbtn" onClick={onToggle} title="Collapse this section">Collapse</button>
+              <button type="button" className="hbtn hbtn-collapse" onClick={onToggle} title="Collapse this section">Collapse</button>
             ) : null}
           </div>
         </div>
@@ -353,8 +361,10 @@ function DiagSection({
 }
 
 function LogModal({ title, block, onClose }: { title: string; block: DiagBlock; onClose: () => void }) {
-  // Lines stay whole by default — the modal exists for room; wrapping is opt-in (§11b).
-  const [wrap, setWrap] = useState(false);
+  // Lines stay whole by default — the modal exists for room; wrapping is opt-in
+  // (§11b) — except on a phone, where horizontal-scrolling a stack trace is
+  // worse than wrapped lines, so Wrap starts on.
+  const [wrap, setWrap] = useState(() => window.matchMedia?.('(max-width: 640px)').matches ?? false);
   const boxRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const prev = document.activeElement as HTMLElement | null;
@@ -413,7 +423,7 @@ function OutputPanel({
   const { node, depth } = row;
   const blocks = diagBlocks(node);
   const style: React.CSSProperties = {
-    margin: `4px 12px 7px ${depth * 20 + 18}px`,
+    margin: `4px var(--diag-mr) 7px calc(${depth} * var(--ind) + var(--diag-gap))`,
     ...(enter !== null ? { animationDelay: `${Math.min(enter, 8) * 18}ms` } : {}),
   };
   return (
@@ -519,12 +529,12 @@ function RowView({
         {Array.from({ length: depth }, (_, i) => <span className="guide" key={i} />)}
       </span>
       <span className="caret" data-open={expandable && expanded ? 'true' : undefined}>{expandable ? '▸' : ''}</span>
-      {isTest ? (
-        status === 'running'
-          ? <span className="spinner indicator" />
-          : <span className="dot indicator" data-stf={status} />
+      {isTest && status === 'running' ? (
+        <span className="spinner indicator" />
       ) : (
-        <span className="cglyph indicator" data-stc={status} data-spin={status === 'running' ? 'true' : undefined}>{GLYPH[status]}</span>
+        // One visual language for pass/fail at every level: containers and leaf
+        // tests both use the status glyph (design mobile-review ruling).
+        <span className="cglyph indicator" data-stc={status} data-spin={!isTest && status === 'running' ? 'true' : undefined}>{GLYPH[status]}</span>
       )}
       <span className="name" data-kind={node.type} style={{ color: nameColor }}>{displayName(node)}</span>
       {hasDiag ? (
@@ -779,11 +789,15 @@ export function TreeView({
         <div className="hdr-bar-row">
           <div className="bar">
             {barSegments.map((s) => (
+              // Proportional flex-grow over a 6px basis: a 2-test sliver stays a
+              // visible, hoverable segment instead of a sub-pixel line.
               <span
                 key={s}
                 data-stf={s}
                 data-pulse={s === 'running' ? 'true' : undefined}
-                style={{ width: `${(counts[s] / total) * 100}%` }}
+                title={`${counts[s]} ${STATUS_LABEL[s]}`}
+                aria-label={`${counts[s]} ${STATUS_LABEL[s]}`}
+                style={{ flex: `${counts[s] / total} 0 6px` }}
               />
             ))}
           </div>

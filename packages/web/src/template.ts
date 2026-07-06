@@ -87,7 +87,7 @@ button { font-family: inherit; } input { font-family: inherit; }
 /* failures earn one extra beat: a single row tint flash, never a loop */
 .settle-failed { animation: failFlash 500ms var(--ease-out); }
 /* the summary bar slides as counts shift queued -> settled */
-.bar > span { transition: width 300ms var(--ease-out); }
+.bar > span { transition: flex-grow 300ms var(--ease-out); }
 .verdict { transition: background-color 200ms var(--ease-out), color 200ms var(--ease-out); }
 
 @media (prefers-reduced-motion: reduce) {
@@ -101,7 +101,7 @@ button { font-family: inherit; } input { font-family: inherit; }
 }
 
 /* app shell */
-.app { height: 100%; display: flex; flex-direction: column; --rh: 34px; --fs: 13.5px; --ind: 20px; }
+.app { height: 100%; display: flex; flex-direction: column; --rh: 34px; --fs: 13.5px; --ind: 20px; --diag-mr: 12px; --diag-gap: 18px; }
 .loading { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--faint); font-size: 13px; }
 
 /* header */
@@ -111,13 +111,17 @@ button { font-family: inherit; } input { font-family: inherit; }
 .verdict-glyph { font-size: 17px; font-weight: 800; line-height: 1; }
 .verdict-text { display: flex; flex-direction: column; line-height: 1.15; }
 .verdict-main { font-size: 15px; font-weight: 700; letter-spacing: .01em; }
-.verdict-sub { font-size: 11px; opacity: .85; font-variant-numeric: tabular-nums; }
+/* secondary text stays neutral ink; the saturated status color is reserved
+   for the glyph and status word (designer contrast ruling) */
+.verdict-sub { font-size: 11px; color: var(--dim); font-variant-numeric: tabular-nums; }
 .chips { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
 .chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; border: 1px solid transparent; cursor: pointer; font-family: inherit; }
 .chip:hover { filter: brightness(1.12); }
 .chip[data-active] { border-color: currentColor; }
 .chip-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
-.chip-label { opacity: .7; font-weight: 500; }
+/* the count keeps the status color; the label word gets full-contrast ink
+   (color-on-tint failed WCAG AA for the muted variants) */
+.chip-label { color: var(--dim); font-weight: 500; }
 .tools { margin-left: auto; display: flex; gap: 9px; align-items: center; }
 .search { position: relative; display: flex; align-items: center; }
 .search svg { position: absolute; left: 11px; color: var(--faint); pointer-events: none; }
@@ -139,7 +143,6 @@ button { font-family: inherit; } input { font-family: inherit; }
 .guide { width: var(--ind); align-self: stretch; border-left: 1px solid var(--line); }
 .caret { width: 16px; flex: none; display: flex; align-items: center; justify-content: center; color: var(--faint); font-size: 10px; transition: transform 160ms var(--ease-out); }
 .caret[data-open="true"] { transform: rotate(90deg); }
-.dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
 .cglyph { font-size: 13px; font-weight: 700; width: 14px; flex: none; text-align: center; }
 .name { font-size: var(--fs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .name[data-kind="file"] { font-family: var(--mono); font-weight: 700; }
@@ -198,7 +201,7 @@ button { font-family: inherit; } input { font-family: inherit; }
 @keyframes modalIn { from { opacity: 0; transform: translateY(6px) scale(.985); } to { opacity: 1; transform: none; } }
 .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 50; display: flex; align-items: center; justify-content: center; }
 .modal { background: var(--panel); border: 1px solid var(--line-2); border-radius: 16px; box-shadow: 0 24px 64px rgba(0,0,0,.45); width: min(1680px, 94vw); height: min(86vh, 100%); display: flex; flex-direction: column; outline: none; animation: modalIn 180ms var(--ease-out) both; }
-@media (max-width: 640px) { .modal-backdrop { padding: 12px; } .modal { width: 100%; height: 100%; } }
+@media (max-width: 640px) { .modal-backdrop { padding: 0; } .modal { width: 100%; height: 100dvh; border: none; border-radius: 0; } }
 .modal-head { display: flex; align-items: center; gap: 8px; padding: 11px 16px; border-bottom: 1px solid var(--line); }
 .modal-title { font-size: 12.5px; font-weight: 700; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .modal-body { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 8px 4px; }
@@ -222,4 +225,40 @@ button { font-family: inherit; } input { font-family: inherit; }
 .legend { margin-left: auto; display: inline-flex; gap: 13px; }
 .legend > span { display: inline-flex; gap: 5px; align-items: center; }
 .legend .ldot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+
+/* mobile (~phone widths): reclaim the indent budget, let names wrap, keep
+   everything on-screen, and pad tap targets */
+@media (max-width: 640px) {
+  .app { --ind: 12px; --rh: 40px; --fs: 13px; --diag-mr: 8px; --diag-gap: 8px; }
+  .guide { border-left: none; }
+  .tree { padding: 6px 4px 24px; }
+  .row { padding: 0 8px; gap: 6px; }
+  .name { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: break-word; }
+  .dur { min-width: 0; }
+  .pills { margin-right: 4px; }
+  .caret { width: 20px; align-self: stretch; }
+  /* one content column: headline row, breakdown pills, controls, progress bar —
+     stacked on a single 12px gutter and spacing step */
+  .hdr-row { flex-direction: column; align-items: stretch; gap: 12px; padding: 12px 12px 0; }
+  .verdict { align-self: flex-start; }
+  .chips { gap: 8px; }
+  .tools { margin-left: 0; }
+  .search { flex: 1; }
+  .search input { width: 100%; min-height: 44px; }
+  .tools .btn { min-height: 44px; min-width: 44px; justify-content: center; }
+  .hdr-bar-row { padding: 12px 12px; }
+  .bar { min-width: 0; }
+  .hbtn { min-height: 34px; min-width: 34px; padding: 5px 9px; font-size: 11px; }
+  .hbtn-label, .hbtn-collapse { display: none; }
+  .diag-head { min-height: 40px; padding: 4px 10px 4px 6px; }
+  .diag-msg { padding: 0 10px; }
+  .diag pre.stack, .diag pre.text { padding: 2px 10px 11px; }
+  .out { padding: 4px 10px 10px; }
+  .diag-list { padding: 2px 10px 10px; }
+  .modal-head { flex-wrap: wrap; row-gap: 6px; padding: 10px 12px; }
+  .modal-title { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .modal-head .diag-tools { flex: 1 1 100%; margin-left: 0; justify-content: flex-end; }
+  .footer { flex-wrap: wrap; row-gap: 5px; padding: 8px 12px; }
+  .legend { margin-left: 0; flex-basis: 100%; flex-wrap: wrap; gap: 5px 12px; }
+}
 `;
