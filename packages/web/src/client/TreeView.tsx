@@ -29,14 +29,7 @@ function pct(n: number, total: number): string {
 }
 
 function chipTip(s: TestStatus, n: number, total: number): string {
-  switch (s) {
-    case 'passed': return `${n} passed · ${pct(n, total)} of the run`;
-    case 'failed': return n === 0 ? '0 failed — nothing to triage' : `${n} failed — click to show only failures`;
-    case 'skipped': return `${n} skipped — expand a row to see why`;
-    case 'todo': return `${n} todo — planned, not yet implemented`;
-    case 'running': return `${n} running — results stream in live`;
-    default: return `${n} queued — waiting to run`;
-  }
+  return `${n} ${STATUS_LABEL[s]} · ${pct(n, total)} of the run`;
 }
 
 function shortReason(reason: string): string {
@@ -50,7 +43,7 @@ function statusTip(node: TestNode, status: TestStatus, ms: number): string | und
     case 'passed': return `Passed in ${formatDuration(ms) || '—'}`;
     case 'failed': return 'Failed';
     case 'skipped': return reason ? `Skipped — ${shortReason(reason)}` : 'Skipped';
-    case 'todo': return reason ? `Todo — ${shortReason(reason)}` : 'Todo — not yet implemented';
+    case 'todo': return reason ? `Todo — ${shortReason(reason)}` : 'Todo — does not fail the run';
     case 'queued': return 'Queued — waiting to run';
     default: return undefined;
   }
