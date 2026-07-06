@@ -460,8 +460,12 @@ export function createTreeStore(): TreeStore {
           sawFileWrapper = true;
           // The runner enqueues the file wrappers up front, in the order the
           // files will report. Claim the group slots now so file order doesn't
-          // depend on which process happens to emit a test event first.
-          ensureGroupNode(groupKey(data), data.file).declPlaced = true;
+          // depend on which process happens to emit a test event first. Only
+          // the enqueue is that ordered signal — a dequeue seen without its
+          // enqueue (mid-run attach) arrives at wall-clock position, and its
+          // group must stay unplaced to settle in decl-stream order instead.
+          const group = ensureGroupNode(groupKey(data), data.file);
+          if (type === 'test:enqueue') group.declPlaced = true;
           break;
         }
         if (data.testId == null) break;

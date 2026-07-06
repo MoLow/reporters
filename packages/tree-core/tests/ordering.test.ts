@@ -93,6 +93,23 @@ test('a re-delivered start leaves an already-settled node in place', () => {
   assert.deepStrictEqual(suite.children.map((n) => n.name), ['first', 'second', 'third']);
 });
 
+test('a wrapper dequeue seen without its enqueue does not claim a decl slot (mid-run attach)', () => {
+  // A viewer attaching mid-run missed the up-front wrapper enqueues. A later
+  // file's wrapper dequeue arrives at its wall-clock position and must not
+  // outrank an earlier-reporting file whose group settles in decl-stream order.
+  const { root } = build([
+    ev('test:enqueue', { name: 'a test', nesting: 0, file: A, testId: 2, parentId: 0, type: 'test' }),
+    ev('test:dequeue', wrapper(B)),
+    ev('test:enqueue', { name: 'b test', nesting: 0, file: B, testId: 2, parentId: 0, type: 'test' }),
+    // Declaration-ordered stream: file A reports first.
+    ev('test:start', { name: 'a test', nesting: 0, file: A, testId: 2, parentId: 0 }),
+    ev('test:pass', { name: 'a test', nesting: 0, file: A, testId: 2, parentId: 0, details: done }),
+    ev('test:start', { name: 'b test', nesting: 0, file: B, testId: 2, parentId: 0 }),
+    ev('test:pass', { name: 'b test', nesting: 0, file: B, testId: 2, parentId: 0, details: done }),
+  ]);
+  assert.deepStrictEqual(root.children.map((n) => n.file), [A, B]);
+});
+
 test('root groups without a file wrapper settle in declaration-stream order', () => {
   // Shared helpers with top-level tests get no wrapper of their own; their
   // groups must not order by which process emits an eager event first.
