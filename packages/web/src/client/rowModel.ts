@@ -111,10 +111,17 @@ export function liveNodeDuration(
   return node.children.reduce((total, child) => total + liveNodeDuration(child, now, since, clock), 0);
 }
 
-/** Container status = the worst status among descendants (severity order). */
+/**
+ * Container status = the worst status among descendants (severity order),
+ * folding in the container's own status while it is still open — a parent
+ * test awaiting subtests, or a file whose wrapper hasn't completed, must not
+ * read ✓ just because everything it produced so far has settled. Terminal own
+ * statuses stay out: descendants alone decide a finished container's color.
+ */
 export function rollup(node: TestNode): TestStatus {
   if (!isContainer(node)) return node.status;
-  for (const s of SEVERITY) if (node.counts[s] > 0) return s;
+  const own = node.status === 'running' || node.status === 'queued' ? node.status : undefined;
+  for (const s of SEVERITY) if (node.counts[s] > 0 || own === s) return s;
   return 'passed';
 }
 

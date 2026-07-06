@@ -39,6 +39,10 @@ interface InternalNode {
   todo?: boolean | string;
   skip?: boolean | string;
   passedOnAttempt?: number;
+  // File groups only: the file-level wrapper has started but not yet
+  // completed — the file is alive even when every test in it has settled
+  // (hooks, teardown, or subtests still to come).
+  wrapperOpen?: boolean;
   childKeys: string[];
 }
 
@@ -531,6 +535,7 @@ export function createTreeStore(): TreeStore {
           // group must stay unplaced to settle in decl-stream order instead.
           const group = ensureGroupNode(groupKey(data), data.file);
           if (type === 'test:enqueue') group.declPlaced = true;
+          else group.wrapperOpen = true;
           break;
         }
         if (data.testId == null) break;
@@ -544,7 +549,12 @@ export function createTreeStore(): TreeStore {
         });
         break;
       case 'test:start':
-        if (isFileLevel(data)) { sawFileWrapper = true; declOpen.clear(); break; }
+        if (isFileLevel(data)) {
+          sawFileWrapper = true;
+          declOpen.clear();
+          ensureGroupNode(groupKey(data), data.file).wrapperOpen = true;
+          break;
+        }
         if (data.testId != null) {
           declStart(data);
         } else {
@@ -559,11 +569,11 @@ export function createTreeStore(): TreeStore {
         // the declaration-ordered pass/fail stack below.
         if (isFileLevel(data)) {
           sawFileWrapper = true;
+          const group = ensureGroupNode(groupKey(data), data.file);
+          group.wrapperOpen = false;
           // The wrapper measures the file's real wall-clock — the file's
           // concurrent tests sum to much more than the run actually took.
-          if (data.details?.duration_ms != null) {
-            ensureGroupNode(groupKey(data), data.file).durationMs = data.details.duration_ms;
-          }
+          if (data.details?.duration_ms != null) group.durationMs = data.details.duration_ms;
           break;
         }
         if (data.testId == null) break;
@@ -584,8 +594,9 @@ export function createTreeStore(): TreeStore {
         if (isFileLevel(data)) {
           sawFileWrapper = true;
           declOpen.clear();
+          const group = ensureGroupNode(groupKey(data), data.file);
+          group.wrapperOpen = false;
           if (data.details?.duration_ms != null) {
-            const group = ensureGroupNode(groupKey(data), data.file);
             group.durationMs = group.durationMs ?? data.details.duration_ms;
           }
           break;
@@ -622,8 +633,9 @@ export function createTreeStore(): TreeStore {
         // completion lacks duration detail.
         if (data.file !== undefined) {
           declOpen.clear();
+          const group = ensureGroupNode(groupKey(data), data.file);
+          group.wrapperOpen = false;
           if (data.duration_ms != null) {
-            const group = ensureGroupNode(groupKey(data), data.file);
             group.durationMs = group.durationMs ?? data.duration_ms;
           }
         }
@@ -685,13 +697,22 @@ export function createTreeStore(): TreeStore {
       if (internal.passedOnAttempt != null && internal.status === 'passed') counts.carried = 1;
     } else {
       for (const child of children) addCounts(counts, child.counts);
+      // A parent whose own body is still executing is itself a running test —
+      // its subtests so far may all have settled while it awaits more (or runs
+      // teardown). Count it, so ancestors and the header can't read done early.
+      // Once it settles it leaves the counts again: totals stay leaves-only.
+      if ((internal.type === 'test' || internal.type === 'suite') && !TERMINAL.has(internal.status)) {
+        counts[internal.status] += 1;
+        counts.total += 1;
+      }
     }
     // File and root nodes have no result event of their own; derive their
-    // status from their descendants.
+    // status from their descendants — and from the wrapper's own liveness,
+    // which outlives the last settled test (hooks, subtests still to come).
     let { status } = internal;
     if (internal.type === 'file' || internal.type === 'root') {
       if (counts.failed > 0) status = 'failed';
-      else if (counts.running > 0) status = 'running';
+      else if (counts.running > 0 || internal.wrapperOpen) status = 'running';
       else if (counts.queued > 0 && counts.passed + counts.skipped + counts.todo === 0) status = 'queued';
       else status = 'passed';
     }

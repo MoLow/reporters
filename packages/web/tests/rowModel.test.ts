@@ -106,6 +106,19 @@ test('rollup: leaves keep their status, containers take the worst descendant', (
   assert.strictEqual(rollup(node({ key: 'q', children: [leaf], counts: { ...zeroCounts(), passed: 1, queued: 1, total: 2 } })), 'queued', 'queued still outranks passed while a run is incomplete');
 });
 
+test('rollup: a container whose own status is still open outranks settled descendants', () => {
+  const leaf = node({ key: 'l' });
+  // A parent test still executing while every subtest so far has passed.
+  const runningParent = node({ key: 'r', status: 'running', children: [leaf], counts: { ...zeroCounts(), passed: 3, total: 3 } });
+  assert.strictEqual(rollup(runningParent), 'running');
+  // A descendant failure still outranks the container's own running status.
+  const failedUnder = node({ key: 'f', status: 'running', children: [leaf], counts: { ...zeroCounts(), failed: 1, total: 1 } });
+  assert.strictEqual(rollup(failedUnder), 'failed');
+  // A file whose wrapper hasn't completed (store-derived running status).
+  const wrapperOpen = node({ key: 'w', type: 'file', status: 'running', children: [leaf], counts: { ...zeroCounts(), passed: 2, total: 2 } });
+  assert.strictEqual(rollup(wrapperOpen), 'running');
+});
+
 test('reasonOf returns the skip/todo string, or undefined', () => {
   assert.strictEqual(reasonOf(node({ skip: 'not ready' })), 'not ready');
   assert.strictEqual(reasonOf(node({ todo: 'later' })), 'later');
