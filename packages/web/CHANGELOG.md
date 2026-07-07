@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.6.1](https://github.com/MoLow/reporters/compare/web-v1.6.0...web-v1.6.1) (2026-07-07)
+
+
+### Bug Fixes
+
+* **tree-core,web:** never hide a container's own error ([#256](https://github.com/MoLow/reporters/issues/256)) ([e5c587d](https://github.com/MoLow/reporters/commit/e5c587dba3d2bfc5e2ce6c6108d2fcce3105163c))
+* **web:** allow selecting text in the viewer ([#255](https://github.com/MoLow/reporters/issues/255)) ([aafe3c6](https://github.com/MoLow/reporters/commit/aafe3c6cc996e1b79c37ea09fd200292a837fea2))
+* **web:** show the loading state before filters can declare no matches ([#253](https://github.com/MoLow/reporters/issues/253)) ([29f0f11](https://github.com/MoLow/reporters/commit/29f0f11566bff591608ff9e38ff81b719c47d4d2))
+
 ## [1.6.0](https://github.com/MoLow/reporters/compare/web-v1.5.2...web-v1.6.0) (2026-07-07)
 
 
