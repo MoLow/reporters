@@ -14,6 +14,7 @@ import { AnsiHtml } from 'fancy-ansi/react';
 import {
   classifyFrame, classifyStack, extractLevel, formatCount, levelSeverity, splitUrls, stripAnsi, type StackLine,
 } from './format.ts';
+import { parseFilterState, serializeFilterState, type FilterState } from './urlState.ts';
 
 const GLYPH: Record<TestStatus, string> = {
   passed: '✓', failed: '✕', skipped: '⊘', todo: '◇', running: '◐', queued: '○',
@@ -219,6 +220,50 @@ function computeTheme(): 'dark' | 'light' {
     if (forced === 'dark' || forced === 'light') return forced;
   } catch { /* location may be unavailable */ }
   return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function currentSearch(): string {
+  try { return window.location.search; } catch { return ''; }
+}
+
+/** Shareable filter state: `?q`, `?status` and `?rerun` mirror the search box,
+ *  status chips and Only re-run. Discrete toggles push a history entry
+ *  immediately, typing debounces into one entry, and Back/Forward restore the
+ *  previous filters. */
+function useUrlFilters() {
+  const [query, setQuery] = useState(() => parseFilterState(currentSearch()).query);
+  const [statuses, setStatuses] = useState<ReadonlySet<TestStatus>>(() => parseFilterState(currentSearch()).statuses);
+  const [onlyRerun, setOnlyRerun] = useState(() => parseFilterState(currentSearch()).onlyRerun);
+  const state: FilterState = { query, statuses, onlyRerun };
+  const stateRef = useRef(state);
+  stateRef.current = state;
+  const sync = () => {
+    const search = currentSearch();
+    const next = serializeFilterState(stateRef.current, search);
+    // Compare canonical forms so encoding quirks (%20 vs +) never push.
+    if (next === serializeFilterState(parseFilterState(search), search)) return;
+    try {
+      window.history.pushState(null, '', `${window.location.pathname}${next}${window.location.hash}`);
+    } catch { /* history may be unavailable (sandboxed iframe) */ }
+  };
+  useEffect(sync, [statuses, onlyRerun]);
+  useEffect(() => {
+    const id = setTimeout(sync, 400);
+    return () => clearTimeout(id);
+  }, [query]);
+  useEffect(() => {
+    const onPop = () => {
+      const s = parseFilterState(currentSearch());
+      setQuery(s.query);
+      setStatuses(s.statuses);
+      setOnlyRerun(s.onlyRerun);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+  return {
+    query, setQuery, statuses, setStatuses, onlyRerun, setOnlyRerun,
+  };
 }
 
 function useTheme(): ['dark' | 'light', () => void] {
@@ -671,10 +716,12 @@ export function TreeView({
   snapshot, streaming = false, pending = false, loadError = false, onRetry,
 }: TreeViewProps) {
   const [theme, toggleTheme] = useTheme();
-  const [query, setQuery] = useState('');
+  // Filters live in the URL (?q, ?status, ?rerun) so a copied link shares the
+  // same view; statuses empty = unfiltered.
+  const {
+    query, setQuery, statuses, setStatuses, onlyRerun, setOnlyRerun,
+  } = useUrlFilters();
   const [overrides, setOverrides] = useState<Map<string, boolean>>(new Map());
-  // Active status-chip filters; empty = unfiltered.
-  const [statuses, setStatuses] = useState<ReadonlySet<TestStatus>>(new Set());
   const toggleStatus = (s: TestStatus) => {
     setStatuses((prev) => {
       const next = new Set(prev);
@@ -692,8 +739,6 @@ export function TreeView({
   const clockRef = useRef<LiveClock | null>(null);
   // A steadily-incrementing tick that drives live duration re-renders.
   const [, setTick] = useState(0);
-
-  const [onlyRerun, setOnlyRerun] = useState(false);
 
   const files = snapshot.root.children;
   const { counts } = snapshot;
