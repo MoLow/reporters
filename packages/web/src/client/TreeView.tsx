@@ -392,8 +392,9 @@ function DiagSection({
           tabIndex={0}
           aria-expanded={open}
           aria-label={`${open ? 'Hide' : 'Show'} ${block.title.toLowerCase()} of ${displayName(node)}`}
-          onClick={onToggle}
-          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => { if (!selectionClick()) onToggle(); }}
+          onMouseDown={markPointerFocus}
+          onBlur={clearPointerFocus}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle(); }
             else if (e.key === 'ArrowRight' && !open) { e.preventDefault(); onToggle(); }
@@ -543,6 +544,19 @@ function useSettle(status: TestStatus): boolean {
 
 const trimTag = (s: string): string => (s.length > 32 ? `${s.slice(0, 31)}…` : s);
 
+/** Focus that arrived from a pointer press gets tagged so CSS can skip the
+ *  ring (Safari matches :focus-visible on clicked tabindex elements); we
+ *  can't preventDefault the mousedown instead — that blocks text selection. */
+const markPointerFocus = (e: React.MouseEvent<HTMLElement>) => { e.currentTarget.dataset.pointer = 'true'; };
+const clearPointerFocus = (e: React.FocusEvent<HTMLElement>) => { delete e.currentTarget.dataset.pointer; };
+
+/** A click that ends a text-selection drag shouldn't also fire the row's
+ *  toggle — the toggle would reflow the tree and destroy the selection. */
+const selectionClick = (): boolean => {
+  const sel = window.getSelection();
+  return sel != null && !sel.isCollapsed && sel.toString() !== '';
+};
+
 /** Stable identity for enter-animation bookkeeping and React keys — a node row
  *  and its nested output row share a node but are distinct rows. */
 const rowKey = (row: FlatRow): string => (row.kind === 'output' ? `${row.node.key}::out` : row.node.key);
@@ -613,10 +627,9 @@ function RowView({
       data-clickable={expandable}
       data-fail={isTest && status === 'failed'}
       data-running={status === 'running' ? 'true' : undefined}
-      onClick={expandable ? activate : undefined}
-      // A pointer click shouldn't paint the keyboard focus ring on the row
-      // (Safari matches :focus-visible on clicked tabindex elements).
-      onMouseDown={(e) => e.preventDefault()}
+      onClick={expandable ? () => { if (!selectionClick()) activate(); } : undefined}
+      onMouseDown={markPointerFocus}
+      onBlur={clearPointerFocus}
       onKeyDown={onKeyDown}
     >
       <span className="guides">
