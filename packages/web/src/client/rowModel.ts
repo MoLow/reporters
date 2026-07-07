@@ -140,10 +140,13 @@ const SYNTHETIC_ROLLUP = /^\d+ subtests? failed$/i;
 /**
  * The error worth showing: only a *leaf* test's own error, and never Node's
  * synthetic container rollup. Containers communicate failure through their
- * status glyph and the failed child inside them, not an error block.
+ * status glyph and the failed child inside them, not an error block. The one
+ * container exception is a file: the store only puts an error there when the
+ * wrapper itself failed with no failed child to carry it, so it's always real.
  */
 export function realError(node: TestNode): { message: string; stack?: string } | undefined {
-  if (isContainer(node) || !node.error) return undefined;
+  if (!node.error) return undefined;
+  if (isContainer(node) && node.type !== 'file') return undefined;
   if (SYNTHETIC_ROLLUP.test((node.error.message ?? '').trim())) return undefined;
   return node.error;
 }
@@ -211,7 +214,11 @@ export function computeMatches(files: TestNode[], query: string, statuses: Reado
     const openContainer = node.children.length > 0
       && (node.type === 'test' || node.type === 'suite')
       && (node.status === 'running' || node.status === 'queued');
-    const leafMatch = (node.children.length === 0 || openContainer) && textOk && statusOk(node)
+    // Same rule for a file failed by its own wrapper (hook, process exit): its
+    // failure is in the counts with no failed leaf underneath to stand for it.
+    const ownFailedFile = node.type === 'file' && node.status === 'failed'
+      && !node.children.some((child) => child.counts.failed > 0);
+    const leafMatch = (node.children.length === 0 || openContainer || ownFailedFile) && textOk && statusOk(node)
       && (!onlyRerun || node.passedOnAttempt == null);
     if (leafMatch || descVis) {
       visible.add(node.key);

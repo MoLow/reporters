@@ -43,6 +43,11 @@ interface InternalNode {
   // completed — the file is alive even when every test in it has settled
   // (hooks, teardown, or subtests still to come).
   wrapperOpen?: boolean;
+  // File groups only: the wrapper closed with its own failure — a hook threw
+  // or the child process died — which node reports only on the wrapper, so it
+  // must survive here or a file whose tests all passed renders green.
+  wrapperFailed?: boolean;
+  wrapperError?: SerializedError;
   childKeys: string[];
 }
 
@@ -574,6 +579,10 @@ export function createTreeStore(): TreeStore {
           // The wrapper measures the file's real wall-clock — the file's
           // concurrent tests sum to much more than the run actually took.
           if (data.details?.duration_ms != null) group.durationMs = data.details.duration_ms;
+          if (data.details?.passed === false) {
+            group.wrapperFailed = true;
+            group.wrapperError ??= serializeError(data.details.error);
+          }
           break;
         }
         if (data.testId == null) break;
@@ -598,6 +607,10 @@ export function createTreeStore(): TreeStore {
           group.wrapperOpen = false;
           if (data.details?.duration_ms != null) {
             group.durationMs = group.durationMs ?? data.details.duration_ms;
+          }
+          if (type === 'test:fail') {
+            group.wrapperFailed = true;
+            group.wrapperError ??= serializeError(data.details?.error);
           }
           break;
         }
@@ -710,8 +723,19 @@ export function createTreeStore(): TreeStore {
     // status from their descendants — and from the wrapper's own liveness,
     // which outlives the last settled test (hooks, subtests still to come).
     let { status } = internal;
+    let error = internal.error;
     if (internal.type === 'file' || internal.type === 'root') {
       if (counts.failed > 0) status = 'failed';
+      else if (internal.wrapperFailed) {
+        // The wrapper failed with every child settled green: the failure is
+        // the file's own (a hook, the process exit), so the wrapper is the
+        // failed test — count it and surface its error. When a child failed,
+        // the wrapper's echo of it stays out of counts and off the node.
+        status = 'failed';
+        counts.failed += 1;
+        counts.total += 1;
+        error ??= internal.wrapperError;
+      }
       else if (counts.running > 0 || internal.wrapperOpen) status = 'running';
       else if (counts.queued > 0 && counts.passed + counts.skipped + counts.todo === 0) status = 'queued';
       else status = 'passed';
@@ -727,7 +751,7 @@ export function createTreeStore(): TreeStore {
       status,
       durationMs: internal.durationMs,
       startedAt: internal.startedAt,
-      error: internal.error,
+      error,
       diagnostics: internal.diagnostics,
       stdout: internal.stdout,
       stderr: internal.stderr,
