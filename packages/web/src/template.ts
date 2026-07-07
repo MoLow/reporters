@@ -51,6 +51,8 @@ body {
 #root { height: 100%; }
 button { font-family: inherit; } input { font-family: inherit; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+/* pointer-origin focus (tagged in TreeView) never paints the keyboard ring */
+[data-pointer]:focus-visible { outline: none; }
 ::-webkit-scrollbar { width: 11px; height: 11px; }
 ::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 7px; border: 3px solid transparent; background-clip: padding-box; }
 ::-webkit-scrollbar-track { background: transparent; }
