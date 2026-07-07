@@ -204,7 +204,14 @@ export function computeMatches(files: TestNode[], query: string, statuses: Reado
       descVis ||= r.vis;
       descOwn ||= r.own;
     }
-    const leafMatch = node.children.length === 0 && textOk && statusOk(node)
+    // A test/suite whose own body is still open is a match in its own right —
+    // it is what the running/queued counts include, so the status filter must
+    // surface it even when every leaf under it has settled. Terminal
+    // containers stay leaves-only, matching the counts.
+    const openContainer = node.children.length > 0
+      && (node.type === 'test' || node.type === 'suite')
+      && (node.status === 'running' || node.status === 'queued');
+    const leafMatch = (node.children.length === 0 || openContainer) && textOk && statusOk(node)
       && (!onlyRerun || node.passedOnAttempt == null);
     if (leafMatch || descVis) {
       visible.add(node.key);
