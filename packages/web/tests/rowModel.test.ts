@@ -377,6 +377,36 @@ test('a status filter shows matching leaves with their ancestors, force-expanded
   assert.deepStrictEqual(rows.map((r) => r.node.key), ['fa', 's1', 'f1']);
 });
 
+test('a running filter matches a still-running parent whose children have settled', () => {
+  // Mirrors the counts: the running parent IS the running test the header
+  // chip counts, so filtering by running must surface it — not hide the file
+  // because no leaf happens to be running right now.
+  const settled = node({ key: 'p1', name: 'validate snapshot', status: 'passed' });
+  const parent = node({
+    key: 'r1', name: 'backup on demand', status: 'running', children: [settled],
+    counts: { ...zeroCounts(), passed: 1, running: 1, total: 2 },
+  });
+  const file = node({
+    key: 'fr', type: 'file', file: '/atlas.test.js', status: 'running', children: [parent],
+    counts: { ...zeroCounts(), passed: 1, running: 1, total: 2 },
+  });
+  const matches = computeMatches([file], '', new Set(['running']));
+  assert.deepStrictEqual([...matches.visible].sort(), ['fr', 'r1']);
+  assert.ok(matches.force.has('fr'), 'the path to the matched parent is force-expanded');
+  // A settled parent must NOT self-match a terminal filter (counts are
+  // leaves-only once terminal): only its passed leaf brings it in as context.
+  const doneParent = node({
+    key: 'r2', name: 'backup on demand', status: 'passed', children: [settled],
+    counts: { ...zeroCounts(), passed: 1, total: 1 },
+  });
+  const doneFile = node({
+    key: 'fd', type: 'file', file: '/atlas.test.js', children: [doneParent],
+    counts: { ...zeroCounts(), passed: 1, total: 1 },
+  });
+  const running = computeMatches([doneFile], '', new Set(['running']));
+  assert.deepStrictEqual([...running.visible], [], 'nothing running remains');
+});
+
 test('multiple statuses union their matches', () => {
   const files = tree();
   const matches = computeMatches(files, '', new Set(['failed', 'todo']));
