@@ -476,3 +476,26 @@ test('an all-carried file disappears under onlyRerun', () => {
   const rows = buildRows([file], { overrides: new Map(), query: '', statuses: new Set(), matches, onlyRerun: true });
   assert.deepStrictEqual(rows, []);
 });
+
+// A file whose wrapper failed on its own (hook threw, process died) is the
+// failure its counts include — with every child green, the filter and the
+// error block must point at the file itself or the failure is unfindable.
+function ownFailedFile(): TestNode {
+  const leaf = node({ key: 'l', name: 'only test', counts: { ...zeroCounts(), passed: 1, total: 1 } });
+  return node({
+    key: 'file', type: 'file', file: FILE, status: 'failed',
+    error: { message: 'test failed' },
+    children: [leaf],
+    counts: { ...zeroCounts(), passed: 1, failed: 1, total: 2 },
+  });
+}
+
+test('a file failed by its own wrapper matches the failed filter', () => {
+  const matches = computeMatches([ownFailedFile()], '', new Set(['failed']));
+  assert.ok(matches.visible.has('file'), 'the failure the counts include must be findable');
+  assert.ok(!matches.visible.has('l'), 'the passing leaf is not a failed match');
+});
+
+test('realError surfaces a file wrapper own failure', () => {
+  assert.deepStrictEqual(realError(ownFailedFile()), { message: 'test failed' });
+});
