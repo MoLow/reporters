@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.6.0](https://github.com/MoLow/reporters/compare/web-v1.5.2...web-v1.6.0) (2026-07-07)
+
+
+### Features
+
+* **web:** persist filters in the URL for shareable views ([#251](https://github.com/MoLow/reporters/issues/251)) ([2ad21ab](https://github.com/MoLow/reporters/commit/2ad21ab7ab8a702c8b73e2962b29a14050d2c6e4))
+
+
+### Bug Fixes
+
+* **tree-core,web:** surface a file wrapper's own failure ([#252](https://github.com/MoLow/reporters/issues/252)) ([faf5f76](https://github.com/MoLow/reporters/commit/faf5f7605cf2ab63695261ea9c6cb5f986620b2c))
+* **web:** let the status filter match a still-running parent ([#249](https://github.com/MoLow/reporters/issues/249)) ([b8d5141](https://github.com/MoLow/reporters/commit/b8d514101abc785b92237f3162eda906496af575))
+
 ## [1.5.2](https://github.com/MoLow/reporters/compare/web-v1.5.1...web-v1.5.2) (2026-07-06)
 
 
