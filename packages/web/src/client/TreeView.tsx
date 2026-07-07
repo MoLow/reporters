@@ -956,6 +956,8 @@ export function TreeView({
               onlyRerun={onlyRerun}
             />
           )))
+        ) : pending ? (
+          <CenteredState icon="◐" iconStatus="running" spin title="Loading test log…" />
         ) : q || statuses.size > 0 || onlyRerun ? (
           <CenteredState
             icon="⌕"
@@ -975,8 +977,6 @@ export function TreeView({
               Clear filters
             </button>
           </CenteredState>
-        ) : pending ? (
-          <CenteredState icon="◐" iconStatus="running" spin title="Loading test log…" />
         ) : (
           <CenteredState icon="◴" iconStatus="queued" pulse title="Waiting for the first results">
             <div className="state-sub">
