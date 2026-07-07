@@ -723,18 +723,17 @@ export function createTreeStore(): TreeStore {
     // status from their descendants — and from the wrapper's own liveness,
     // which outlives the last settled test (hooks, subtests still to come).
     let { status } = internal;
-    let error = internal.error;
+    let error = internal.error ?? internal.wrapperError;
     if (internal.type === 'file' || internal.type === 'root') {
       if (counts.failed > 0) status = 'failed';
       else if (internal.wrapperFailed) {
         // The wrapper failed with every child settled green: the failure is
         // the file's own (a hook, the process exit), so the wrapper is the
-        // failed test — count it and surface its error. When a child failed,
-        // the wrapper's echo of it stays out of counts and off the node.
+        // failed test — count it. When a child failed, the wrapper's echo
+        // stays out of the counts, but its error still lands on the node.
         status = 'failed';
         counts.failed += 1;
         counts.total += 1;
-        error ??= internal.wrapperError;
       }
       else if (counts.running > 0 || internal.wrapperOpen) status = 'running';
       else if (counts.queued > 0 && counts.passed + counts.skipped + counts.todo === 0) status = 'queued';
