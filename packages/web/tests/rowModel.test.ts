@@ -207,37 +207,36 @@ test('buildRows drops nodes filtered out by an active query', () => {
   assert.ok(!rows.some((r) => r.node.key === 'l2'), 'the non-matching sibling is filtered out');
 });
 
-test('realError shows a failed leaf error but suppresses synthetic and container rollups', () => {
+test('realError shows every recorded error — leaves, containers, and rollups alike', () => {
   // a real leaf error is returned as-is
   const leaf = node({ error: { message: 'expected 3 to equal 4', stack: 'at x' } });
   assert.deepStrictEqual(realError(leaf), { message: 'expected 3 to equal 4', stack: 'at x' });
-  // Node's synthetic "N subtests failed" rollup on a leaf is dropped
-  assert.strictEqual(realError(node({ error: { message: '1 subtest failed' } })), undefined);
-  assert.strictEqual(realError(node({ error: { message: '3 subtests failed' } })), undefined);
-  // a container never renders its own error, even a genuine-looking one
+  // Node's "N subtests failed" rollup is still an error the node reported — shown
+  const rollup = { message: '3 subtests failed' };
+  assert.strictEqual(realError(node({ error: rollup })), rollup);
+  // a container's own error (e.g. a failed before hook) is shown too
+  const containerError = { message: 'failed running before hook' };
   const container = node({
-    error: { message: 'boom' },
+    error: containerError,
     children: [node({ key: 'c' })],
     counts: { ...zeroCounts(), failed: 1, total: 1 },
   });
-  assert.strictEqual(realError(container), undefined);
+  assert.strictEqual(realError(container), containerError);
   // a leaf with no error has none
   assert.strictEqual(realError(node()), undefined);
-  // a leaf error with no message isn't synthetic — it's shown as-is
-  const noMsg = { message: undefined as unknown as string };
-  assert.strictEqual(realError(node({ error: noMsg })), noMsg);
 });
 
-test('hasDiagnostics ignores a suppressed (synthetic/container) error', () => {
-  // a container whose only "diagnostic" is a synthetic rollup error has nothing to show
+test('hasDiagnostics sees a container error', () => {
   const container = node({
     error: { message: '1 subtest failed' },
     children: [node({ key: 'c' })],
     counts: { ...zeroCounts(), failed: 1, total: 1 },
   });
-  assert.strictEqual(hasDiagnostics(container), false);
+  assert.strictEqual(hasDiagnostics(container), true);
   // a failed leaf with a real error does have diagnostics
   assert.strictEqual(hasDiagnostics(node({ error: { message: 'real' } })), true);
+  // and a node with nothing recorded has none
+  assert.strictEqual(hasDiagnostics(node()), false);
 });
 
 test('nodeDuration prefers a measured wall-clock over summing concurrent children', () => {

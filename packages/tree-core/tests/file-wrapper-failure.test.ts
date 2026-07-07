@@ -57,7 +57,7 @@ test('a wrapper failing because a child failed does not double-count', () => {
   assert.strictEqual(file.status, 'failed');
   assert.strictEqual(counts.failed, 1, 'the failing leaf is the failure; the wrapper echoes it');
   assert.strictEqual(counts.total, 1);
-  assert.strictEqual(file.error, undefined, 'the wrapper\'s echo error is noise when a child carries the real one');
+  assert.strictEqual(file.error?.message, '1 subtest failed', 'the wrapper\'s own error stays on the node even when a child failed');
 });
 
 test('a wrapper that closes passed leaves the file passed', () => {

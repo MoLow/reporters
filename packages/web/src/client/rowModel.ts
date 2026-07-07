@@ -133,21 +133,12 @@ export function reasonOf(node: TestNode): string | undefined {
   return undefined;
 }
 
-/** Node's aggregate "N subtests failed" error — redundant with the real error on
- *  the failing leaf, so we never render it. */
-const SYNTHETIC_ROLLUP = /^\d+ subtests? failed$/i;
-
 /**
- * The error worth showing: only a *leaf* test's own error, and never Node's
- * synthetic container rollup. Containers communicate failure through their
- * status glyph and the failed child inside them, not an error block. The one
- * container exception is a file: the store only puts an error there when the
- * wrapper itself failed with no failed child to carry it, so it's always real.
+ * Any error the node reported is shown — containers included. A container's
+ * error can be the only place the real cause lives (a suite whose before hook
+ * failed cancels its children with a generic message), so nothing is filtered.
  */
 export function realError(node: TestNode): { message: string; stack?: string } | undefined {
-  if (!node.error) return undefined;
-  if (isContainer(node) && node.type !== 'file') return undefined;
-  if (SYNTHETIC_ROLLUP.test((node.error.message ?? '').trim())) return undefined;
   return node.error;
 }
 
