@@ -10,7 +10,7 @@ import {
 
 // node:test captures colored output verbatim; render the ANSI SGR codes as real
 // colors (mapped to the theme's --ansi-* vars) rather than stripping them.
-import { AnsiHtml } from 'fancy-ansi/react';
+import { AnsiSpan } from './ansi.ts';
 import {
   classifyFrame, extractLevel, formatCount, levelSeverity, splitUrls, stripAnsi, type StackLine,
 } from './format.ts';
@@ -122,10 +122,12 @@ const FrameText = ({ frame }: { frame: StackLine }) => (frame.loc ? (
   </>
 ) : <>{frame.text === '' ? ' ' : frame.text}</>);
 
-// AnsiHtml plus a DOM post-pass that wraps http(s) URLs in links — post-render
+// AnsiSpan plus a DOM post-pass that wraps http(s) URLs in links — post-render
 // so ANSI color state stays intact across the link boundary. Lines that look
 // like stack frames (also inside log messages) get node-style frame coloring.
-function Ansi({ text }: { text: string }) {
+// Memoized: a live run re-renders the whole tree 4×/s, and re-rendering a
+// rendered log would re-split it and re-run the linkify pass for nothing.
+const Ansi = React.memo(({ text }: { text: string }) => {
   const ref = useRef<HTMLSpanElement>(null);
   useEffect(() => { if (ref.current) linkifyDom(ref.current); });
   return (
@@ -138,13 +140,13 @@ function Ansi({ text }: { text: string }) {
             {i > 0 ? '\n' : null}
             {frame ? (
               <span className="frame" data-kind={frame.kind}><FrameText frame={frame} /></span>
-            ) : <AnsiHtml text={line} />}
+            ) : <AnsiSpan text={line} />}
           </React.Fragment>
         );
       })}
     </span>
   );
-}
+});
 
 function Stack({ stack }: { stack: string }) {
   return (
