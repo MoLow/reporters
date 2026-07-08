@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
+import { inspect } from 'node:util';
 import { formatDuration } from '../src/format.ts';
 import { toWireEvent, serializeWireLine, parseWireLines } from '../src/wire.ts';
 import { defaultExpanded } from '../src/expand.ts';
@@ -155,6 +156,7 @@ test('toWireEvent appends extra enumerable error props to the stack, inspect-sty
     '  meta: { httpStatusCode: 400, nested: { deep: [Object] } }',
     '}',
   ].join('\n'));
+  assert.strictEqual(flat.stack, inspect(error));
 });
 
 test('toWireEvent leaves the stack alone when the error has no extra props', () => {
@@ -200,9 +202,9 @@ test('extra error props survive odd values without breaking JSON serialization',
   assert.ok(stack.includes('big: 10n'));
   assert.ok(stack.includes('fn: [Function: fn]'));
   assert.ok(stack.includes('none: null'));
-  assert.ok(stack.includes("quote: 'it\\'s'"));
+  assert.ok(stack.includes(`quote: "it's"`));
   assert.ok(stack.includes("multi: 'a\\nb'"));
-  assert.ok(stack.includes('self: [Circular]'));
+  assert.ok(stack.includes('self: [Circular *1]'));
 });
 
 test('toWireEvent tolerates a non-Error error value and a missing error', () => {
