@@ -836,6 +836,14 @@ __metadata:
     react-dom: "npm:^19.0.0"
     tsup: "npm:^8.5.0"
     typescript: "npm:^5.7.0"
+  peerDependencies:
+    react: ^19.0.0
+    react-dom: ^19.0.0
+  peerDependenciesMeta:
+    react:
+      optional: true
+    react-dom:
+      optional: true
   languageName: unknown
   linkType: soft
 
