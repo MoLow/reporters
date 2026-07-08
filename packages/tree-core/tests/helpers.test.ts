@@ -172,6 +172,18 @@ test('the props block keeps util.inspect ANSI colors on the wire', () => {
   assert.ok(stack.includes('[33m3[39m'));
 });
 
+test('a stackless error is not inspected', () => {
+  const noStack = Object.assign(new Error('gone'), { jobId: 'abc' });
+  delete noStack.stack;
+  const emptyStack = Object.assign(new Error('empty'), { stack: '', jobId: 'abc' });
+  for (const error of [noStack, emptyStack]) {
+    const wire = toWireEvent({ type: 'test:fail', data: { details: { duration_ms: 1, error } } });
+    const flat = wire.data.details?.error as { message: string; stack?: string };
+    assert.strictEqual(flat.stack, error.stack);
+    assert.strictEqual(flat.message, error.message);
+  }
+});
+
 test('an error without extra props keeps its plain stack text', () => {
   const error = new Error('plain');
   const wire = toWireEvent({ type: 'test:fail', data: { details: { duration_ms: 1, error } } });
