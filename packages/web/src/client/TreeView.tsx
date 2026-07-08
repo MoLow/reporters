@@ -12,7 +12,7 @@ import {
 // colors (mapped to the theme's --ansi-* vars) rather than stripping them.
 import { AnsiHtml } from 'fancy-ansi/react';
 import {
-  classifyFrame, classifyStack, extractLevel, formatCount, levelSeverity, splitUrls, stripAnsi, type StackLine,
+  classifyFrame, extractLevel, formatCount, levelSeverity, splitUrls, stripAnsi, type StackLine,
 } from './format.ts';
 import { parseFilterState, serializeFilterState, type FilterState } from './urlState.ts';
 
@@ -148,14 +148,7 @@ function Ansi({ text }: { text: string }) {
 
 function Stack({ stack }: { stack: string }) {
   return (
-    <pre className="stack">
-      {classifyStack(stack).map((line, i) => (
-        // eslint-disable-next-line react/no-array-index-key
-        <div className="stack-line" data-kind={line.kind} key={i}>
-          <FrameText frame={line} />
-        </div>
-      ))}
-    </pre>
+    <pre className="stack"><Ansi text={stack} /></pre>
   );
 }
 

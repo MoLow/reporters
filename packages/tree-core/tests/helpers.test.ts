@@ -1,6 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
 import { inspect } from 'node:util';
+
+// eslint-disable-next-line no-control-regex
+const stripAnsi = (text: string) => text.replace(/\[[0-9;]*m/g, '');
 import { formatDuration } from '../src/format.ts';
 import { toWireEvent, serializeWireLine, parseWireLines } from '../src/wire.ts';
 import { defaultExpanded } from '../src/expand.ts';
@@ -146,7 +149,8 @@ test('toWireEvent appends extra enumerable error props to the stack, inspect-sty
   const wire = toWireEvent({ type: 'test:fail', data: { details: { duration_ms: 1, error } } });
   const flat = wire.data.details?.error as { message: string; stack: string };
   assert.strictEqual(flat.message, 'job stuck');
-  const suffix = flat.stack.slice(error.stack!.length);
+  assert.ok(flat.stack.startsWith(error.stack!));
+  const suffix = stripAnsi(flat.stack.slice(error.stack!.length));
   assert.strictEqual(suffix, [
     ' {',
     "  jobId: '456707be',",
@@ -156,7 +160,16 @@ test('toWireEvent appends extra enumerable error props to the stack, inspect-sty
     '  meta: { httpStatusCode: 400, nested: { deep: [Object] } }',
     '}',
   ].join('\n'));
-  assert.strictEqual(flat.stack, inspect(error));
+  assert.strictEqual(suffix, stripAnsi(inspect(error, { colors: true })).slice(error.stack!.length));
+});
+
+test('the props block keeps util.inspect ANSI colors on the wire', () => {
+  const error = Object.assign(new Error('boom'), { jobId: '456707be', attempts: 3 });
+  const wire = toWireEvent({ type: 'test:fail', data: { details: { duration_ms: 1, error } } });
+  const { stack } = wire.data.details?.error as { stack: string };
+  assert.ok(stack.startsWith(error.stack!));
+  assert.ok(stack.includes("[32m'456707be'[39m"));
+  assert.ok(stack.includes('[33m3[39m'));
 });
 
 test('toWireEvent leaves the stack alone when the error has no extra props', () => {
@@ -173,7 +186,7 @@ test('toWireEvent appends cause props to the cause stack but skips the test-runn
   const wire = toWireEvent({ type: 'test:fail', data: { details: { duration_ms: 1, error: wrapper } } });
   const flat = wire.data.details?.error as { stack: string; cause: { stack: string } };
   assert.ok(!flat.stack.includes('failureType'));
-  assert.ok(flat.cause.stack.endsWith(" {\n  jobId: 'abc'\n}"));
+  assert.ok(stripAnsi(flat.cause.stack).endsWith(" {\n  jobId: 'abc'\n}"));
 });
 
 test('re-flattening an already-flattened error does not duplicate the props block', () => {
@@ -197,7 +210,7 @@ test('extra error props survive odd values without breaking JSON serialization',
   (error as { self?: unknown }).self = error;
   const wire = toWireEvent({ type: 'test:fail', data: { details: { duration_ms: 1, error } } });
   assert.doesNotThrow(() => JSON.stringify(wire));
-  const { stack } = wire.data.details?.error as { stack: string };
+  const stack = stripAnsi((wire.data.details?.error as { stack: string }).stack);
   assert.ok(stack.includes('when: 1970-01-01T00:00:00.000Z'));
   assert.ok(stack.includes('big: 10n'));
   assert.ok(stack.includes('fn: [Function: fn]'));
