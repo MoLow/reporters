@@ -134,6 +134,77 @@ test('toWireEvent copies every known field and flattens nested errors', () => {
   assert.strictEqual(err.cause.message, 'root cause');
 });
 
+test('toWireEvent appends extra enumerable error props to the stack, inspect-style', () => {
+  const error = Object.assign(new Error('job stuck'), {
+    jobId: '456707be',
+    temporal: 'https://temporal.example/wf/456707be',
+    attempts: 3,
+    pendingActivities: ['UpdateEvidenceTable'],
+    meta: { httpStatusCode: 400, nested: { deep: { too: 1 } } },
+  });
+  const wire = toWireEvent({ type: 'test:fail', data: { details: { duration_ms: 1, error } } });
+  const flat = wire.data.details?.error as { message: string; stack: string };
+  assert.strictEqual(flat.message, 'job stuck');
+  const suffix = flat.stack.slice(error.stack!.length);
+  assert.strictEqual(suffix, [
+    ' {',
+    "  jobId: '456707be',",
+    "  temporal: 'https://temporal.example/wf/456707be',",
+    '  attempts: 3,',
+    "  pendingActivities: [ 'UpdateEvidenceTable' ],",
+    '  meta: { httpStatusCode: 400, nested: { deep: [Object] } }',
+    '}',
+  ].join('\n'));
+});
+
+test('toWireEvent leaves the stack alone when the error has no extra props', () => {
+  const error = new Error('plain');
+  const wire = toWireEvent({ type: 'test:fail', data: { details: { duration_ms: 1, error } } });
+  assert.strictEqual((wire.data.details?.error as { stack: string }).stack, error.stack);
+});
+
+test('toWireEvent appends cause props to the cause stack but skips the test-runner wrapper', () => {
+  const cause = Object.assign(new Error('real'), { jobId: 'abc' });
+  const wrapper = Object.assign(new Error('wrapped'), {
+    code: 'ERR_TEST_FAILURE', failureType: 'testCodeFailure', exitCode: 1, cause,
+  });
+  const wire = toWireEvent({ type: 'test:fail', data: { details: { duration_ms: 1, error: wrapper } } });
+  const flat = wire.data.details?.error as { stack: string; cause: { stack: string } };
+  assert.ok(!flat.stack.includes('failureType'));
+  assert.ok(flat.cause.stack.endsWith(" {\n  jobId: 'abc'\n}"));
+});
+
+test('re-flattening an already-flattened error does not duplicate the props block', () => {
+  const error = Object.assign(new Error('boom'), { jobId: 'abc' });
+  const once = toWireEvent({ type: 'test:fail', data: { details: { duration_ms: 1, error } } });
+  const twice = toWireEvent(once);
+  const a = once.data.details?.error as { stack: string };
+  const b = twice.data.details?.error as { stack: string };
+  assert.strictEqual(b.stack, a.stack);
+});
+
+test('extra error props survive odd values without breaking JSON serialization', () => {
+  const error = Object.assign(new Error('boom'), {
+    when: new Date(0),
+    big: 10n,
+    fn: () => {},
+    none: null,
+    quote: "it's",
+    multi: 'a\nb',
+  });
+  (error as { self?: unknown }).self = error;
+  const wire = toWireEvent({ type: 'test:fail', data: { details: { duration_ms: 1, error } } });
+  assert.doesNotThrow(() => JSON.stringify(wire));
+  const { stack } = wire.data.details?.error as { stack: string };
+  assert.ok(stack.includes('when: 1970-01-01T00:00:00.000Z'));
+  assert.ok(stack.includes('big: 10n'));
+  assert.ok(stack.includes('fn: [Function: fn]'));
+  assert.ok(stack.includes('none: null'));
+  assert.ok(stack.includes("quote: 'it\\'s'"));
+  assert.ok(stack.includes("multi: 'a\\nb'"));
+  assert.ok(stack.includes('self: [Circular]'));
+});
+
 test('toWireEvent tolerates a non-Error error value and a missing error', () => {
   const withString = toWireEvent({ type: 'test:fail', data: { details: { error: 'boom' as unknown as Error } } });
   assert.strictEqual((withString.data.details?.error as { message: string }).message, 'boom');

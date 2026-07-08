@@ -1,11 +1,49 @@
 import type { TestEvent, TestEventData } from './types.ts';
 
+const ERROR_BASE_KEYS = new Set(['message', 'stack', 'name', 'cause']);
+const BARE_KEY_RE = /^[A-Za-z_$][\w$]*$/;
+
+function inspectValue(value: unknown, depth: number, seen: Set<object>): string {
+  if (typeof value === 'string') return `'${value.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n')}'`;
+  if (typeof value === 'bigint') return `${value}n`;
+  if (typeof value === 'function') return value.name ? `[Function: ${value.name}]` : '[Function (anonymous)]';
+  if (typeof value !== 'object' || value == null) return String(value);
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? 'Invalid Date' : value.toISOString();
+  if (seen.has(value)) return '[Circular]';
+  if (depth < 0) return Array.isArray(value) ? '[Array]' : '[Object]';
+  seen.add(value);
+  try {
+    if (Array.isArray(value)) {
+      return value.length === 0 ? '[]' : `[ ${value.map((v) => inspectValue(v, depth - 1, seen)).join(', ')} ]`;
+    }
+    const entries = Object.entries(value)
+      .map(([k, v]) => `${BARE_KEY_RE.test(k) ? k : inspectValue(k, 0, seen)}: ${inspectValue(v, depth - 1, seen)}`);
+    return entries.length === 0 ? '{}' : `{ ${entries.join(', ')} }`;
+  } finally {
+    seen.delete(value);
+  }
+}
+
+/** The `util.inspect`-style `{ key: value }` block a terminal reporter prints
+ *  after the stack frames — the error's extra own enumerable props. The
+ *  test-runner's ERR_TEST_FAILURE wrapper is skipped: its code/failureType
+ *  bookkeeping isn't part of the user's error (viewers unwrap to the cause). */
+function errorPropsSuffix(raw: object): string {
+  if ((raw as { code?: unknown }).code === 'ERR_TEST_FAILURE') return '';
+  const seen = new Set<object>([raw]);
+  const entries = Object.entries(raw)
+    .filter(([k]) => !ERROR_BASE_KEYS.has(k))
+    .map(([k, v]) => `  ${BARE_KEY_RE.test(k) ? k : inspectValue(k, 0, seen)}: ${inspectValue(v, 1, seen)}`);
+  return entries.length === 0 ? '' : ` {\n${entries.join(',\n')}\n}`;
+}
+
 function flattenError(raw: unknown): unknown {
   if (raw == null) return undefined;
   const err = raw as { message?: string; stack?: string; name?: string; cause?: unknown };
+  const suffix = typeof raw === 'object' ? errorPropsSuffix(raw) : '';
   return {
     message: err.message ?? String(err),
-    stack: err.stack,
+    stack: err.stack == null ? err.stack : err.stack + suffix,
     name: err.name,
     cause: err.cause instanceof Error ? flattenError(err.cause) : err.cause,
   };
