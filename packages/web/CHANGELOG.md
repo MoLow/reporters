@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.2](https://github.com/MoLow/reporters/compare/web-v1.6.1...web-v1.6.2) (2026-07-08)
+
+
+### Bug Fixes
+
+* **tree-core:** carry extra error props onto the wire stack ([#257](https://github.com/MoLow/reporters/issues/257)) ([deec348](https://github.com/MoLow/reporters/commit/deec3483dfbe050f411f8b841564d983d0d5f2d0))
+
 ## [1.6.1](https://github.com/MoLow/reporters/compare/web-v1.6.0...web-v1.6.1) (2026-07-07)
 
 
