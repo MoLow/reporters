@@ -6,53 +6,22 @@ const inspect = (globalThis as {
   process?: { getBuiltinModule?: (id: string) => { inspect: (value: unknown, opts?: object) => string } };
 }).process?.getBuiltinModule?.('node:util')?.inspect;
 
-const ANSI = '[';
-
-function skipAnsi(text: string, from: number): number {
-  let i = from;
-  while (text.startsWith(ANSI, i)) {
-    const end = text.indexOf('m', i + ANSI.length);
-    if (end === -1) break;
-    i = end + 1;
-  }
-  return i;
-}
-
-/** Slice `text` past `plain`, matching around interleaved ANSI color codes
- *  (inspect dims internal stack frames, so the raw stack isn't a substring). */
-function sliceAfterPlain(text: string, plain: string, from: number): string {
-  let ti = from;
-  for (let pi = 0; pi < plain.length; pi++, ti++) {
-    ti = skipAnsi(text, ti);
-    if (text[ti] !== plain[pi]) return '';
-  }
-  return text.slice(skipAnsi(text, ti));
-}
-
-/** The colored `{ key: value }` props block `util.inspect` prints after the
- *  stack frames, exactly as terminal reporters show it — obtained by
- *  inspecting the error and slicing off the stack. The test-runner's
- *  ERR_TEST_FAILURE wrapper is skipped: its code/failureType bookkeeping isn't
- *  part of the user's error (viewers unwrap to the cause). */
-function errorPropsSuffix(err: Error & { code?: unknown }): string {
-  if (inspect == null || typeof err.stack !== 'string' || err.stack === '' || err.code === 'ERR_TEST_FAILURE') return '';
-  const text = inspect(err, { colors: true });
-  // A self-referencing error is prefixed with its (colored) circular-ref marker.
-  let from = skipAnsi(text, 0);
-  if (text.startsWith('<ref *', from)) {
-    from = skipAnsi(text, text.indexOf('>', from) + 1);
-    if (text[from] === ' ') from++;
-  }
-  return sliceAfterPlain(text, err.stack, from);
+/** The colored stack + `{ key: value }` props block `util.inspect` prints,
+ *  exactly as terminal reporters show it. The test-runner's ERR_TEST_FAILURE
+ *  wrapper keeps its plain stack: its code/failureType bookkeeping isn't part
+ *  of the user's error (viewers unwrap to the cause). */
+function inspectedStack(raw: unknown): string | undefined {
+  if (inspect == null || !(raw instanceof Error) || (raw as { code?: unknown }).code === 'ERR_TEST_FAILURE') return undefined;
+  if (typeof raw.stack !== 'string' || raw.stack === '') return undefined;
+  return inspect(raw, { colors: true });
 }
 
 function flattenError(raw: unknown): unknown {
   if (raw == null) return undefined;
   const err = raw as { message?: string; stack?: string; name?: string; cause?: unknown };
-  const suffix = raw instanceof Error ? errorPropsSuffix(raw) : '';
   return {
     message: err.message ?? String(err),
-    stack: err.stack == null ? err.stack : err.stack + suffix,
+    stack: inspectedStack(raw) ?? err.stack,
     name: err.name,
     cause: err.cause instanceof Error ? flattenError(err.cause) : err.cause,
   };

@@ -149,9 +149,10 @@ test('toWireEvent appends extra enumerable error props to the stack, inspect-sty
   const wire = toWireEvent({ type: 'test:fail', data: { details: { duration_ms: 1, error } } });
   const flat = wire.data.details?.error as { message: string; stack: string };
   assert.strictEqual(flat.message, 'job stuck');
-  assert.ok(flat.stack.startsWith(error.stack!));
-  const suffix = stripAnsi(flat.stack.slice(error.stack!.length));
-  assert.strictEqual(suffix, [
+  assert.strictEqual(flat.stack, inspect(error, { colors: true }));
+  const stripped = stripAnsi(flat.stack);
+  assert.ok(stripped.startsWith(error.stack!));
+  assert.strictEqual(stripped.slice(error.stack!.length), [
     ' {',
     "  jobId: '456707be',",
     "  temporal: 'https://temporal.example/wf/456707be',",
@@ -160,22 +161,21 @@ test('toWireEvent appends extra enumerable error props to the stack, inspect-sty
     '  meta: { httpStatusCode: 400, nested: { deep: [Object] } }',
     '}',
   ].join('\n'));
-  assert.strictEqual(suffix, stripAnsi(inspect(error, { colors: true })).slice(error.stack!.length));
 });
 
 test('the props block keeps util.inspect ANSI colors on the wire', () => {
   const error = Object.assign(new Error('boom'), { jobId: '456707be', attempts: 3 });
   const wire = toWireEvent({ type: 'test:fail', data: { details: { duration_ms: 1, error } } });
   const { stack } = wire.data.details?.error as { stack: string };
-  assert.ok(stack.startsWith(error.stack!));
+  assert.strictEqual(stack, inspect(error, { colors: true }));
   assert.ok(stack.includes("[32m'456707be'[39m"));
   assert.ok(stack.includes('[33m3[39m'));
 });
 
-test('toWireEvent leaves the stack alone when the error has no extra props', () => {
+test('an error without extra props keeps its plain stack text', () => {
   const error = new Error('plain');
   const wire = toWireEvent({ type: 'test:fail', data: { details: { duration_ms: 1, error } } });
-  assert.strictEqual((wire.data.details?.error as { stack: string }).stack, error.stack);
+  assert.strictEqual(stripAnsi((wire.data.details?.error as { stack: string }).stack), error.stack);
 });
 
 test('toWireEvent appends cause props to the cause stack but skips the test-runner wrapper', () => {
