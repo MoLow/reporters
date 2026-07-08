@@ -1,11 +1,27 @@
 import type { TestEvent, TestEventData } from './types.ts';
 
+// Loaded via getBuiltinModule so bundling this file for the browser stays
+// possible; there flattenError never sees a live Error — only Node does.
+const inspect = (globalThis as {
+  process?: { getBuiltinModule?: (id: string) => { inspect: (value: unknown, opts?: object) => string } };
+}).process?.getBuiltinModule?.('node:util')?.inspect;
+
+/** The colored stack + `{ key: value }` props block `util.inspect` prints,
+ *  exactly as terminal reporters show it. The test-runner's ERR_TEST_FAILURE
+ *  wrapper keeps its plain stack: its code/failureType bookkeeping isn't part
+ *  of the user's error (viewers unwrap to the cause). */
+function inspectedStack(raw: unknown): string | undefined {
+  if (inspect == null || !(raw instanceof Error) || (raw as { code?: unknown }).code === 'ERR_TEST_FAILURE') return undefined;
+  if (typeof raw.stack !== 'string' || raw.stack === '') return undefined;
+  return inspect(raw, { colors: true });
+}
+
 function flattenError(raw: unknown): unknown {
   if (raw == null) return undefined;
   const err = raw as { message?: string; stack?: string; name?: string; cause?: unknown };
   return {
     message: err.message ?? String(err),
-    stack: err.stack,
+    stack: inspectedStack(raw) ?? err.stack,
     name: err.name,
     cause: err.cause instanceof Error ? flattenError(err.cause) : err.cause,
   };
