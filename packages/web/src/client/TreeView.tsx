@@ -554,6 +554,11 @@ const selectionClick = (): boolean => {
  *  and its nested output row share a node but are distinct rows. */
 const rowKey = (row: FlatRow): string => (row.kind === 'output' ? `${row.node.key}::out` : row.node.key);
 
+/** Embedder hook: render custom trailing content (e.g. action buttons) for a
+ *  tree row. Called for every node — containers and tests alike — on every
+ *  render, so it must be cheap; return null to render nothing for a node. */
+export type RenderNodeActions = (node: TestNode) => React.ReactNode;
+
 interface RowViewProps {
   row: FlatRow;
   toggle: (key: string, current: boolean) => void;
@@ -568,10 +573,11 @@ interface RowViewProps {
   carriedRun: boolean;
   /** The only-re-run filter is active (collapsed pills show re-run counts). */
   onlyRerun: boolean;
+  renderNodeActions?: RenderNodeActions;
 }
 
 function RowView({
-  row, toggle, enter, now, since, clock, carriedRun, onlyRerun,
+  row, toggle, enter, now, since, clock, carriedRun, onlyRerun, renderNodeActions,
 }: RowViewProps) {
   const {
     node, depth, status, expandable, expanded, hasDiag,
@@ -667,6 +673,18 @@ function RowView({
         </span>
       ) : null}
       <span className="dur" data-carried={carried || rollupMark ? 'true' : undefined} data-tip={durTip}>{formatDuration(ms) || '—'}</span>
+      {renderNodeActions ? (
+        // Custom content is interactive on its own terms: clicks and keys
+        // inside must never toggle the row's disclosure.
+        <span
+          className="node-actions"
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+        >
+          {renderNodeActions(node)}
+        </span>
+      ) : null}
     </div>
   );
 }
@@ -716,10 +734,12 @@ export interface TreeViewProps {
   /** The viewer's `?src=` is missing or unreachable. */
   loadError?: boolean;
   onRetry?: () => void;
+  /** Render custom trailing content at the end of every tree row. */
+  renderNodeActions?: RenderNodeActions;
 }
 
 export function TreeView({
-  snapshot, streaming = false, pending = false, loadError = false, onRetry,
+  snapshot, streaming = false, pending = false, loadError = false, onRetry, renderNodeActions,
 }: TreeViewProps) {
   const [theme, toggleTheme] = useTheme();
   // Filters live in the URL (?q, ?status, ?rerun) so a copied link shares the
@@ -960,6 +980,7 @@ export function TreeView({
               clock={clock}
               carriedRun={carriedRun}
               onlyRerun={onlyRerun}
+              renderNodeActions={renderNodeActions}
             />
           )))
         ) : pending ? (

@@ -37,6 +37,18 @@
     "pretest": "rm -rf dist && tsup",
     "test": "node --test-reporter=@reporters/mux --test"
   },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@reporters/mux": "workspace:^",
     "@reporters/tree-core": "workspace:^",

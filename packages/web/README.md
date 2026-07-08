@@ -61,14 +61,14 @@ Built on the shared [`@reporters/tree-core`](https://github.com/MoLow/reporters/
 model (also used by [`@reporters/live`](https://github.com/MoLow/reporters/tree/main/packages/live)) —
 the same run state, rendered in the browser instead of the terminal.
 
-## Custom report sources (`@reporters/web/viewer`)
+## Embedding the viewer (`@reporters/web/viewer`)
 
 The hosted viewer reads `?src=<url>` with plain `fetch`. To serve reports that
-need authentication (private buckets, SSO), build your own viewer page on the
-same UI with a custom source resolver:
+need authentication (private buckets, SSO), or to add your own controls to the
+tree, build your own viewer page on the same UI:
 
-```ts
-import { startViewer } from '@reporters/web/viewer';
+```tsx
+import { startViewer, type TestNode } from '@reporters/web/viewer';
 
 startViewer({
   resolveSource: async (params) => {
@@ -76,13 +76,36 @@ startViewer({
     const credentials = await acquireCredentialsSomehow();
     return { url: params.get('key')!, fetch: authenticatedFetch(credentials) };
   },
+  renderNodeActions: (node: TestNode) => (node.type === 'test'
+    ? <button onClick={() => rerun(node)}>↻ rerun</button>
+    : null),
 });
 ```
 
-`resolveSource` runs before anything renders. Return `null`/`undefined` to fall
-through to the default `?src=` handling; return `{ url, fetch?, pollMs? }` to
-take over. The custom `fetch` receives the reader's `Range` header and must
-return a standard `Response`; a thrown error shows the viewer's load-error
-screen, and a promise that never resolves is fine while an auth redirect is in
-flight. The export is a self-contained browser ESM module (React inlined) —
-bundle it with your resolver into a static HTML page.
+The export is a browser ESM module that bundles everything except React —
+`react` and `react-dom` are (optional) peer dependencies, so your page's TSX
+and the viewer share one React 19 instance. Bundle it with your resolver into a
+static HTML page.
+
+### `resolveSource`
+
+Runs before anything renders. Return `null`/`undefined` to fall through to the
+default `?src=` handling; return `{ url, fetch?, pollMs? }` to take over. The
+custom `fetch` receives the reader's `Range` header and must return a standard
+`Response`; a thrown error shows the viewer's load-error screen, and a promise
+that never resolves is fine while an auth redirect is in flight.
+
+### `renderNodeActions`
+
+Renders custom trailing content at the end of every tree row — containers and
+tests alike; return `null` to render nothing for a node. The result is wrapped
+in a `.node-actions` element that swallows clicks and keystrokes, so your
+buttons never toggle the row's disclosure. It is called on every render (which
+is frequent during a live run), so keep it cheap.
+
+Visibility is yours to style — e.g. reveal on row hover:
+
+```css
+.node-actions { visibility: hidden; }
+.row:hover .node-actions, .row:focus-within .node-actions { visibility: visible; }
+```

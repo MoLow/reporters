@@ -13,7 +13,8 @@ export default defineConfig([
     noExternal: [/@reporters\/tree-core/],
   },
   // Browser clients: self-contained IIFE bundles (React + react-dom + tree-core
-  // inlined). `viewer` is assembled into a standalone page below.
+  // inlined; react is a peer dep, so force-bundle it here). `viewer` is
+  // assembled into a standalone page below.
   {
     entry: { viewer: 'src/client/viewer.tsx' },
     format: ['iife'],
@@ -22,6 +23,7 @@ export default defineConfig([
     dts: false,
     clean: false,
     minify: true,
+    noExternal: [/.*/],
     async onSuccess() {
       const viewerJs = readFileSync('dist/viewer.global.js', 'utf8');
       const page = `<!doctype html>
@@ -42,7 +44,9 @@ export default defineConfig([
     },
   },
   // Browser library entry: startViewer for hosts composing their own viewer
-  // page with a custom source resolver. Self-contained (React inlined).
+  // page with a custom source resolver and per-row TSX. React stays external
+  // (peer dep) so the host's TSX and the viewer share one React instance;
+  // everything else is inlined.
   {
     entry: { start: 'src/client/start.tsx' },
     format: ['esm'],
@@ -52,6 +56,7 @@ export default defineConfig([
     clean: false,
     minify: true,
     env: { NODE_ENV: 'production' },
-    noExternal: [/.*/],
+    external: [/^react(-dom)?(\/|$)/],
+    noExternal: [/@reporters\/tree-core/, 'fancy-ansi'],
   },
 ]);
