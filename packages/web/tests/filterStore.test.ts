@@ -63,6 +63,18 @@ test('urlFilterState: a write matching the URL pushes nothing', async () => {
   resetUrl();
 });
 
+test('urlFilterState: tolerates a window without location/history (sandboxed iframe)', () => {
+  const real = (globalThis as any).window;
+  (globalThis as any).window = new Proxy({}, { get() { throw new Error('denied'); } });
+  try {
+    const store = urlFilterState();
+    assert.deepStrictEqual(store.read(), state(), 'read falls back to defaults');
+    store.write(state({ onlyRerun: true })); // a discrete change pushes — must not throw
+  } finally {
+    (globalThis as any).window = real;
+  }
+});
+
 test('urlFilterState: subscribe reports Back/Forward, unsubscribe stops it', async () => {
   const store = urlFilterState();
   const seen: FilterState[] = [];
