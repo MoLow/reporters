@@ -168,6 +168,7 @@ button { font-family: inherit; } input { font-family: inherit; }
 .dur { flex: none; color: var(--faint); font-size: 11.5px; font-family: var(--mono); min-width: 54px; text-align: right; font-variant-numeric: tabular-nums; }
 .dur[data-carried="true"] { font-style: italic; }
 .node-actions { flex: none; display: inline-flex; align-items: center; gap: 4px; }
+.header-actions { flex: none; display: inline-flex; align-items: center; gap: 4px; }
 
 /* shared floating tooltip: one body-level fixed node (client/tooltip.ts), so
    no overflow container or sticky-header stacking context can clip or cover
