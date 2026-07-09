@@ -561,6 +561,10 @@ const rowKey = (row: FlatRow): string => (row.kind === 'output' ? `${row.node.ke
  *  render, so it must be cheap; return null to render nothing for a node. */
 export type RenderNodeActions = (node: TestNode) => React.ReactNode;
 
+/** Embedder hook: render custom content in the header toolbar, after the
+ *  built-in buttons. Called on every render, so it must be cheap. */
+export type RenderHeaderActions = () => React.ReactNode;
+
 interface RowViewProps {
   row: FlatRow;
   toggle: (key: string, current: boolean) => void;
@@ -657,6 +661,18 @@ function RowView({
         <span className="todotag" data-soft="skipped">⊘ {trimTag(node.skip)}</span>
       ) : null}
       <span className="spacer" />
+      {renderNodeActions ? (
+        // Custom content is interactive on its own terms: clicks and keys
+        // inside must never toggle the row's disclosure.
+        <span
+          className="node-actions"
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+        >
+          {renderNodeActions(node)}
+        </span>
+      ) : null}
       {container && !expanded ? (
         <span className="pills">
           {STATUS_ORDER.filter((s) => (s === 'passed' && onlyRerun ? counts.passed - counts.carried : counts[s]) > 0).map((s) => (
@@ -675,18 +691,6 @@ function RowView({
         </span>
       ) : null}
       <span className="dur" data-carried={carried || rollupMark ? 'true' : undefined} data-tip={durTip}>{formatDuration(ms) || '—'}</span>
-      {renderNodeActions ? (
-        // Custom content is interactive on its own terms: clicks and keys
-        // inside must never toggle the row's disclosure.
-        <span
-          className="node-actions"
-          onClick={(e) => e.stopPropagation()}
-          onMouseDown={(e) => e.stopPropagation()}
-          onKeyDown={(e) => e.stopPropagation()}
-        >
-          {renderNodeActions(node)}
-        </span>
-      ) : null}
     </div>
   );
 }
@@ -738,10 +742,12 @@ export interface TreeViewProps {
   onRetry?: () => void;
   /** Render custom trailing content at the end of every tree row. */
   renderNodeActions?: RenderNodeActions;
+  /** Render custom content at the end of the header toolbar. */
+  renderHeaderActions?: RenderHeaderActions;
 }
 
 export function TreeView({
-  snapshot, streaming = false, pending = false, loadError = false, onRetry, renderNodeActions,
+  snapshot, streaming = false, pending = false, loadError = false, onRetry, renderNodeActions, renderHeaderActions,
 }: TreeViewProps) {
   const [theme, toggleTheme] = useTheme();
   // Filters live in the URL (?q, ?status, ?rerun) so a copied link shares the
@@ -941,6 +947,9 @@ export function TreeView({
             >
               {allCollapsed ? 'Expand all' : 'Collapse all'}
             </button>
+            {renderHeaderActions ? (
+              <span className="header-actions">{renderHeaderActions()}</span>
+            ) : null}
           </div>
         </div>
         <div className="hdr-bar-row">

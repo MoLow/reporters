@@ -4,12 +4,12 @@ import { createTreeStore, type TreeStore } from '@reporters/tree-core';
 import { createNdjsonReader } from '../poll.ts';
 import { resolveReportSource, type ViewerOptions as SourceOptions } from '../source.ts';
 import { STYLES } from '../template.ts';
-import { TreeView, type RenderNodeActions } from './TreeView.tsx';
+import { TreeView, type RenderHeaderActions, type RenderNodeActions } from './TreeView.tsx';
 import { initTooltips } from './tooltip.ts';
 
 export type { ReportSource } from '../source.ts';
 export type { FetchLike } from '../poll.ts';
-export type { RenderNodeActions } from './TreeView.tsx';
+export type { RenderHeaderActions, RenderNodeActions } from './TreeView.tsx';
 export type { TestNode } from '@reporters/tree-core';
 
 export interface ViewerOptions extends SourceOptions {
@@ -20,6 +20,10 @@ export interface ViewerOptions extends SourceOptions {
    *  return null to render nothing for a node. Visibility (e.g. reveal on row
    *  hover) is the embedder's own CSS: `.row:hover .node-actions { … }`. */
   renderNodeActions?: RenderNodeActions;
+  /** Render custom content in the header toolbar, to the right of the built-in
+   *  buttons (search, theme, collapse all), inside a `.header-actions` wrapper.
+   *  Called on each render (frequent during a live run), so keep it cheap. */
+  renderHeaderActions?: RenderHeaderActions;
 }
 
 const delay = (ms: number) => new Promise((resolve) => { setTimeout(resolve, ms); });
@@ -52,6 +56,7 @@ export async function startViewer(options: ViewerOptions = {}): Promise<void> {
       loadError={loadError}
       onRetry={retry}
       renderNodeActions={options.renderNodeActions}
+      renderHeaderActions={options.renderHeaderActions}
     />,
   );
 

@@ -79,6 +79,7 @@ startViewer({
   renderNodeActions: (node: TestNode) => (node.type === 'test'
     ? <button onClick={() => rerun(node)}>↻ rerun</button>
     : null),
+  renderHeaderActions: () => <button onClick={rerunAll}>↻ rerun all</button>,
 });
 ```
 
@@ -97,11 +98,12 @@ that never resolves is fine while an auth redirect is in flight.
 
 ### `renderNodeActions`
 
-Renders custom trailing content at the end of every tree row — containers and
-tests alike; return `null` to render nothing for a node. The result is wrapped
-in a `.node-actions` element that swallows clicks and keystrokes, so your
-buttons never toggle the row's disclosure. It is called on every render (which
-is frequent during a live run), so keep it cheap.
+Renders custom content on every tree row — containers and tests alike; return
+`null` to render nothing for a node. The result sits between the test name and
+the row's built-in trailing indicators (status pills, duration), wrapped in a
+`.node-actions` element that swallows clicks and keystrokes so your buttons
+never toggle the row's disclosure. It is called on every render (which is
+frequent during a live run), so keep it cheap.
 
 Visibility is yours to style — e.g. reveal on row hover:
 
@@ -109,3 +111,9 @@ Visibility is yours to style — e.g. reveal on row hover:
 .node-actions { visibility: hidden; }
 .row:hover .node-actions, .row:focus-within .node-actions { visibility: visible; }
 ```
+
+### `renderHeaderActions`
+
+Renders custom content in the header toolbar, to the right of the built-in
+buttons (search, theme, collapse all), wrapped in a `.header-actions` element.
+Same contract as `renderNodeActions`: called on every render, so keep it cheap.
