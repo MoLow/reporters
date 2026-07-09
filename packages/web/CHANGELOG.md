@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.1.0](https://github.com/MoLow/reporters/compare/web-v2.0.0...web-v2.1.0) (2026-07-09)
+
+
+### Features
+
+* **web:** export the viewer as a React component ([#264](https://github.com/MoLow/reporters/issues/264)) ([fe5f398](https://github.com/MoLow/reporters/commit/fe5f39816825de31753aa5a37c35f0f47d8548c9))
+* **web:** renderHeaderActions slot; node actions before row indicators ([#262](https://github.com/MoLow/reporters/issues/262)) ([26f948a](https://github.com/MoLow/reporters/commit/26f948a64032038db403ad45b021ad10cba81d1a))
+
 ## [2.0.0](https://github.com/MoLow/reporters/compare/web-v1.6.2...web-v2.0.0) (2026-07-08)
 
 
