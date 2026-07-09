@@ -224,15 +224,17 @@ function currentSearch(): string {
 /** Shareable filter state: `?q`, `?status` and `?rerun` mirror the search box,
  *  status chips and Only re-run. Discrete toggles push a history entry
  *  immediately, typing debounces into one entry, and Back/Forward restore the
- *  previous filters. */
-function useUrlFilters() {
-  const [query, setQuery] = useState(() => parseFilterState(currentSearch()).query);
-  const [statuses, setStatuses] = useState<ReadonlySet<TestStatus>>(() => parseFilterState(currentSearch()).statuses);
-  const [onlyRerun, setOnlyRerun] = useState(() => parseFilterState(currentSearch()).onlyRerun);
+ *  previous filters. With `syncUrl` off (embedded in a host app that owns the
+ *  address bar), filters live purely in memory and history is never touched. */
+function useUrlFilters(syncUrl: boolean) {
+  const [query, setQuery] = useState(() => (syncUrl ? parseFilterState(currentSearch()).query : ''));
+  const [statuses, setStatuses] = useState<ReadonlySet<TestStatus>>(() => (syncUrl ? parseFilterState(currentSearch()).statuses : new Set()));
+  const [onlyRerun, setOnlyRerun] = useState(() => (syncUrl ? parseFilterState(currentSearch()).onlyRerun : false));
   const state: FilterState = { query, statuses, onlyRerun };
   const stateRef = useRef(state);
   stateRef.current = state;
   const sync = () => {
+    if (!syncUrl) return;
     const search = currentSearch();
     const next = serializeFilterState(stateRef.current, search);
     // Compare canonical forms so encoding quirks (%20 vs +) never push.
@@ -247,6 +249,7 @@ function useUrlFilters() {
     return () => clearTimeout(id);
   }, [query]);
   useEffect(() => {
+    if (!syncUrl) return undefined;
     const onPop = () => {
       const s = parseFilterState(currentSearch());
       setQuery(s.query);
@@ -255,7 +258,7 @@ function useUrlFilters() {
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
-  }, []);
+  }, [syncUrl]);
   return {
     query, setQuery, statuses, setStatuses, onlyRerun, setOnlyRerun,
   };
@@ -744,17 +747,20 @@ export interface TreeViewProps {
   renderNodeActions?: RenderNodeActions;
   /** Render custom content at the end of the header toolbar. */
   renderHeaderActions?: RenderHeaderActions;
+  /** Mirror filters into the page URL (?q, ?status, ?rerun). On for the
+   *  standalone page; off when embedded so the host's router owns the URL. */
+  syncUrl?: boolean;
 }
 
 export function TreeView({
-  snapshot, streaming = false, pending = false, loadError = false, onRetry, renderNodeActions, renderHeaderActions,
+  snapshot, streaming = false, pending = false, loadError = false, onRetry, renderNodeActions, renderHeaderActions, syncUrl = true,
 }: TreeViewProps) {
   const [theme, toggleTheme] = useTheme();
   // Filters live in the URL (?q, ?status, ?rerun) so a copied link shares the
   // same view; statuses empty = unfiltered.
   const {
     query, setQuery, statuses, setStatuses, onlyRerun, setOnlyRerun,
-  } = useUrlFilters();
+  } = useUrlFilters(syncUrl);
   const [overrides, setOverrides] = useState<Map<string, boolean>>(new Map());
   const toggleStatus = (s: TestStatus) => {
     setStatuses((prev) => {
