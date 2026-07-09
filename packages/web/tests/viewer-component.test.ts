@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
 import { JSDOM } from 'jsdom';
-import React, { act } from 'react';
-import { createRoot, type Root } from 'react-dom/client';
+import type ReactTypes from 'react';
+import type { Root } from 'react-dom/client';
 
 const dom = new JSDOM('<div id="root"></div>', { url: 'http://localhost/' });
 (globalThis as any).window = dom.window;
@@ -10,11 +10,17 @@ const dom = new JSDOM('<div id="root"></div>', { url: 'http://localhost/' });
 Object.defineProperty(globalThis, 'navigator', { value: dom.window.navigator, configurable: true });
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
 
-// The built bundle, not the source: node:test can't load .tsx, and the dist
-// artifact (React external) is what embedders actually run. Imported after
-// the DOM globals exist.
-const { TestReportViewer } = await import('../dist/start.js' as string) as {
-  TestReportViewer: React.FunctionComponent<Record<string, unknown>>;
+// Everything below is imported dynamically, after the DOM globals exist:
+// react-dom snapshots the environment at module evaluation, and with no
+// document its event system goes inert — dispatched events silently reach no
+// handler. The dist bundle (React external) is what embedders actually run;
+// node:test couldn't load the .tsx source anyway.
+const React = (await import('react')).default;
+const { act } = await import('react');
+const { createRoot } = await import('react-dom/client');
+const { TestReportViewer, memoryFilterState } = await import('../dist/start.js' as string) as {
+  TestReportViewer: ReactTypes.FunctionComponent<Record<string, unknown>>;
+  memoryFilterState: (initial?: object) => object;
 };
 
 const LOG = [
@@ -94,20 +100,39 @@ test('renderNodeActions and renderHeaderActions render in the embedded component
   await act(async () => root.unmount());
 });
 
-test('does not touch the page URL by default', async () => {
+async function typeQuery(el: HTMLElement, text: string): Promise<void> {
+  const input = el.querySelector('input')!;
+  await act(async () => {
+    const setter = Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, 'value')!.set!;
+    setter.call(input, text);
+    input.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+  });
+  await tick(450); // past the URL store's 400ms typing debounce
+}
+
+test('the default filter store syncs the page URL', async () => {
   const { fetchImpl } = fakeSource(`${LOG}\n${SUMMARY}\n`);
   const { root, el } = mount();
   await act(async () => {
     root.render(React.createElement(TestReportViewer, { src: '/run.ndjson', fetch: fetchImpl, pollMs: 10 }));
   });
   await tick(30);
-  const input = el.querySelector('input')!;
+  await typeQuery(el, 'adds');
+  assert.strictEqual(dom.window.location.search, '?q=adds');
+  await act(async () => root.unmount());
+  dom.window.history.replaceState(null, '', '/');
+});
+
+test('memoryFilterState keeps the page URL untouched', async () => {
+  const { fetchImpl } = fakeSource(`${LOG}\n${SUMMARY}\n`);
+  const { root, el } = mount();
   await act(async () => {
-    const setter = Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, 'value')!.set!;
-    setter.call(input, 'adds');
-    input.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+    root.render(React.createElement(TestReportViewer, {
+      src: '/run.ndjson', fetch: fetchImpl, pollMs: 10, filters: memoryFilterState(),
+    }));
   });
-  await tick(450); // past the 400ms URL-sync debounce
-  assert.strictEqual(dom.window.location.search, '', 'embedded viewer must not write query params');
+  await tick(30);
+  await typeQuery(el, 'adds');
+  assert.strictEqual(dom.window.location.search, '', 'memory store must not write query params');
   await act(async () => root.unmount());
 });

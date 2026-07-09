@@ -6,11 +6,13 @@ import { resolveReportSource, type ViewerOptions as SourceOptions } from '../sou
 import { STYLES } from '../template.ts';
 import { TreeView, type RenderHeaderActions, type RenderNodeActions } from './TreeView.tsx';
 import { initTooltips } from './tooltip.ts';
+import type { FilterStore } from './urlState.ts';
 
 export type { ReportSource } from '../source.ts';
 export type { FetchLike } from '../poll.ts';
 export type { RenderHeaderActions, RenderNodeActions } from './TreeView.tsx';
 export type { TestNode } from '@reporters/tree-core';
+export { memoryFilterState, urlFilterState, type FilterState, type FilterStore } from './urlState.ts';
 
 export interface ViewerOptions extends SourceOptions {
   /** Render custom trailing content (e.g. action buttons) at the end of every
@@ -106,17 +108,18 @@ export interface TestReportViewerProps {
   pollMs?: number;
   renderNodeActions?: RenderNodeActions;
   renderHeaderActions?: RenderHeaderActions;
-  /** Mirror filters into the page URL (?q, ?status, ?rerun). Off by default:
-   *  an embedded viewer must not fight the host app's router. The standalone
-   *  page turns it on for shareable links. */
-  syncUrl?: boolean;
+  /** Where filter state (?q, ?status, ?rerun) lives; defaults to the
+   *  shareable page URL. Pass memoryFilterState() when the host app owns the
+   *  address bar, or your own store to bind filters to a router or state
+   *  container. Must be stable across renders. */
+  filters?: FilterStore;
 }
 
 /** The report viewer as a React component: render it anywhere in a host app.
  *  Polls `src`, live-updates until the run's summary, and stops polling on
  *  unmount. Styles are injected into document.head on first mount. */
 export function TestReportViewer({
-  src, fetch: fetchImpl, pollMs = DEFAULT_POLL_MS, renderNodeActions, renderHeaderActions, syncUrl = false,
+  src, fetch: fetchImpl, pollMs = DEFAULT_POLL_MS, renderNodeActions, renderHeaderActions, filters,
 }: TestReportViewerProps) {
   useEffect(() => { injectStyles(); initTooltips(); }, []);
   const {
@@ -131,7 +134,7 @@ export function TestReportViewer({
       onRetry={retry}
       renderNodeActions={renderNodeActions}
       renderHeaderActions={renderHeaderActions}
-      syncUrl={syncUrl}
+      filters={filters}
     />
   );
 }
@@ -171,7 +174,6 @@ export async function startViewer(options: ViewerOptions = {}): Promise<void> {
       pollMs={source.pollMs}
       renderNodeActions={options.renderNodeActions}
       renderHeaderActions={options.renderHeaderActions}
-      syncUrl
     />,
   );
 }

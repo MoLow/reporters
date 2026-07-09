@@ -75,12 +75,15 @@ summary, and stops polling on unmount. Styles are injected into
 `document.head` on first mount.
 
 ```tsx
-import { TestReportViewer, type TestNode } from '@reporters/web/viewer';
+import { TestReportViewer, memoryFilterState, type TestNode } from '@reporters/web/viewer';
+
+const filters = memoryFilterState();
 
 <TestReportViewer
   src={reportUrl}
   fetch={authenticatedFetch}  // optional; receives the Range header
   pollMs={250}                // optional; default 1000
+  filters={filters}           // optional; defaults to the shareable page URL
   renderNodeActions={(node: TestNode) => (node.type === 'test'
     ? <button onClick={() => rerun(node)}>↻ rerun</button>
     : null)}
@@ -88,9 +91,22 @@ import { TestReportViewer, type TestNode } from '@reporters/web/viewer';
 />
 ```
 
-Filters (search, status chips, Only re-run) live in memory — the component
-never touches the host page's URL. Pass `syncUrl` to opt into the standalone
-page's shareable `?q`/`?status`/`?rerun` params.
+Filter state (search, status chips, Only re-run) lives in a pluggable
+`FilterStore`. The default is `urlFilterState()` — shareable
+`?q`/`?status`/`?rerun` params, exactly like the standalone page. Pass
+`memoryFilterState()` when the host app owns the address bar, or implement the
+three-method interface to bind filters to your router or state container:
+
+```ts
+interface FilterStore {
+  read(): FilterState;                                        // initial state on mount
+  write(state: FilterState): void;                            // called on every change
+  subscribe?(onChange: (s: FilterState) => void): () => void; // external changes
+}
+```
+
+The store instance must be stable for the life of the component — create it
+outside the render (or in `useState`/`useMemo`).
 
 ### `startViewer()` — a full viewer page
 
