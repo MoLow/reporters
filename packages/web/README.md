@@ -63,12 +63,60 @@ the same run state, rendered in the browser instead of the terminal.
 
 ## Embedding the viewer (`@reporters/web/viewer`)
 
-The hosted viewer reads `?src=<url>` with plain `fetch`. To serve reports that
-need authentication (private buckets, SSO), or to add your own controls to the
-tree, build your own viewer page on the same UI:
+The export is a browser ESM module that bundles everything except React —
+`react` and `react-dom` are (optional) peer dependencies, so your app's TSX and
+the viewer share one React 19 instance.
+
+### `<TestReportViewer>` — the viewer as a component
+
+Render the whole viewer anywhere in a React app — a tab, a modal, a split
+pane. It polls `src` with HTTP Range, live-updates until the run's final
+summary, and stops polling on unmount. Styles are injected into
+`document.head` on first mount.
 
 ```tsx
-import { startViewer, type TestNode } from '@reporters/web/viewer';
+import { TestReportViewer, memoryFilterState, type TestNode } from '@reporters/web/viewer';
+
+const filters = memoryFilterState();
+
+<TestReportViewer
+  src={reportUrl}
+  fetch={authenticatedFetch}  // optional; receives the Range header
+  pollMs={250}                // optional; default 1000
+  filters={filters}           // optional; defaults to the shareable page URL
+  renderNodeActions={(node: TestNode) => (node.type === 'test'
+    ? <button onClick={() => rerun(node)}>↻ rerun</button>
+    : null)}
+  renderHeaderActions={() => <button onClick={rerunAll}>↻ rerun all</button>}
+/>
+```
+
+Filter state (search, status chips, Only re-run) lives in a pluggable
+`FilterStore`. The default is `urlFilterState()` — shareable
+`?q`/`?status`/`?rerun` params, exactly like the standalone page. Pass
+`memoryFilterState()` when the host app owns the address bar, or implement the
+three-method interface to bind filters to your router or state container:
+
+```ts
+interface FilterStore {
+  read(): FilterState;                                        // initial state on mount
+  write(state: FilterState): void;                            // called on every change
+  subscribe?(onChange: (s: FilterState) => void): () => void; // external changes
+}
+```
+
+The store instance must be stable for the life of the component — create it
+outside the render (or in `useState`/`useMemo`).
+
+### `startViewer()` — a full viewer page
+
+For a dedicated static page on the same UI (the hosted viewer is exactly
+this), `startViewer` reads `?src=`/`?poll=` from the page URL, mounts into
+`#root`, and keeps filters in the URL so views are shareable. Reports that
+need authentication (private buckets, SSO) plug in a source resolver:
+
+```tsx
+import { startViewer } from '@reporters/web/viewer';
 
 startViewer({
   resolveSource: async (params) => {
@@ -76,25 +124,17 @@ startViewer({
     const credentials = await acquireCredentialsSomehow();
     return { url: params.get('key')!, fetch: authenticatedFetch(credentials) };
   },
-  renderNodeActions: (node: TestNode) => (node.type === 'test'
-    ? <button onClick={() => rerun(node)}>↻ rerun</button>
-    : null),
-  renderHeaderActions: () => <button onClick={rerunAll}>↻ rerun all</button>,
+  renderNodeActions: ...,   // both hooks work here too
+  renderHeaderActions: ...,
 });
 ```
 
-The export is a browser ESM module that bundles everything except React —
-`react` and `react-dom` are (optional) peer dependencies, so your page's TSX
-and the viewer share one React 19 instance. Bundle it with your resolver into a
-static HTML page.
-
-### `resolveSource`
-
-Runs before anything renders. Return `null`/`undefined` to fall through to the
-default `?src=` handling; return `{ url, fetch?, pollMs? }` to take over. The
-custom `fetch` receives the reader's `Range` header and must return a standard
-`Response`; a thrown error shows the viewer's load-error screen, and a promise
-that never resolves is fine while an auth redirect is in flight.
+`resolveSource` runs before anything renders. Return `null`/`undefined` to fall
+through to the default `?src=` handling; return `{ url, fetch?, pollMs? }` to
+take over. The custom `fetch` receives the reader's `Range` header and must
+return a standard `Response`; a thrown error shows the viewer's load-error
+screen, and a promise that never resolves is fine while an auth redirect is in
+flight.
 
 ### `renderNodeActions`
 

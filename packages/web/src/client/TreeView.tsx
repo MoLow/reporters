@@ -14,7 +14,7 @@ import { AnsiSpan } from './ansi.ts';
 import {
   classifyFrame, extractLevel, formatCount, levelSeverity, splitUrls, stripAnsi, type StackLine,
 } from './format.ts';
-import { parseFilterState, serializeFilterState, type FilterState } from './urlState.ts';
+import { urlFilterState, type FilterState, type FilterStore } from './urlState.ts';
 
 const GLYPH: Record<TestStatus, string> = {
   passed: '✓', failed: '✕', skipped: '⊘', todo: '◇', running: '◐', queued: '○',
@@ -217,47 +217,23 @@ function computeTheme(): 'dark' | 'light' {
   return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
-function currentSearch(): string {
-  try { return window.location.search; } catch { return ''; }
-}
-
-/** Shareable filter state: `?q`, `?status` and `?rerun` mirror the search box,
- *  status chips and Only re-run. Discrete toggles push a history entry
- *  immediately, typing debounces into one entry, and Back/Forward restore the
- *  previous filters. */
-function useUrlFilters() {
-  const [query, setQuery] = useState(() => parseFilterState(currentSearch()).query);
-  const [statuses, setStatuses] = useState<ReadonlySet<TestStatus>>(() => parseFilterState(currentSearch()).statuses);
-  const [onlyRerun, setOnlyRerun] = useState(() => parseFilterState(currentSearch()).onlyRerun);
-  const state: FilterState = { query, statuses, onlyRerun };
-  const stateRef = useRef(state);
-  stateRef.current = state;
-  const sync = () => {
-    const search = currentSearch();
-    const next = serializeFilterState(stateRef.current, search);
-    // Compare canonical forms so encoding quirks (%20 vs +) never push.
-    if (next === serializeFilterState(parseFilterState(search), search)) return;
-    try {
-      window.history.pushState(null, '', `${window.location.pathname}${next}${window.location.hash}`);
-    } catch { /* history may be unavailable (sandboxed iframe) */ }
-  };
-  useEffect(sync, [statuses, onlyRerun]);
+/** Filter state (search, status chips, Only re-run) bound to a FilterStore:
+ *  read once on mount, write on every change, re-read on external changes
+ *  (Back/Forward for the URL store, the host's own events for custom ones). */
+function useFilters(store: FilterStore) {
+  const [state, setState] = useState<FilterState>(() => store.read());
+  const first = useRef(true);
   useEffect(() => {
-    const id = setTimeout(sync, 400);
-    return () => clearTimeout(id);
-  }, [query]);
-  useEffect(() => {
-    const onPop = () => {
-      const s = parseFilterState(currentSearch());
-      setQuery(s.query);
-      setStatuses(s.statuses);
-      setOnlyRerun(s.onlyRerun);
-    };
-    window.addEventListener('popstate', onPop);
-    return () => window.removeEventListener('popstate', onPop);
-  }, []);
+    // Mount state came from read(); only user changes are written back.
+    if (first.current) { first.current = false; return; }
+    store.write(state);
+  }, [state]);
+  useEffect(() => store.subscribe?.(setState), [store]);
+  const setQuery = (query: string) => setState((prev) => ({ ...prev, query }));
+  const setStatuses = (next: ReadonlySet<TestStatus> | ((prev: ReadonlySet<TestStatus>) => ReadonlySet<TestStatus>)) => setState((prev) => ({ ...prev, statuses: typeof next === 'function' ? next(prev.statuses) : next }));
+  const setOnlyRerun = (onlyRerun: boolean) => setState((prev) => ({ ...prev, onlyRerun }));
   return {
-    query, setQuery, statuses, setStatuses, onlyRerun, setOnlyRerun,
+    query: state.query, statuses: state.statuses, onlyRerun: state.onlyRerun, setQuery, setStatuses, setOnlyRerun,
   };
 }
 
@@ -744,17 +720,21 @@ export interface TreeViewProps {
   renderNodeActions?: RenderNodeActions;
   /** Render custom content at the end of the header toolbar. */
   renderHeaderActions?: RenderHeaderActions;
+  /** Where filter state lives; defaults to the shareable page URL (?q,
+   *  ?status, ?rerun). Pass memoryFilterState() (or your own store) when the
+   *  host app owns the address bar. Must be stable across renders. */
+  filters?: FilterStore;
 }
 
 export function TreeView({
-  snapshot, streaming = false, pending = false, loadError = false, onRetry, renderNodeActions, renderHeaderActions,
+  snapshot, streaming = false, pending = false, loadError = false, onRetry, renderNodeActions, renderHeaderActions, filters,
 }: TreeViewProps) {
   const [theme, toggleTheme] = useTheme();
-  // Filters live in the URL (?q, ?status, ?rerun) so a copied link shares the
-  // same view; statuses empty = unfiltered.
+  // The default store is per-mount so its debounce timer dies with the view.
+  const [defaultFilters] = useState(() => filters ?? urlFilterState());
   const {
     query, setQuery, statuses, setStatuses, onlyRerun, setOnlyRerun,
-  } = useUrlFilters();
+  } = useFilters(filters ?? defaultFilters);
   const [overrides, setOverrides] = useState<Map<string, boolean>>(new Map());
   const toggleStatus = (s: TestStatus) => {
     setStatuses((prev) => {
