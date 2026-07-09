@@ -1,5 +1,21 @@
 # Changelog
 
+## [2.0.0](https://github.com/MoLow/reporters/compare/web-v1.6.2...web-v2.0.0) (2026-07-08)
+
+
+### ⚠ BREAKING CHANGES
+
+* **web:** the @reporters/web/viewer ESM entry no longer inlines React — react and react-dom are now (optional) peer dependencies, so the host page's TSX and the viewer share one React 19 instance. The standalone viewer page is unchanged (still fully self-contained).
+
+### Features
+
+* **web:** renderNodeActions — embedder TSX per tree row ([#259](https://github.com/MoLow/reporters/issues/259)) ([6911f07](https://github.com/MoLow/reporters/commit/6911f07e1081f51de7f40b10474c661601fdb9ec))
+
+
+### Bug Fixes
+
+* **web:** stop rebuilding ANSI line DOM on every live re-render ([#261](https://github.com/MoLow/reporters/issues/261)) ([1eb3321](https://github.com/MoLow/reporters/commit/1eb33215e533dac6a840f6ee37854b00921383e1))
+
 ## [1.6.2](https://github.com/MoLow/reporters/compare/web-v1.6.1...web-v1.6.2) (2026-07-08)
 
 
