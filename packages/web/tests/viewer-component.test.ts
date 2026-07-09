@@ -123,6 +123,23 @@ test('the default filter store syncs the page URL', async () => {
   dom.window.history.replaceState(null, '', '/');
 });
 
+test('without src renders the load-error screen; retry button only with onRetry', async () => {
+  const { root, el } = mount();
+  await act(async () => { root.render(React.createElement(TestReportViewer, {})); });
+  assert.ok(el.textContent!.includes('Couldn’t load the live log'), 'load-error screen renders');
+  assert.strictEqual(el.querySelector('.state button'), null, 'no retry without a handler');
+
+  let retried = 0;
+  await act(async () => {
+    root.render(React.createElement(TestReportViewer, { onRetry: () => { retried += 1; } }));
+  });
+  const button = el.querySelector('.state button') as HTMLButtonElement;
+  assert.ok(button, 'retry button renders with a handler');
+  await act(async () => { button.click(); });
+  assert.strictEqual(retried, 1);
+  await act(async () => root.unmount());
+});
+
 test('memoryFilterState keeps the page URL untouched', async () => {
   const { fetchImpl } = fakeSource(`${LOG}\n${SUMMARY}\n`);
   const { root, el } = mount();

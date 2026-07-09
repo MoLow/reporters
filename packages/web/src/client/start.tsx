@@ -1,4 +1,6 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, {
+  useCallback, useEffect, useInsertionEffect, useState,
+} from 'react';
 import { createRoot } from 'react-dom/client';
 import { createTreeStore, type TreeSnapshot } from '@reporters/tree-core';
 import { createNdjsonReader, DEFAULT_POLL_MS, type FetchLike } from '../poll.ts';
@@ -47,8 +49,9 @@ interface StreamView {
 
 /** Poll the NDJSON report and fold events into a live snapshot. Stops at the
  *  run's final summary, on unmount, or when the source identity changes;
- *  `retry` restarts the stream from scratch after a load error. */
-function useReportStream(src: string, fetchImpl: FetchLike | undefined, pollMs: number) {
+ *  `retry` restarts the stream from scratch after a load error. Without a
+ *  `src` there is nothing to poll — the view settles on the load-error state. */
+function useReportStream(src: string | undefined, fetchImpl: FetchLike | undefined, pollMs: number) {
   const [generation, setGeneration] = useState(0);
   const [view, setView] = useState<StreamView>(() => ({
     snapshot: createTreeStore().getSnapshot(), streaming: true, pending: true, loadError: false,
@@ -56,6 +59,12 @@ function useReportStream(src: string, fetchImpl: FetchLike | undefined, pollMs: 
   useEffect(() => {
     let cancelled = false;
     let store = createTreeStore();
+    if (!src) {
+      setView({
+        snapshot: store.getSnapshot(), streaming: false, pending: false, loadError: true,
+      });
+      return undefined;
+    }
     const reader = createNdjsonReader(src, fetchImpl);
     setView({
       snapshot: store.getSnapshot(), streaming: true, pending: true, loadError: false,
@@ -99,8 +108,10 @@ function useReportStream(src: string, fetchImpl: FetchLike | undefined, pollMs: 
 }
 
 export interface TestReportViewerProps {
-  /** URL of the NDJSON report; polled with HTTP Range while the run streams. */
-  src: string;
+  /** URL of the NDJSON report; polled with HTTP Range while the run streams.
+   *  Omit (e.g. while the host is still resolving where the report lives and
+   *  has nothing to show) to render the load-error screen. */
+  src?: string;
   /** Transport for reads; defaults to the global fetch. Receives the reader's
    *  Range header and must return a standard Response. */
   fetch?: FetchLike;
@@ -113,15 +124,20 @@ export interface TestReportViewerProps {
    *  address bar, or your own store to bind filters to a router or state
    *  container. Must be stable across renders. */
   filters?: FilterStore;
+  /** Replaces the load-error screen's default retry (restart the stream) —
+   *  e.g. re-run the host's own source resolution. With no `src` there is no
+   *  stream to restart, so without this the retry button is hidden. */
+  onRetry?: () => void;
 }
 
 /** The report viewer as a React component: render it anywhere in a host app.
  *  Polls `src`, live-updates until the run's summary, and stops polling on
- *  unmount. Styles are injected into document.head on first mount. */
+ *  unmount. Injects its stylesheet into document.head before first paint. */
 export function TestReportViewer({
-  src, fetch: fetchImpl, pollMs = DEFAULT_POLL_MS, renderNodeActions, renderHeaderActions, filters,
+  src, fetch: fetchImpl, pollMs = DEFAULT_POLL_MS, renderNodeActions, renderHeaderActions, filters, onRetry,
 }: TestReportViewerProps) {
-  useEffect(() => { injectStyles(); initTooltips(); }, []);
+  useInsertionEffect(() => { injectStyles(); }, []);
+  useEffect(() => { initTooltips(); }, []);
   const {
     snapshot, streaming, pending, loadError, retry,
   } = useReportStream(src, fetchImpl, pollMs);
@@ -131,7 +147,7 @@ export function TestReportViewer({
       streaming={streaming}
       pending={pending}
       loadError={loadError}
-      onRetry={retry}
+      onRetry={onRetry ?? (src ? retry : undefined)}
       renderNodeActions={renderNodeActions}
       renderHeaderActions={renderHeaderActions}
       filters={filters}
@@ -140,11 +156,8 @@ export function TestReportViewer({
 }
 
 export async function startViewer(options: ViewerOptions = {}): Promise<void> {
-  injectStyles();
-  initTooltips();
   const mount = document.getElementById('root');
   if (!mount) return;
-  const root = createRoot(mount);
 
   let source;
   try {
@@ -153,27 +166,16 @@ export async function startViewer(options: ViewerOptions = {}): Promise<void> {
     console.error(err);
     source = null;
   }
-  if (!source) {
-    // No usable source at all (missing/rejected ?src=): a retry must re-run
-    // source resolution, so reload the page rather than re-poll.
-    root.render(
-      <TreeView
-        snapshot={createTreeStore().getSnapshot()}
-        streaming={false}
-        loadError
-        onRetry={() => window.location.reload()}
-      />,
-    );
-    return;
-  }
-
-  root.render(
+  createRoot(mount).render(
     <TestReportViewer
-      src={source.url}
-      fetch={source.fetch}
-      pollMs={source.pollMs}
+      src={source?.url}
+      fetch={source?.fetch}
+      pollMs={source?.pollMs}
       renderNodeActions={options.renderNodeActions}
       renderHeaderActions={options.renderHeaderActions}
+      // No usable source (missing/rejected ?src=): a retry must re-run source
+      // resolution, so reload the page rather than restart a stream.
+      onRetry={source ? undefined : () => window.location.reload()}
     />,
   );
 }
