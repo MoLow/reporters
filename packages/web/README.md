@@ -61,6 +61,28 @@ Built on the shared [`@reporters/tree-core`](https://github.com/MoLow/reporters/
 model (also used by [`@reporters/live`](https://github.com/MoLow/reporters/tree/main/packages/live)) —
 the same run state, rendered in the browser instead of the terminal.
 
+## Consuming the NDJSON from your own tooling
+
+Every line is one JSON-encoded `node:test` event, so the log is easy to feed
+into dashboards, notifiers or CI annotations — not just the viewer. Failure
+events carry the error on `data.details.error`:
+
+```jsonc
+{
+  "message": "1 subtest failed",
+  "name": "Error",
+  "stack": "…", // util.inspect-style: extra enumerable props appear here
+  "code": "ERR_TEST_FAILURE",
+  "failureType": "subtestsFailed", // e.g. testCodeFailure, hookFailed, cancelledByParent
+  "cause": { /* the original error, same shape, recursive */ }
+}
+```
+
+`code` and `failureType` are copied from the runner's error when they are
+strings, so a consumer can branch on
+`error.failureType === 'subtestsFailed'` instead of matching message text.
+Logs written by older versions of this reporter lack these two fields.
+
 ## Embedding the viewer (`@reporters/web/viewer`)
 
 The export is a browser ESM module that bundles everything except React —
