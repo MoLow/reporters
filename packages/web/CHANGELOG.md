@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.0](https://github.com/MoLow/reporters/compare/web-v2.1.0...web-v2.2.0) (2026-07-26)
+
+
+### Features
+
+* **web:** carry failureType and code on NDJSON wire errors ([#266](https://github.com/MoLow/reporters/issues/266)) ([8ccb379](https://github.com/MoLow/reporters/commit/8ccb37966c18f4ed62e2ff29c02931ce5c425f11))
+
 ## [2.1.0](https://github.com/MoLow/reporters/compare/web-v2.0.0...web-v2.1.0) (2026-07-09)
 
 
