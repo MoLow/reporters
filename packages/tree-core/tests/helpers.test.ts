@@ -201,6 +201,40 @@ test('toWireEvent appends cause props to the cause stack but skips the test-runn
   assert.ok(stripAnsi(flat.cause.stack).endsWith(" {\n  jobId: 'abc'\n}"));
 });
 
+test('toWireEvent keeps failureType and code on the wire error, recursively', () => {
+  const cause = Object.assign(new Error('read failed'), { code: 'ENOENT' });
+  const wrapper = Object.assign(new Error('1 subtest failed'), {
+    code: 'ERR_TEST_FAILURE', failureType: 'subtestsFailed', exitCode: 1, cause,
+  });
+  const wire = toWireEvent({ type: 'test:fail', data: { details: { duration_ms: 1, error: wrapper } } });
+  const flat = JSON.parse(JSON.stringify(wire.data.details?.error)) as {
+    code?: string; failureType?: string; cause?: { code?: string; failureType?: string };
+  };
+  assert.strictEqual(flat.failureType, 'subtestsFailed');
+  assert.strictEqual(flat.code, 'ERR_TEST_FAILURE');
+  assert.strictEqual(flat.cause?.code, 'ENOENT');
+  assert.ok(!('failureType' in flat.cause!));
+});
+
+test('non-string code and failureType stay off the wire fields', () => {
+  const error = Object.assign(new Error('boom'), { code: 10n, failureType: 42 });
+  const line = serializeWireLine({ type: 'test:fail', data: { details: { duration_ms: 1, error } } });
+  const [event] = parseWireLines(line);
+  const flat = event.data.details?.error as { code?: unknown; failureType?: unknown; stack: string };
+  assert.ok(!('code' in flat));
+  assert.ok(!('failureType' in flat));
+  assert.ok(stripAnsi(flat.stack).includes('code: 10n'));
+});
+
+test('failureType and code survive re-flattening', () => {
+  const error = Object.assign(new Error('wrapped'), { code: 'ERR_TEST_FAILURE', failureType: 'subtestsFailed' });
+  const once = toWireEvent({ type: 'test:fail', data: { details: { duration_ms: 1, error } } });
+  const twice = toWireEvent(once);
+  const flat = twice.data.details?.error as { code?: string; failureType?: string };
+  assert.strictEqual(flat.code, 'ERR_TEST_FAILURE');
+  assert.strictEqual(flat.failureType, 'subtestsFailed');
+});
+
 test('re-flattening an already-flattened error does not duplicate the props block', () => {
   const error = Object.assign(new Error('boom'), { jobId: 'abc' });
   const once = toWireEvent({ type: 'test:fail', data: { details: { duration_ms: 1, error } } });
