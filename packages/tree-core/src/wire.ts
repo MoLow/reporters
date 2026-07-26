@@ -18,11 +18,16 @@ function inspectedStack(raw: unknown): string | undefined {
 
 function flattenError(raw: unknown): unknown {
   if (raw == null) return undefined;
-  const err = raw as { message?: string; stack?: string; name?: string; cause?: unknown };
+  const err = raw as {
+    message?: string; stack?: string; name?: string; cause?: unknown;
+    code?: unknown; failureType?: unknown;
+  };
   return {
     message: err.message ?? String(err),
     stack: inspectedStack(raw) ?? err.stack,
     name: err.name,
+    code: typeof err.code === 'string' ? err.code : undefined,
+    failureType: typeof err.failureType === 'string' ? err.failureType : undefined,
     cause: err.cause instanceof Error ? flattenError(err.cause) : err.cause,
   };
 }
