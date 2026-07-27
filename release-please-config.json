@@ -26,6 +26,7 @@
     "packages/live": {},
     "packages/web": {},
     "packages/mux": {},
-    "packages/sink": {}
+    "packages/sink": {},
+    "packages/tree-core": {}
   }
 }
