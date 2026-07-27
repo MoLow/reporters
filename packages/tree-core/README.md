@@ -18,10 +18,12 @@ One model, two renderers:
 | --- | --- |
 | ![the live terminal tree](https://raw.githubusercontent.com/MoLow/reporters/5393ed7b104f42d90bb930ad89854d8fdff6785b/packages/live/assets/cli.gif) | ![the web viewer](https://raw.githubusercontent.com/MoLow/reporters/5393ed7b104f42d90bb930ad89854d8fdff6785b/packages/web/assets/viewer.png) |
 
-> [!NOTE]
-> This is an internal workspace package — it isn't published to npm. If you're
-> building a tree-shaped reporter of your own, the pieces below are what the
-> two reporters share.
+If you're building a tree-shaped reporter of your own, the pieces below are
+what the two reporters share:
+
+```bash
+npm i @reporters/tree-core
+```
 
 ## What it provides
 

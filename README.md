@@ -89,8 +89,9 @@ Not ready for a config file? Every reporter also works standalone with plain
 | [mux](packages/mux) ([npm](https://www.npmjs.com/package/@reporters/mux)) | Environment-aware routing: tee the run to multiple reporters, each into its own sink, per profile |
 | [sink](packages/sink) ([npm](https://www.npmjs.com/package/@reporters/sink)) | Delivery sinks for mux: upload the run to a gist or S3 so the hosted viewer can render it |
 
-(`live` and `web` share one tree model, [tree-core](packages/tree-core) —
-internal, but useful if you're building a tree-shaped reporter of your own.)
+(`live` and `web` share one tree model, [tree-core](packages/tree-core)
+([npm](https://www.npmjs.com/package/@reporters/tree-core)) — useful if you're
+building a tree-shaped reporter of your own.)
 
 ## Pick by need
 

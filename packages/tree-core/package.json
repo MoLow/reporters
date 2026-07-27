@@ -3,7 +3,6 @@
   "version": "0.0.0",
   "description": "Shared tree-state model for @reporters/live and @reporters/web",
   "type": "module",
-  "private": true,
   "keywords": [
     "node:test",
     "test",
@@ -24,6 +23,7 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsup",
+    "prepack": "tsup",
     "test": "node --test-reporter=@reporters/mux --test"
   },
   "devDependencies": {
