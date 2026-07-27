@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert';
 import web from '../src/index.ts';
 import { internals } from '../src/open.ts';
+import { createTreeStore } from '@reporters/tree-core';
 import type { TestEvent } from '@reporters/tree-core';
 
 const events: TestEvent[] = [
@@ -66,6 +67,27 @@ test('web with open:true and a file destination serves + opens AND writes NDJSON
     internals.openInBrowser = origOpen;
     process.execArgv = origArgv;
   }
+});
+
+test('an empty-message cause still yields a real message after the viewer store replay', async () => {
+  // A DOMException cause (AbortSignal.timeout's TimeoutError) crossing the test-runner
+  // process-isolation IPC deserializes with an empty message but an intact stack; the
+  // viewer must surface the stack's first line, not an empty string.
+  const cause = new Error('');
+  cause.stack = 'TimeoutError: The operation was aborted due to timeout\n    at Timeout._onTimeout';
+  const wrapper = new Error('The operation was aborted due to timeout');
+  // @ts-expect-error test cause shape
+  wrapper.cause = cause;
+  const failing: TestEvent[] = [
+    { type: 'test:start', data: { name: 't', nesting: 0, file: '/a.test.js', testId: 1 } },
+    { type: 'test:fail', data: { name: 't', nesting: 0, file: '/a.test.js', testId: 1, details: { duration_ms: 1, error: wrapper } } },
+  ];
+  const out: string[] = [];
+  for await (const chunk of web(failing, { open: false })) out.push(chunk);
+  const store = createTreeStore();
+  for (const line of out) store.apply(JSON.parse(line));
+  const node = store.getSnapshot().root.children[0].children[0];
+  assert.strictEqual(node.error?.message, 'TimeoutError: The operation was aborted due to timeout');
 });
 
 test('web declares under-mux defaults so mux drives it as a pure emitter', () => {
