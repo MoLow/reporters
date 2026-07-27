@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.1](https://github.com/MoLow/reporters/compare/web-v2.2.0...web-v2.2.1) (2026-07-27)
+
+
+### Bug Fixes
+
+* **tree-core:** fall back to the stack first line when a cause message is empty ([#268](https://github.com/MoLow/reporters/issues/268)) ([f44a666](https://github.com/MoLow/reporters/commit/f44a666a459d6d82878a1023f701ff28103d9d91))
+
 ## [2.2.0](https://github.com/MoLow/reporters/compare/web-v2.1.0...web-v2.2.0) (2026-07-26)
 
 
