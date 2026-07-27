@@ -67,6 +67,24 @@ test('failed test carries the unwrapped cause error', () => {
   assert.strictEqual(node.error?.message, 'actual failure');
 });
 
+test('empty-message cause falls back to the stack first line', () => {
+  const store = createTreeStore();
+  // A DOMException cause (e.g. AbortSignal.timeout's TimeoutError) crossing the
+  // child-process IPC boundary deserializes as an Error whose message/name getters
+  // were lost (own-property snapshot), while the stack string keeps the real text.
+  const cause = new Error('');
+  cause.stack = 'TimeoutError: The operation was aborted due to timeout\n    at Timeout._onTimeout';
+  const wrapper = new Error('The operation was aborted due to timeout');
+  // @ts-expect-error test cause shape
+  wrapper.cause = cause;
+  apply(store, [
+    { type: 'test:start', data: { name: 't', nesting: 0, file: '/a.test.js', testId: 1 } },
+    { type: 'test:fail', data: { name: 't', nesting: 0, file: '/a.test.js', testId: 1, details: { error: wrapper } } },
+  ]);
+  const node = store.getSnapshot().root.children[0].children[0];
+  assert.strictEqual(node.error?.message, 'TimeoutError: The operation was aborted due to timeout');
+});
+
 test('skip maps to its own status; todo status is reserved for failing todos', () => {
   const store = createTreeStore();
   apply(store, [

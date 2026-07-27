@@ -72,8 +72,11 @@ function serializeError(raw: unknown): SerializedError | undefined {
   if (raw == null) return undefined;
   const err = raw as { message?: string; stack?: string; name?: string; cause?: unknown };
   const cause = (err.cause ?? err) as { message?: string; stack?: string; name?: string };
+  // A cause whose message/name live on prototype getters (e.g. DOMException) loses them
+  // when v8-serialized across the test-runner IPC boundary; the stack string keeps the
+  // real "Name: message" first line, so fall back to it before the generic String().
   return {
-    message: cause?.message ?? String(cause),
+    message: cause?.message || cause?.stack?.split('\n', 1)[0] || String(cause),
     stack: cause?.stack,
     name: cause?.name,
   };
