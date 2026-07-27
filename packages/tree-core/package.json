@@ -1,6 +1,6 @@
 {
   "name": "@reporters/tree-core",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Shared tree-state model for @reporters/live and @reporters/web",
   "type": "module",
   "keywords": [
