@@ -34,7 +34,11 @@ node --test-reporter=@reporters/live --test
 
 - **Live** — tests appear as they start and complete in real execution order.
 - **Full tree, always expanded** — you always see every test; only per-test
-  diagnostics (errors, stdout/stderr, `diagnostic()` messages) collapse.
+  detail (errors, stdout/stderr, `diagnostic()` and `log()` messages) collapses.
+- **Live logs** — `t.log()` messages (Node ≥ v26.6.0) appear the moment they are
+  emitted, even under process isolation, where everything else is buffered until
+  the file reports. A `{ level: 'warn' | 'error' }` in the payload colors the
+  line; the payload itself renders after the message.
 - **Interactive review** — when stdin is a TTY it stays open after the run so
   you can browse:
   - `↑`/`↓` (or `k`/`j`) — move between tests that have diagnostics

@@ -19,7 +19,9 @@ import { renderTreeText } from './text.ts';
  *
  * Note: under the default process isolation Node buffers each file's events
  * until that file's turn to report, so files fill in as they complete. For true
- * real-time per-test streaming, run with `--test-isolation=none`.
+ * real-time per-test streaming, run with `--test-isolation=none`. The exception
+ * is `t.log()` (Node >= v26.6.0), whose `test:log` events bypass that buffer and
+ * land on the tree as they happen.
  */
 export default async function* live(source: AsyncIterable<TestEvent>): AsyncGenerator<string> {
   const store = createTreeStore();
