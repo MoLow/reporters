@@ -11,6 +11,14 @@ import { build, captureEvents, findOne } from './util.ts';
 const isolationFlagSupported = spawnSync(process.execPath, ['--help'], { encoding: 'utf8' })
   .stdout.includes('--test-isolation');
 
+/** The same stream as a pre-v26.6.0 writer would have produced it. */
+function withoutEntryFile(events: TestEvent[]): TestEvent[] {
+  return events.map((event) => {
+    const { entryFile, ...data } = event.data;
+    return { ...event, data };
+  });
+}
+
 function leaf(node: TestNode, name: string): TestNode | undefined {
   if (node.name === name && node.children.length === 0) return node;
   for (const child of node.children) {
@@ -46,15 +54,46 @@ test('a fast test finalizes before its slower, first-declared sibling (live orde
   assert.strictEqual(status.slow, 'running', 'slow should still be running, not waiting on declaration order');
 });
 
-test('isolation: shared-helper tests from two files group under the definition file', () => {
-  // KNOWN LIMITATION: tests defined in a shared, imported module report the
-  // definition file (not the entry file) and, under process isolation, reset
-  // testId per process. Grouping by file (required for a live tree — see the
-  // model in store.ts) therefore merges the two files' identical tests. The
-  // final, cumulative summary still reports the true totals.
-  // See docs/node-issue-entry-file-attribution.md.
-  const events = captureEvents(['fixtures/entry-a.mjs', 'fixtures/entry-b.mjs']);
-  const { root, summary } = build(events);
+// Two entry files whose tests are both defined in one shared imported helper —
+// the case that used to collapse into a single, wrong file node.
+const sharedHelperStream = captureEvents(['fixtures/entry-a.mjs', 'fixtures/entry-b.mjs']);
+const reportsEntryFile = sharedHelperStream.some((e) => e.data.entryFile != null);
+
+test('isolation: shared-helper tests split by the entry file that ran them', {
+  skip: reportsEntryFile ? false : 'this Node build does not report entryFile',
+}, () => {
+  const { root, summary } = build(sharedHelperStream);
+
+  const fileNodes = root.children.filter((n) => n.type === 'file');
+  assert.deepStrictEqual(
+    fileNodes.map((n) => n.name.replace(/^.*\//, '')).sort(),
+    ['entry-a.mjs', 'entry-b.mjs'],
+    'each entry file gets its own node, named for the entry file',
+  );
+
+  for (const fileNode of fileNodes) {
+    const passing = leaf(fileNode, 'shared passing test');
+    assert.strictEqual(passing?.status, 'passed', `passing test under ${fileNode.name}`);
+    assert.strictEqual(leaf(fileNode, 'shared failing test')?.status, 'failed', `failing test under ${fileNode.name}`);
+    // The node keeps the definition site; only the grouping uses the entry file.
+    assert.ok(passing?.file?.endsWith('shared-helper.mjs'), 'file is the definition site');
+    assert.strictEqual(passing?.entryFile, fileNode.file, 'entryFile is the group it sits in');
+  }
+
+  // The tree now agrees with the run-level summary instead of under-reporting.
+  assert.deepStrictEqual(
+    { passed: root.counts.passed, failed: root.counts.failed, total: root.counts.total },
+    { passed: 2, failed: 2, total: 4 },
+  );
+  assert.strictEqual(summary?.counts.tests, 4);
+});
+
+test('a stream without entryFile still merges them under the definition file', () => {
+  // Backwards compatibility, exercised on every Node version: strip the field
+  // and the heuristic path must produce exactly what it always did — one node
+  // named for the helper, holding one copy of each test, with the true totals
+  // surviving only in the cumulative summary.
+  const { root, summary } = build(withoutEntryFile(sharedHelperStream));
 
   const fileNodes = root.children.filter((n) => n.type === 'file');
   assert.strictEqual(fileNodes.length, 1, 'both files define via the same helper');
@@ -62,7 +101,6 @@ test('isolation: shared-helper tests from two files group under the definition f
   assert.strictEqual(leaf(fileNodes[0], 'shared passing test')?.status, 'passed');
   assert.strictEqual(leaf(fileNodes[0], 'shared failing test')?.status, 'failed');
 
-  // The run-level summary still reflects that 4 tests actually ran.
   assert.strictEqual(summary?.counts.tests, 4);
   assert.strictEqual(summary?.counts.passed, 2);
   assert.strictEqual(summary?.counts.failed, 2);
