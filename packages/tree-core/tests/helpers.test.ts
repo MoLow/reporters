@@ -296,7 +296,7 @@ function node(partial: Partial<TestNode>): TestNode {
     nesting: 0,
     type: 'suite',
     status: 'passed',
-    diagnostics: [],
+    messages: [],
     stdout: [],
     stderr: [],
     children: [],

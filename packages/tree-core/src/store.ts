@@ -30,7 +30,7 @@ interface InternalNode {
   durationMs?: number;
   startedAt?: number;
   error?: SerializedError;
-  diagnostics: TestNode['diagnostics'];
+  messages: TestNode['messages'];
   stdout: string[];
   stderr: string[];
   line?: number;
@@ -159,7 +159,7 @@ export function createTreeStore(): TreeStore {
       nesting: type === 'root' || type === 'file' ? -1 : 0,
       type,
       status: type === 'root' || type === 'file' ? 'running' : 'queued',
-      diagnostics: [],
+      messages: [],
       stdout: [],
       stderr: [],
       childKeys: [],
@@ -634,7 +634,7 @@ export function createTreeStore(): TreeStore {
         const targetKey = lastStartedByGroupNesting.get(gk)?.get(data.nesting ?? 0);
         const target = (declKey && nodes.get(declKey))
           || (targetKey && nodes.get(targetKey)) || nodes.get(gk);
-        if (target) target.diagnostics.push({ message: data.message, level: data.level ?? 'info' });
+        if (target) target.messages.push({ kind: 'diagnostic', message: data.message, level: data.level ?? 'info' });
         break;
       }
       case 'test:stdout':
@@ -694,12 +694,12 @@ export function createTreeStore(): TreeStore {
   // re-linked away: it never got an event of its own, so it has no name.
   function isEmptyFileNode(node: TestNode): boolean {
     return node.type === 'file' && node.children.length === 0
-      && node.stdout.length === 0 && node.stderr.length === 0 && node.diagnostics.length === 0;
+      && node.stdout.length === 0 && node.stderr.length === 0 && node.messages.length === 0;
   }
 
   function isEmptyPlaceholder(node: TestNode): boolean {
     return node.type === 'test' && node.name === '' && node.children.length === 0
-      && node.diagnostics.length === 0;
+      && node.messages.length === 0;
   }
 
   function build(key: string): TestNode {
@@ -754,7 +754,7 @@ export function createTreeStore(): TreeStore {
       durationMs: internal.durationMs,
       startedAt: internal.startedAt,
       error,
-      diagnostics: internal.diagnostics,
+      messages: internal.messages,
       stdout: internal.stdout,
       stderr: internal.stderr,
       children,

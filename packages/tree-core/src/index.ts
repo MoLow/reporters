@@ -8,7 +8,7 @@ export type {
   TestStatus,
   NodeType,
   DiagnosticLevel,
-  Diagnostic,
+  TestMessage,
   SerializedError,
   Counts,
   TestNode,

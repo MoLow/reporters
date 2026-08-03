@@ -175,8 +175,8 @@ function computeDiagBlocks(node: TestNode): DiagBlock[] {
       copyText: stripAnsi(lines.map((l) => l.text).join('\n')),
     });
   }
-  if (node.diagnostics.length > 0) {
-    const items = node.diagnostics.map((d) => {
+  if (node.messages.length > 0) {
+    const items = node.messages.map((d) => {
       const level = extractLevel(d.message) ?? d.level;
       return { level, sev: levelSeverity(level), text: d.message };
     });
@@ -184,7 +184,7 @@ function computeDiagBlocks(node: TestNode): DiagBlock[] {
       : items.some((i) => i.sev === 'running') ? 'running' : 'skipped';
     blocks.push({
       key: 'diag', title: 'Diagnostics', icon: '◇', sev, kind: 'list', items,
-      copyText: stripAnsi(node.diagnostics.map((d) => d.message).join('\n')),
+      copyText: stripAnsi(node.messages.map((d) => d.message).join('\n')),
     });
   }
   const reason = reasonOf(node);

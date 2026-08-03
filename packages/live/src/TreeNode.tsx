@@ -11,7 +11,7 @@ function basename(file: string | undefined): string {
 }
 
 export function nodeHasDiagnostics(node: TestNode): boolean {
-  return Boolean(node.error) || node.diagnostics.length > 0
+  return Boolean(node.error) || node.messages.length > 0
     || node.stdout.length > 0 || node.stderr.length > 0;
 }
 
@@ -33,7 +33,7 @@ function Diagnostics({ node, indent }: { node: TestNode; indent: string }) {
     ));
   };
   if (node.error) push('error', node.error.stack || node.error.message, 'red');
-  if (node.diagnostics.length) push('diagnostics', node.diagnostics.map((d) => d.message).join('\n'));
+  if (node.messages.length) push('diagnostics', node.messages.map((d) => d.message).join('\n'));
   if (node.stdout.length) push('stdout', node.stdout.join('').replace(/\n$/, ''));
   if (node.stderr.length) push('stderr', node.stderr.join('').replace(/\n$/, ''));
   return <Box flexDirection="column">{lines}</Box>;

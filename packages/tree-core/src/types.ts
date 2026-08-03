@@ -10,9 +10,17 @@ export type NodeType = 'root' | 'file' | 'suite' | 'test';
 
 export type DiagnosticLevel = 'info' | 'warn' | 'error';
 
-export interface Diagnostic {
+/** A message a test reported about itself. `diagnostic` comes from
+ *  `t.diagnostic()`, buffered by the runner into declaration order; `log` comes
+ *  from `t.log()` and arrives immediately, in execution order. */
+export interface TestMessage {
+  kind: 'diagnostic' | 'log';
   message: string;
   level: DiagnosticLevel;
+  /** Logs only: the opaque payload from `t.log(message, data)`, JSON-sanitized. */
+  data?: unknown;
+  /** Logs only: writer wall-clock when the log was emitted. */
+  t?: number;
 }
 
 export interface SerializedError {
@@ -46,7 +54,7 @@ export interface TestNode {
    *  stamps against each other, never against their own clock. */
   startedAt?: number;
   error?: SerializedError;
-  diagnostics: Diagnostic[];
+  messages: TestMessage[];
   stdout: string[];
   stderr: string[];
   children: TestNode[];
@@ -96,6 +104,8 @@ export interface TestEventData {
   skip?: boolean | string;
   message?: string;
   level?: DiagnosticLevel;
+  /** `test:log` only: the opaque payload from `t.log(message, data)`. */
+  data?: unknown;
   count?: number;
   type?: 'suite' | 'test';
   details?: {

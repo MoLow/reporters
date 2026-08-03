@@ -122,7 +122,7 @@ test('diagnostics attach to the last started test at that file+nesting', () => {
     { type: 'test:pass', data: { name: 't', nesting: 0, file: '/a.test.js', testId: 1 } },
   ]);
   const node = store.getSnapshot().root.children[0].children[0];
-  assert.deepStrictEqual(node.diagnostics, [{ message: 'hello', level: 'info' }]);
+  assert.deepStrictEqual(node.messages, [{ kind: 'diagnostic', message: 'hello', level: 'info' }]);
 });
 
 test('stdout and stderr attach to the file node', () => {

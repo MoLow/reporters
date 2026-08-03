@@ -144,7 +144,7 @@ export function realError(node: TestNode): { message: string; stack?: string } |
 
 export function hasDiagnostics(node: TestNode): boolean {
   return Boolean(realError(node))
-    || node.diagnostics.length > 0
+    || node.messages.length > 0
     || node.stdout.length > 0
     || node.stderr.length > 0
     || Boolean(reasonOf(node));
