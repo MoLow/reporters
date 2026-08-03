@@ -1,15 +1,12 @@
 # Changelog
 
-## [2.0.0](https://github.com/MoLow/reporters/compare/live-v1.2.0...live-v2.0.0) (2026-08-03)
+## [1.3.0](https://github.com/MoLow/reporters/compare/live-v1.2.0...live-v1.3.0) (2026-08-03)
 
-
-### ⚠ BREAKING CHANGES
-
-* `TestNode.diagnostics: Diagnostic[]` is replaced by `TestNode.messages: TestMessage[]`. The `Diagnostic` type is gone; use `TestMessage`, whose `kind` is `'diagnostic'` for `t.diagnostic()` messages.
 
 ### Features
 
 * support test:log for real-time per-test logging ([#272](https://github.com/MoLow/reporters/issues/272)) ([e1c91a4](https://github.com/MoLow/reporters/commit/e1c91a42ff8900402c75290f4a869281b5cc998f))
+* **tree-core:** resolve the test tree exactly using entryFile ([#274](https://github.com/MoLow/reporters/issues/274)) ([474737d](https://github.com/MoLow/reporters/commit/474737d13f16d4e4a71f8359789857f473e361b1))
 
 ## [1.2.0](https://github.com/MoLow/reporters/compare/live-v1.1.0...live-v1.2.0) (2026-07-06)
 

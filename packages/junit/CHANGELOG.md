@@ -1,11 +1,7 @@
 # Changelog
 
-## [3.0.0](https://github.com/MoLow/reporters/compare/junit-v2.0.2...junit-v3.0.0) (2026-08-03)
+## [2.1.0](https://github.com/MoLow/reporters/compare/junit-v2.0.2...junit-v2.1.0) (2026-08-03)
 
-
-### ⚠ BREAKING CHANGES
-
-* `TestNode.diagnostics: Diagnostic[]` is replaced by `TestNode.messages: TestMessage[]`. The `Diagnostic` type is gone; use `TestMessage`, whose `kind` is `'diagnostic'` for `t.diagnostic()` messages.
 
 ### Features
 
