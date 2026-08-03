@@ -36,6 +36,14 @@ function treeToXML(tree) {
   return `${indent}<${tag} ${propsString}>\n${childrenString}${indent}</${tag}>\n`;
 }
 
+// `test:log` is execution-ordered - Node forwards it the moment `t.log()` runs,
+// bypassing the per-file declaration-order buffer that `test:diagnostic` waits
+// in. Appending it on arrival puts the comment beside whichever test happens to
+// be reporting, so logs are held and attached to their own test instead.
+// `entryFile` (nodejs/node#64309) will disambiguate the isolated processes that
+// share a declaration file; until it lands, `(file, testId)` can collide.
+const logKey = (data) => `${data.entryFile ?? data.file} ${data.testId}`;
+
 function isFailure(node) {
   return (node?.children && node.children.some((c) => c.tag === 'failure')) || node?.props?.failures;
 }
@@ -49,6 +57,34 @@ export default async function* junitReporter(source) {
   yield '<testsuites>\n';
   let currentSuite = null;
   const roots = [];
+  const pendingLogs = new Map();
+  let orphanLogs = 0;
+
+  function pushLog(data) {
+    // A log with no `testId` can never be claimed by a reported test, so it gets
+    // a key nothing matches and surfaces at the end of the run instead.
+    orphanLogs += data.testId === undefined ? 1 : 0;
+    const key = data.testId === undefined ? ` orphan ${orphanLogs}` : logKey(data);
+    const logs = pendingLogs.get(key);
+    if (logs === undefined) {
+      pendingLogs.set(key, [data.message]);
+    } else {
+      logs.push(data.message);
+    }
+  }
+
+  function takeLogs(data) {
+    if (data.testId === undefined) {
+      return [];
+    }
+    const key = logKey(data);
+    const logs = pendingLogs.get(key);
+    if (logs === undefined) {
+      return [];
+    }
+    pendingLogs.delete(key);
+    return logs;
+  }
 
   function startTest(event) {
     const originalSuite = currentSuite;
@@ -117,16 +153,32 @@ export default async function* junitReporter(source) {
             currentTest.props.failure = event.data.details?.error?.message ?? '';
           }
         }
+        // After the tag is decided: comments are excluded from the child count
+        // that distinguishes a testcase from a testsuite, so a logged test must
+        // not become a suite.
+        for (const message of takeLogs(event.data)) {
+          currentTest.children.push({ nesting: event.data.nesting + 1, comment: message });
+        }
         break;
       }
-      case 'test:diagnostic':
-      case 'test:log': {
+      case 'test:diagnostic': {
         const parent = currentSuite?.children ?? roots;
         parent.push({ nesting: event.data.nesting, comment: event.data.message });
         break;
       }
+      case 'test:log': {
+        pushLog(event.data);
+        break;
+      }
       default:
         break;
+    }
+  }
+  // Logs whose test never reported - an interrupted run, or `t.log()` from an
+  // async leak that outlived its test.
+  for (const logs of pendingLogs.values()) {
+    for (const message of logs) {
+      roots.push({ nesting: 0, comment: message });
     }
   }
   for (const suite of roots) {

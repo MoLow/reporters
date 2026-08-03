@@ -80,24 +80,89 @@ describe('github reporter', () => {
 });
 
 describe('test:log annotations', () => {
-  const LOG = {
+  const log = (data) => transformEvent({
     type: 'test:log',
     data: {
-      name: 't', nesting: 0, file: 'x.js', line: 3, column: 1, message: 'fetched user',
+      name: 't', nesting: 0, file: 'x.js', line: 3, column: 1, testId: 1, ...data,
     },
+  });
+
+  const passed = (data) => transformEvent({
+    type: 'test:pass',
+    data: {
+      name: 't', nesting: 0, file: 'x.js', line: 3, column: 1, testId: 1, details: { duration_ms: 1 }, ...data,
+    },
+  });
+
+  const verbose = (fn) => {
+    process.env.GITHUB_ACTIONS_REPORTER_VERBOSE = '1';
+    try {
+      return fn();
+    } finally {
+      delete process.env.GITHUB_ACTIONS_REPORTER_VERBOSE;
+    }
   };
 
   test('a log becomes a notice only when verbose is enabled', () => {
     delete process.env.GITHUB_ACTIONS_REPORTER_VERBOSE;
-    assert.strictEqual(transformEvent(LOG), '');
+    assert.strictEqual(log({ message: 'quiet' }), '');
+    assert.doesNotMatch(passed({}), /quiet/);
 
-    process.env.GITHUB_ACTIONS_REPORTER_VERBOSE = '1';
-    try {
-      const out = transformEvent(LOG);
-      assert.match(out, /^::notice /);
+    verbose(() => {
+      assert.strictEqual(log({ message: 'fetched user' }), '', 'held until the test reports');
+      const out = passed({});
+      assert.match(out, /::notice /);
       assert.match(out, /fetched user/);
-    } finally {
-      delete process.env.GITHUB_ACTIONS_REPORTER_VERBOSE;
-    }
+    });
+  });
+
+  test('a notice carries the log payload', () => {
+    verbose(() => {
+      log({ message: 'fetched', data: { userId: 42 } });
+      assert.match(passed({}), /fetched \{"userId":42\}/);
+    });
+  });
+
+  test('a log waits for its own test, not the next one to report', () => {
+    verbose(() => {
+      log({ name: 'owner', testId: 7, message: 'owned line' });
+      assert.doesNotMatch(passed({ name: 'bystander', testId: 8 }), /owned line/);
+      assert.match(passed({ name: 'owner', testId: 7 }), /owned line/);
+    });
+  });
+
+  test('a failing test flushes its logs even when its error is suppressed', () => {
+    // A parent whose only error is `subtestsFailed` emits no annotation of its
+    // own; its logs must not be swallowed with it.
+    verbose(() => {
+      log({ name: 'parent', testId: 9, message: 'parent line' });
+      const out = transformEvent({
+        type: 'test:fail',
+        data: {
+          name: 'parent',
+          nesting: 0,
+          file: 'x.js',
+          line: 3,
+          column: 1,
+          testId: 9,
+          details: { error: { code: 'ERR_TEST_FAILURE', failureType: 'subtestsFailed' } },
+        },
+      });
+      assert.match(out, /parent line/);
+    });
+  });
+
+  test('a log with no location does not throw', () => {
+    // Node stamps a log with the owning test's `loc`, which is undefined for the
+    // root test; a location-less notice is still better than a crash.
+    verbose(() => {
+      const nowhere = { file: undefined, line: undefined, column: undefined };
+      let out;
+      assert.doesNotThrow(() => {
+        log({ ...nowhere, testId: 11, message: 'no location' });
+        out = passed({ ...nowhere, testId: 11 });
+      });
+      assert.match(out, /::notice::no location/);
+    });
   });
 });

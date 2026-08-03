@@ -7,6 +7,7 @@ import {
   getSummary, transformEvent, isTopLevelDiagnostic, DIAGNOSTIC_VALUES,
 } from '@reporters/github';
 import { Command } from '@reporters/github/gh_core';
+import LogBuffer, { formatLogMessage } from '@reporters/github/log_buffer';
 
 const diagnosticColorMap = { __proto__: null, warn: 'yellow', error: 'red' };
 const LEVELS = new Set(['info', 'warn', 'error']);
@@ -14,14 +15,6 @@ const LEVELS = new Set(['info', 'warn', 'error']);
 function logLevel(data) {
   const level = data.data?.level;
   return typeof level === 'string' && LEVELS.has(level) ? level : 'info';
-}
-
-function safeJson(value) {
-  try {
-    return JSON.stringify(value) ?? '';
-  } catch {
-    return String(value);
-  }
 }
 
 const indentMemo = new Map();
@@ -84,6 +77,8 @@ class SpecReporter extends Transform {
   #specReporter;
 
   #reportedGroup = false;
+
+  #logs = new LogBuffer();
 
   constructor() {
     super({ __proto__: null, writableObjectMode: true });
@@ -149,6 +144,32 @@ class SpecReporter extends Transform {
     return result;
   }
 
+  // The runner passes `t.log()`'s payload through untouched, so a `level` in it
+  // is a reporter-side convention rather than something Node assigns.
+  #renderLog(data) {
+    const logColor = diagnosticColorMap[logLevel(data)] || 'white';
+    return `${indent(data.nesting)}${styleText(logColor, formatLogMessage(data), { validateStream: !this.#isGitHubActions })}\n`;
+  }
+
+  #flushLogs(data) {
+    return this.#logs.take(data).map((log) => this.#renderLog(log)).join('');
+  }
+
+  // Logs whose test never reported - an interrupted run, or `t.log()` from an
+  // async leak that outlived its test. Emitted after the failures block, which
+  // has already closed the last open group.
+  #drainLogs() {
+    const pending = this.#logs.drain();
+    if (pending.length === 0) {
+      return '';
+    }
+    const body = pending.map((log) => this.#renderLog(log)).join('');
+    if (!this.#isGitHubActions) {
+      return body;
+    }
+    return new Command('group', {}, 'Logs from tests that never reported').toString() + body + endGroup;
+  }
+
   #handleEvent({ type, data }) {
     let res = '';
     if (this.#isGitHubActions) {
@@ -158,7 +179,7 @@ class SpecReporter extends Transform {
       case 'test:fail':
       case 'test:pass': {
         const { prefix, header } = splitReport(rewriteDuration(this.#specOutput(type, data)));
-        return this.#group(prefix, header, '\n') + res;
+        return this.#group(prefix, header, '\n') + res + this.#flushLogs(data);
       }
       case 'test:start':
         // Feed the event to the upstream reporter so it can track nesting, but it
@@ -172,14 +193,12 @@ class SpecReporter extends Transform {
         const diagnosticColor = diagnosticColorMap[data.level] || 'white';
         return `${res}${indent(data.nesting)}${styleText(diagnosticColor, `${data.message}`, { validateStream: !this.#isGitHubActions })}\n`;
       }
-      case 'test:log': {
-        // A log always names a real test, so it is never a run-level counts
-        // line the way a top-level diagnostic is. The runner passes the payload
-        // through untouched, so a `level` in it is a reporter-side convention.
-        const logColor = diagnosticColorMap[logLevel(data)] || 'white';
-        const payload = data.data === undefined ? '' : ` ${safeJson(data.data)}`;
-        return `${res}${indent(data.nesting)}${styleText(logColor, `${data.message}${payload}`, { validateStream: !this.#isGitHubActions })}\n`;
-      }
+      case 'test:log':
+        // Held until the owning test reports so the line lands inside that
+        // test's group, where its diagnostics already go. Never forwarded to the
+        // upstream reporter, which would print it a second time, unbuffered.
+        this.#logs.push(data);
+        return res;
       case 'test:summary':
         // We report only the root test summary
         if (data.file === undefined) {
@@ -223,7 +242,7 @@ class SpecReporter extends Transform {
       if (chunk) failures = chunk;
     });
     Promise.resolve(this.#isGitHubActions ? getSummary() : '').then((summary) => {
-      callback(null, this.#reshapeFailures(failures) + summary);
+      callback(null, this.#reshapeFailures(failures) + this.#drainLogs() + summary);
     }).catch((err) => {
       /* c8 ignore next 2 */
       callback(err);
