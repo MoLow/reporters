@@ -1,4 +1,4 @@
-import type { TestStatus } from './types.ts';
+import type { DiagnosticLevel, TestStatus } from './types.ts';
 
 export const SYMBOLS: Record<TestStatus, string> = {
   passed: '✔',
@@ -19,6 +19,13 @@ export const INK_COLOR: Record<TestStatus, string> = {
   todo: 'cyan',
   running: 'blue',
   queued: 'gray',
+};
+
+/** Ink color names per message level; `info` keeps the surrounding default. */
+export const INK_LEVEL_COLOR: Record<DiagnosticLevel, string | undefined> = {
+  info: undefined,
+  warn: 'yellow',
+  error: 'red',
 };
 
 /** CSS color tokens per status, for the web renderers. */
