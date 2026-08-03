@@ -16,7 +16,8 @@
   },
   "files": [
     "./index.js",
-    "./gh_core.js"
+    "./gh_core.js",
+    "./log_buffer.js"
   ],
   "scripts": {
     "test": "node --test-reporter=@reporters/mux --test"
@@ -27,7 +28,8 @@
   "main": "index.js",
   "exports": {
     ".": "./index.js",
-    "./gh_core": "./gh_core.js"
+    "./gh_core": "./gh_core.js",
+    "./log_buffer": "./log_buffer.js"
   },
   "homepage": "https://github.com/MoLow/reporters/tree/main/packages/github",
   "repository": "https://github.com/MoLow/reporters.git",

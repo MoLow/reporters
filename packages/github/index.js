@@ -5,6 +5,7 @@ import { EOL } from 'node:os';
 import { summary } from '@actions/core';
 import StackUtils from 'stack-utils';
 import { Command, toCommandProperties } from './gh_core.js';
+import LogBuffer, { formatLogMessage } from './log_buffer.js';
 
 const WORKSPACE = process.env.GITHUB_WORKSPACE ?? '';
 
@@ -63,6 +64,31 @@ function extractLocation(data) {
 
 const counter = { pass: 0, fail: 0 };
 const diagnostics = [];
+const logs = new LogBuffer();
+
+function logNotice(data) {
+  // Unlike a diagnostic, a log can reach here without a location: Node stamps it
+  // with the owning test's `loc`, which is undefined for the root test.
+  const props = data.file === undefined ? {} : toCommandProperties(extractLocation(data));
+  return new Command('notice', props, formatLogMessage(data)).toString();
+}
+
+function renderLogs(pending) {
+  if (!process.env.GITHUB_ACTIONS_REPORTER_VERBOSE) {
+    return '';
+  }
+  return pending.map(logNotice).join('');
+}
+
+function flushLogs(data) {
+  return renderLogs(logs.take(data));
+}
+
+// Logs whose test never reported - an interrupted run, or `t.log()` from an
+// async leak that outlived its test.
+function drainLogs() {
+  return renderLogs(logs.drain());
+}
 
 export function isTopLevelDiagnostic(data) {
   return (data.file === undefined
@@ -77,18 +103,19 @@ export function transformEvent(event) {
       return new Command('debug', {}, `starting to run ${event.data.name}`).toString();
     case 'test:pass':
       counter.pass += 1;
-      return new Command('debug', {}, `completed running ${event.data.name}`).toString();
+      return new Command('debug', {}, `completed running ${event.data.name}`).toString() + flushLogs(event.data);
     case 'test:fail': {
+      const pending = flushLogs(event.data);
       const error = event.data.details?.error;
       if (!error || (error.code === 'ERR_TEST_FAILURE' && error.failureType === 'subtestsFailed')) {
-        break;
+        return pending;
       }
       const err = error.code === 'ERR_TEST_FAILURE' ? error.cause : error;
       counter.fail += 1;
       return new Command('error', toCommandProperties({
         ...extractLocation(event.data),
         title: event.data.name,
-      }), util.inspect(err, { colors: true, breakLength: Infinity })).toString();
+      }), util.inspect(err, { colors: true, breakLength: Infinity })).toString() + pending;
     } case 'test:diagnostic':
       if (isTopLevelDiagnostic(event.data)) {
         diagnostics.push(event.data.message);
@@ -97,11 +124,11 @@ export function transformEvent(event) {
       }
       break;
     case 'test:log':
-      // A log never carries the run-level counts a top-level diagnostic does,
-      // but annotations are rate-limited, so it stays behind the same opt-in.
-      if (process.env.GITHUB_ACTIONS_REPORTER_VERBOSE) {
-        return new Command('notice', toCommandProperties(extractLocation(event.data)), `${event.data.message}`).toString();
-      }
+      // Held until the owning test reports, so the annotation lands in that
+      // test's group instead of whichever one happens to be printing. Buffered
+      // regardless of the opt-in; `flushLogs` discards rather than renders when
+      // annotations are off, so the buffer still empties.
+      logs.push(event.data);
       break;
     /* c8 ignore start */
     case 'test:interrupted': {
@@ -139,7 +166,7 @@ export async function getSummary() {
       DIAGNOSTIC_VALUES[key] ? DIAGNOSTIC_VALUES[key](value) : value,
     ];
   });
-  let res = '';
+  let res = drainLogs();
   res += new Command('group', {}, `Test results (${formattedDiagnostics.find(([key]) => key === DIAGNOSTIC_KEYS.pass)?.[1] ?? counter.pass} passed, ${formattedDiagnostics.find(([key]) => key === DIAGNOSTIC_KEYS.fail)?.[1] ?? counter.fail} failed)`).toString();
   res += new Command('notice', {}, formattedDiagnostics.map((d) => d.join(': ')).join(EOL)).toString();
   res += new Command('endgroup').toString();
