@@ -32,6 +32,77 @@ function flattenError(raw: unknown): unknown {
   };
 }
 
+const MAX_DEPTH = 8;
+const MAX_NODES = 1000;
+
+/**
+ * Make a `t.log()` payload safe to JSON-serialize. The payload is arbitrary
+ * user data that reaches us untouched — under `--test-isolation=none` a
+ * circular object arrives with its cycle intact, and an unguarded
+ * `JSON.stringify` would throw and take down the whole run. Cycles are tracked
+ * along the current path only, so a value referenced twice is kept twice rather
+ * than being mistaken for a cycle.
+ */
+function sanitizeLogData(root: unknown): unknown {
+  let budget = MAX_NODES;
+  const path = new Set<object>();
+
+  const walkList = (items: unknown[], depth: number): unknown[] => {
+    const out: unknown[] = [];
+    for (const item of items) {
+      if (budget <= 0) {
+        out.push('[Truncated]');
+        break;
+      }
+      budget -= 1;
+      // Positions carry meaning in a list, so an omitted value becomes null
+      // rather than shifting everything after it.
+      const value = walk(item, depth + 1);
+      out.push(value === undefined ? null : value);
+    }
+    return out;
+  };
+
+  const walkObject = (obj: object, depth: number): Record<string, unknown> => {
+    const out: Record<string, unknown> = {};
+    for (const [key, raw] of Object.entries(obj)) {
+      if (budget <= 0) {
+        out['[Truncated]'] = true;
+        break;
+      }
+      budget -= 1;
+      const value = walk(raw, depth + 1);
+      if (value !== undefined) out[key] = value;
+    }
+    return out;
+  };
+
+  function walk(value: unknown, depth: number): unknown {
+    if (value === null) return null;
+    const type = typeof value;
+    if (type === 'string' || type === 'boolean') return value;
+    // JSON turns NaN/Infinity into null, losing which one it was.
+    if (type === 'number') return Number.isFinite(value) ? value : String(value);
+    if (type === 'bigint') return `${value as bigint}n`;
+    if (type === 'undefined' || type === 'function' || type === 'symbol') return undefined;
+    if (depth >= MAX_DEPTH) return '[Truncated]';
+    const obj = value as object;
+    if (path.has(obj)) return '[Circular]';
+    if (obj instanceof Date) return obj.toISOString();
+    if (obj instanceof Error) return flattenError(obj);
+    path.add(obj);
+    try {
+      if (obj instanceof Map || obj instanceof Set) return walkList([...obj], depth);
+      if (Array.isArray(obj)) return walkList(obj, depth);
+      return walkObject(obj, depth);
+    } finally {
+      path.delete(obj);
+    }
+  }
+
+  return walk(root, 0);
+}
+
 /**
  * Normalize a `node:test` event into a small, JSON-safe object containing only
  * the fields the store consumes. This is the canonical NDJSON wire shape shared
@@ -53,6 +124,7 @@ export function toWireEvent(event: TestEvent): TestEvent {
   if (d.skip != null) data.skip = d.skip;
   if (d.message != null) data.message = d.message;
   if (d.level != null) data.level = d.level;
+  if (d.data !== undefined) data.data = sanitizeLogData(d.data);
   if (d.count != null) data.count = d.count;
   if (d.type != null) data.type = d.type;
   if (d.counts != null) data.counts = d.counts;
