@@ -25,6 +25,7 @@ interface InternalNode {
   declPlaced?: boolean;
   parentKey: string | null;
   file: string | undefined;
+  entryFile?: string;
   name: string;
   nesting: number;
   type: NodeType;
@@ -302,6 +303,7 @@ export function createTreeStore(): TreeStore {
   }
 
   function assignFields(node: InternalNode, data: TestEventData): void {
+    if (data.entryFile != null) node.entryFile = data.entryFile;
     if (data.name != null) node.name = data.name;
     if (data.nesting != null) node.nesting = data.nesting;
     if (data.line != null) node.line = data.line;
@@ -774,6 +776,7 @@ export function createTreeStore(): TreeStore {
       testId: internal.testId,
       parentKey: internal.parentKey,
       file: internal.file,
+      entryFile: internal.entryFile,
       name: internal.name,
       nesting: internal.nesting,
       type: internal.type,

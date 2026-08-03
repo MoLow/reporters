@@ -45,6 +45,10 @@ export interface TestNode {
   testId: number | undefined;
   parentKey: string | null;
   file: string | undefined;
+  /** The test file that was the child process's entry point, when the runner
+   *  reported one. Differs from `file` for a test defined in an imported
+   *  helper; absent without process isolation, and on Node < v26.6.0. */
+  entryFile?: string;
   name: string;
   nesting: number;
   type: NodeType;
@@ -95,6 +99,11 @@ export interface TestEventData {
   name?: string;
   nesting?: number;
   file?: string;
+  /** The entry file of the child process that emitted this event. Present on
+   *  every child-forwarded event under process isolation (Node >= v26.6.0);
+   *  absent on the parent's own file-wrapper events, whose `file` IS the
+   *  entry file. */
+  entryFile?: string;
   testId?: number;
   parentId?: number;
   line?: number;

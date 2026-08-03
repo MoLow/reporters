@@ -549,3 +549,14 @@ test('a log with no message is ignored', () => {
   const node = store.getSnapshot().root.children[0].children[0];
   assert.deepStrictEqual(node.messages, []);
 });
+
+test('a node exposes the entry file it ran under alongside its definition file', () => {
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:start', data: { name: 't', nesting: 0, file: '/helper.mjs', entryFile: '/a.test.mjs', testId: 1, parentId: 0 } },
+    { type: 'test:pass', data: { name: 't', nesting: 0, file: '/helper.mjs', entryFile: '/a.test.mjs', testId: 1, parentId: 0, details: { duration_ms: 1 } } },
+  ]);
+  const node = store.getSnapshot().root.children[0].children[0];
+  assert.strictEqual(node.file, '/helper.mjs', 'file stays the definition site');
+  assert.strictEqual(node.entryFile, '/a.test.mjs');
+});
