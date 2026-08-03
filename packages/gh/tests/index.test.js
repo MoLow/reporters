@@ -61,9 +61,26 @@ describe('test:log rendering', () => {
   // inner spec reporter's nesting state.
   let instance = 0;
 
-  const load = async () => {
+  // The reporter reads GITHUB_ACTIONS once, at construction, and these tests run
+  // both in and out of Actions - pin it so each case covers the branch it means
+  // to rather than whichever one the environment happens to select.
+  const load = async (actions = false) => {
     instance += 1;
-    return (await import(`../index.js?case=${instance}`)).default;
+    const previous = process.env.GITHUB_ACTIONS;
+    if (actions) {
+      process.env.GITHUB_ACTIONS = 'true';
+    } else {
+      delete process.env.GITHUB_ACTIONS;
+    }
+    try {
+      return (await import(`../index.js?case=${instance}`)).default;
+    } finally {
+      if (previous === undefined) {
+        delete process.env.GITHUB_ACTIONS;
+      } else {
+        process.env.GITHUB_ACTIONS = previous;
+      }
+    }
   };
 
   const feed = (reporter, events) => events.map((event) => {
@@ -187,21 +204,9 @@ describe('test:log rendering', () => {
   });
 
   test('drained logs get their own group under Actions', async () => {
-    // The reporter reads GITHUB_ACTIONS once, at construction.
-    const actions = process.env.GITHUB_ACTIONS;
-    process.env.GITHUB_ACTIONS = 'true';
-    let out;
-    try {
-      const reporter = await load();
-      feed(reporter, [log({ message: 'stranded' })]);
-      out = await drain(reporter);
-    } finally {
-      if (actions === undefined) {
-        delete process.env.GITHUB_ACTIONS;
-      } else {
-        process.env.GITHUB_ACTIONS = actions;
-      }
-    }
+    const reporter = await load(true);
+    feed(reporter, [log({ message: 'stranded' })]);
+    const out = await drain(reporter);
     assert.match(out, /::group::Logs from tests that never reported/);
     assert.match(out, /stranded/);
     assert.match(out, /::endgroup::/);
