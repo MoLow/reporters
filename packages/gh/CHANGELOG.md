@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.1](https://github.com/MoLow/reporters/compare/gh-v2.1.0...gh-v2.1.1) (2026-08-03)
+
+
+### Bug Fixes
+
+* **gh,github,junit:** attach test:log to the test that emitted it ([#275](https://github.com/MoLow/reporters/issues/275)) ([4ae4b04](https://github.com/MoLow/reporters/commit/4ae4b0415cf5c6aa7de66443e45586f34c6dd77a))
+
 ## [2.1.0](https://github.com/MoLow/reporters/compare/gh-v2.0.3...gh-v2.1.0) (2026-08-03)
 
 
