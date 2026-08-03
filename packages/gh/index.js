@@ -9,6 +9,20 @@ import {
 import { Command } from '@reporters/github/gh_core';
 
 const diagnosticColorMap = { __proto__: null, warn: 'yellow', error: 'red' };
+const LEVELS = new Set(['info', 'warn', 'error']);
+
+function logLevel(data) {
+  const level = data.data?.level;
+  return typeof level === 'string' && LEVELS.has(level) ? level : 'info';
+}
+
+function safeJson(value) {
+  try {
+    return JSON.stringify(value) ?? '';
+  } catch {
+    return String(value);
+  }
+}
 
 const indentMemo = new Map();
 function indent(nesting) {
@@ -157,6 +171,14 @@ class SpecReporter extends Transform {
         }
         const diagnosticColor = diagnosticColorMap[data.level] || 'white';
         return `${res}${indent(data.nesting)}${styleText(diagnosticColor, `${data.message}`, { validateStream: !this.#isGitHubActions })}\n`;
+      }
+      case 'test:log': {
+        // A log always names a real test, so it is never a run-level counts
+        // line the way a top-level diagnostic is. The runner passes the payload
+        // through untouched, so a `level` in it is a reporter-side convention.
+        const logColor = diagnosticColorMap[logLevel(data)] || 'white';
+        const payload = data.data === undefined ? '' : ` ${safeJson(data.data)}`;
+        return `${res}${indent(data.nesting)}${styleText(logColor, `${data.message}${payload}`, { validateStream: !this.#isGitHubActions })}\n`;
       }
       case 'test:summary':
         // We report only the root test summary

@@ -29,8 +29,8 @@ npm i @reporters/tree-core
 
 - **`createTreeStore()`** — feed it `node:test` events, get a subscribable tree
   of suites and tests with statuses (queued → running → passed/failed/skipped),
-  durations, counts, and per-test diagnostics (errors, stdout/stderr,
-  `diagnostic()` messages).
+  durations, counts, and per-test detail (errors, stdout/stderr, and a
+  `messages` stream carrying both `diagnostic()` and `log()` output).
 - **Wire format** — `toWireEvent` / `serializeWireLine` / `parseWireLines`
   convert runner events to and from the JSON-safe NDJSON lines that
   `@reporters/web` streams, so a run can be replayed anywhere.

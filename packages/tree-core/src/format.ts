@@ -1,3 +1,14 @@
+/** A log's structured payload as a compact one-line string, empty when absent.
+ *  Wire-sanitized payloads always stringify; a store fed raw events might not. */
+export function formatLogPayload(data: unknown): string {
+  if (data === undefined) return '';
+  try {
+    return JSON.stringify(data) ?? '';
+  } catch {
+    return String(data);
+  }
+}
+
 const SECOND = 1000;
 const MINUTE = 60 * SECOND;
 const HOUR = 60 * MINUTE;

@@ -3,6 +3,7 @@ import { Text, Box } from 'ink';
 import {
   formatDuration, INK_COLOR, SPINNER_FRAMES, SYMBOLS, todoLabel, type TestNode,
 } from '@reporters/tree-core';
+import { diagnosticSections } from './sections.ts';
 
 function basename(file: string | undefined): string {
   if (!file) return '<unknown>';
@@ -11,7 +12,7 @@ function basename(file: string | undefined): string {
 }
 
 export function nodeHasDiagnostics(node: TestNode): boolean {
-  return Boolean(node.error) || node.diagnostics.length > 0
+  return Boolean(node.error) || node.messages.length > 0
     || node.stdout.length > 0 || node.stderr.length > 0;
 }
 
@@ -21,22 +22,17 @@ export function diagnosticsOpen(node: TestNode, overrides: Map<string, boolean>)
 }
 
 function Diagnostics({ node, indent }: { node: TestNode; indent: string }) {
-  const lines: React.ReactNode[] = [];
-  const push = (label: string, text: string, color?: string) => {
-    lines.push(
-      // eslint-disable-next-line react/no-array-index-key
-      <Text key={`${label}-l`} dimColor>{indent}{label}</Text>,
-    );
-    text.split('\n').forEach((line, i) => lines.push(
-      // eslint-disable-next-line react/no-array-index-key
-      <Text key={`${label}-${i}`} color={color}>{indent}{line}</Text>,
-    ));
-  };
-  if (node.error) push('error', node.error.stack || node.error.message, 'red');
-  if (node.diagnostics.length) push('diagnostics', node.diagnostics.map((d) => d.message).join('\n'));
-  if (node.stdout.length) push('stdout', node.stdout.join('').replace(/\n$/, ''));
-  if (node.stderr.length) push('stderr', node.stderr.join('').replace(/\n$/, ''));
-  return <Box flexDirection="column">{lines}</Box>;
+  return (
+    <Box flexDirection="column">
+      {diagnosticSections(node).flatMap((section) => [
+        <Text key={`${section.label}-l`} dimColor>{indent}{section.label}</Text>,
+        ...section.lines.map((line, i) => (
+          // eslint-disable-next-line react/no-array-index-key
+          <Text key={`${section.label}-${i}`} color={line.color}>{indent}{line.text}</Text>
+        )),
+      ])}
+    </Box>
+  );
 }
 
 interface TreeNodeProps {

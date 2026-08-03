@@ -8,6 +8,8 @@ const dom = new JSDOM('<div id="root"></div>', { url: 'http://localhost/' });
 (globalThis as any).window = dom.window;
 (globalThis as any).document = dom.window.document;
 Object.defineProperty(globalThis, 'navigator', { value: dom.window.navigator, configurable: true });
+// linkifyDom walks rendered message/log text with a TreeWalker.
+(globalThis as any).NodeFilter = dom.window.NodeFilter;
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
 
 // Everything below is imported dynamically, after the DOM globals exist:
@@ -151,5 +153,70 @@ test('memoryFilterState keeps the page URL untouched', async () => {
   await tick(30);
   await typeQuery(el, 'adds');
   assert.strictEqual(dom.window.location.search, '', 'memory store must not write query params');
+  await act(async () => root.unmount());
+});
+
+// The real v26.6.0 shape: logs stream out eagerly, then the buffered
+// declaration block (start/pass) and finally the diagnostics.
+const MESSAGE_LOG = [
+  '{"type":"test:enqueue","data":{"name":"uploads","nesting":0,"file":"s3.test.js","testId":1,"parentId":0,"type":"test"}}',
+  '{"type":"test:dequeue","data":{"name":"uploads","nesting":0,"file":"s3.test.js","testId":1,"parentId":0,"type":"test"}}',
+  '{"type":"test:log","data":{"name":"uploads","nesting":0,"file":"s3.test.js","testId":1,"parentId":0,"message":"fetched user","data":{"userId":42}}}',
+  '{"type":"test:log","data":{"name":"uploads","nesting":0,"file":"s3.test.js","testId":1,"parentId":0,"message":"retrying endpoint","data":{"level":"warn","attempt":3}}}',
+  '{"type":"test:complete","data":{"name":"uploads","nesting":0,"file":"s3.test.js","testId":1,"parentId":0,"details":{"passed":true,"duration_ms":1}}}',
+  '{"type":"test:start","data":{"name":"uploads","nesting":0,"file":"s3.test.js","testId":1,"parentId":0}}',
+  '{"type":"test:pass","data":{"name":"uploads","nesting":0,"file":"s3.test.js","testId":1,"parentId":0,"details":{"duration_ms":1}}}',
+  '{"type":"test:diagnostic","data":{"nesting":0,"file":"s3.test.js","message":"buffered note","level":"info"}}',
+].join('\n');
+
+/** Mount the log, then open the "uploads" row and its Messages section — a
+ *  passing test collapses both by default. */
+async function openMessages(): Promise<{ root: Root; el: HTMLElement; list: Element }> {
+  const { fetchImpl } = fakeSource(`${MESSAGE_LOG}\n${SUMMARY}\n`);
+  const { root, el } = mount();
+  await act(async () => {
+    root.render(React.createElement(TestReportViewer, { src: '/run.ndjson', fetch: fetchImpl, pollMs: 10 }));
+  });
+  await tick(30);
+
+  const row = [...el.querySelectorAll('[role="treeitem"]')]
+    .find((n) => n.getAttribute('aria-label')!.startsWith('uploads,')) as HTMLElement;
+  assert.ok(row, 'the uploads row should render');
+  await act(async () => { row.click(); });
+
+  const head = [...el.querySelectorAll('.diag-head')]
+    .find((n) => n.textContent!.includes('Messages')) as HTMLElement;
+  assert.ok(head, 'a Messages section should render');
+  await act(async () => { head.click(); });
+
+  const list = el.querySelector('.diag-list');
+  assert.ok(list, 'the Messages list body should mount once opened');
+  return { root, el, list: list! };
+}
+
+test('logs and diagnostics render in one Messages block, in arrival order', async () => {
+  const { root, list } = await openMessages();
+  assert.deepStrictEqual(
+    [...list.querySelectorAll('.diag-item .txt')].map((n) => n.textContent),
+    ['fetched user{"userId":42}', 'retrying endpoint{"level":"warn","attempt":3}', 'buffered note'],
+  );
+  await act(async () => root.unmount());
+});
+
+test('a log payload renders in its own dimmed span', async () => {
+  const { root, list } = await openMessages();
+  assert.deepStrictEqual(
+    [...list.querySelectorAll('.diag-payload')].map((n) => n.textContent),
+    ['{"userId":42}', '{"level":"warn","attempt":3}'],
+  );
+  await act(async () => root.unmount());
+});
+
+test('a warn payload level drives the item severity', async () => {
+  const { root, list } = await openMessages();
+  assert.deepStrictEqual(
+    [...list.querySelectorAll('.diag-item .diag-level')].map((n) => [n.textContent, n.getAttribute('data-soft')]),
+    [['info', 'skipped'], ['warn', 'running'], ['info', 'skipped']],
+  );
   await act(async () => root.unmount());
 });

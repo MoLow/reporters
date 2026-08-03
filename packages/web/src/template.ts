@@ -213,6 +213,7 @@ button { font-family: inherit; } input { font-family: inherit; }
 .out-line, .diag-item { content-visibility: auto; contain-intrinsic-size: auto 19px; }
 .diag-level { font-size: 9.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; flex: none; border-radius: 5px; padding: 1px 6px; }
 .diag-item .txt { font-family: var(--mono); font-size: 12px; white-space: pre-wrap; word-break: break-word; }
+.diag-payload { margin-left: 7px; opacity: .68; word-break: break-all; }
 .diag a { color: var(--st-todo); text-decoration: underline; text-underline-offset: 2px; word-break: break-all; }
 .diag a:hover { filter: brightness(1.15); }
 

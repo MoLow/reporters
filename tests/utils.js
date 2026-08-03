@@ -18,6 +18,7 @@ function sanitize(str) {
     .replaceAll(/[0-9.]+(ms| millisecond)s?/g, '*$1')
     .replaceAll(hostname(), 'HOSTNAME')
     .replaceAll(/time="[0-9.]+"/g, 'time="*"')
+    .replaceAll(/duration_ms [0-9.]+/g, 'duration_ms *')
     .replaceAll(/test_runner\/harness:[0-9.]+\n/g, 'test_runner/harness:*\n')
     // eslint-disable-next-line no-control-regex
     .replaceAll(/\u001b\[[0-9;]*m/g, '')

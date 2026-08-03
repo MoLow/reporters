@@ -28,6 +28,14 @@ Object {
 		</failure>
 	</testcase>
 	<testcase name=\"should pass\" time=\"*\" classname=\"test\"/>
+	<!-- tests 2 -->
+	<!-- suites 0 -->
+	<!-- pass 1 -->
+	<!-- fail 1 -->
+	<!-- cancelled 0 -->
+	<!-- skipped 0 -->
+	<!-- todo 0 -->
+	<!-- duration_ms * -->
 </testsuites>
 ",
 }

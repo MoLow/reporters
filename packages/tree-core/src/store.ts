@@ -1,10 +1,12 @@
 import type {
   Counts,
+  DiagnosticLevel,
   NodeType,
   SerializedError,
   SummaryData,
   TestEvent,
   TestEventData,
+  TestMessage,
   TestNode,
   TestStatus,
   TreeSnapshot,
@@ -30,7 +32,7 @@ interface InternalNode {
   durationMs?: number;
   startedAt?: number;
   error?: SerializedError;
-  diagnostics: TestNode['diagnostics'];
+  messages: TestNode['messages'];
   stdout: string[];
   stderr: string[];
   line?: number;
@@ -66,6 +68,15 @@ function statusFromComplete(data: TestEventData): TestStatus {
   if (data.skip != null && data.skip !== false) return 'skipped';
   if (data.todo != null && data.todo !== false) return data.details?.passed ? 'passed' : 'todo';
   return data.details?.passed ? 'passed' : 'failed';
+}
+
+const LEVELS: ReadonlySet<string> = new Set(['info', 'warn', 'error']);
+
+// `test:log` carries no level of its own — the runner passes the payload through
+// untouched — so a level is a reporter-side convention read out of it.
+function logLevel(data: TestEventData): DiagnosticLevel {
+  const level = (data.data as { level?: unknown } | null | undefined)?.level;
+  return typeof level === 'string' && LEVELS.has(level) ? level as DiagnosticLevel : 'info';
 }
 
 function serializeError(raw: unknown): SerializedError | undefined {
@@ -159,7 +170,7 @@ export function createTreeStore(): TreeStore {
       nesting: type === 'root' || type === 'file' ? -1 : 0,
       type,
       status: type === 'root' || type === 'file' ? 'running' : 'queued',
-      diagnostics: [],
+      messages: [],
       stdout: [],
       stderr: [],
       childKeys: [],
@@ -625,6 +636,22 @@ export function createTreeStore(): TreeStore {
         }
         break;
       }
+      case 'test:log': {
+        // Unlike a diagnostic, a log names its own test (testId/parentId), so it
+        // routes exactly. It is also execution-ordered and bypasses the per-file
+        // declaration buffer, so it can be the first sight of a test — the eager
+        // upsert below creates the node when that happens.
+        if (data.message == null) break;
+        const message: TestMessage = { kind: 'log', message: data.message, level: logLevel(data) };
+        if (data.data !== undefined) message.data = data.data;
+        if (currentT != null) message.t = currentT;
+        if (data.testId == null) {
+          ensureGroupNode(groupKey(data), data.file).messages.push(message);
+          break;
+        }
+        upsertFromTestEvent(data, (node) => { node.messages.push(message); });
+        break;
+      }
       case 'test:diagnostic': {
         if (data.message == null) break;
         const gk = groupKey(data);
@@ -634,7 +661,7 @@ export function createTreeStore(): TreeStore {
         const targetKey = lastStartedByGroupNesting.get(gk)?.get(data.nesting ?? 0);
         const target = (declKey && nodes.get(declKey))
           || (targetKey && nodes.get(targetKey)) || nodes.get(gk);
-        if (target) target.diagnostics.push({ message: data.message, level: data.level ?? 'info' });
+        if (target) target.messages.push({ kind: 'diagnostic', message: data.message, level: data.level ?? 'info' });
         break;
       }
       case 'test:stdout':
@@ -694,12 +721,12 @@ export function createTreeStore(): TreeStore {
   // re-linked away: it never got an event of its own, so it has no name.
   function isEmptyFileNode(node: TestNode): boolean {
     return node.type === 'file' && node.children.length === 0
-      && node.stdout.length === 0 && node.stderr.length === 0 && node.diagnostics.length === 0;
+      && node.stdout.length === 0 && node.stderr.length === 0 && node.messages.length === 0;
   }
 
   function isEmptyPlaceholder(node: TestNode): boolean {
     return node.type === 'test' && node.name === '' && node.children.length === 0
-      && node.diagnostics.length === 0;
+      && node.messages.length === 0;
   }
 
   function build(key: string): TestNode {
@@ -754,7 +781,7 @@ export function createTreeStore(): TreeStore {
       durationMs: internal.durationMs,
       startedAt: internal.startedAt,
       error,
-      diagnostics: internal.diagnostics,
+      messages: internal.messages,
       stdout: internal.stdout,
       stderr: internal.stderr,
       children,

@@ -122,7 +122,7 @@ test('diagnostics attach to the last started test at that file+nesting', () => {
     { type: 'test:pass', data: { name: 't', nesting: 0, file: '/a.test.js', testId: 1 } },
   ]);
   const node = store.getSnapshot().root.children[0].children[0];
-  assert.deepStrictEqual(node.diagnostics, [{ message: 'hello', level: 'info' }]);
+  assert.deepStrictEqual(node.messages, [{ kind: 'diagnostic', message: 'hello', level: 'info' }]);
 });
 
 test('stdout and stderr attach to the file node', () => {
@@ -442,4 +442,110 @@ test('unstamped events leave startedAt and the stream clock unset', () => {
   const snapshot = store.getSnapshot();
   assert.strictEqual(snapshot.clock, undefined);
   assert.strictEqual(snapshot.root.children[0].children[0].startedAt, undefined);
+});
+
+// test:log is execution-ordered and bypasses the per-file declaration buffer, so
+// it can be the very first sight of a test. Measured on a real v26.6.0 stream, a
+// suite's `s.log()` precedes that suite's own test:enqueue.
+test('a log arriving before its test is enqueued still attaches to it', () => {
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:log', t: 10, data: { name: 'suite a', nesting: 0, file: '/a.test.js', testId: 1, parentId: 0, message: 'suite log' } },
+    { type: 'test:enqueue', t: 11, data: { name: 'suite a', nesting: 0, file: '/a.test.js', testId: 1, parentId: 0, type: 'suite' } },
+  ]);
+  const node = store.getSnapshot().root.children[0].children[0];
+  assert.strictEqual(node.name, 'suite a');
+  assert.deepStrictEqual(node.messages, [{ kind: 'log', message: 'suite log', level: 'info', t: 10 }]);
+});
+
+test('a log resolves under its parent test, not the file', () => {
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:dequeue', data: { name: 'parent', nesting: 0, file: '/a.test.js', testId: 1, parentId: 0 } },
+    { type: 'test:log', data: { name: 'child', nesting: 1, file: '/a.test.js', testId: 2, parentId: 1, message: 'from the child' } },
+  ]);
+  const parent = store.getSnapshot().root.children[0].children[0];
+  assert.strictEqual(parent.name, 'parent');
+  assert.strictEqual(parent.children[0].name, 'child');
+  assert.strictEqual(parent.children[0].messages[0].message, 'from the child');
+});
+
+test('a log never moves a test out of its current status', () => {
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:dequeue', data: { name: 't', nesting: 0, file: '/a.test.js', testId: 1, parentId: 0 } },
+    { type: 'test:log', data: { name: 't', nesting: 0, file: '/a.test.js', testId: 1, parentId: 0, message: 'mid-flight' } },
+  ]);
+  const node = store.getSnapshot().root.children[0].children[0];
+  assert.strictEqual(node.status, 'running');
+});
+
+test('a log after a test settled leaves its result alone', () => {
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:complete', data: { name: 't', nesting: 0, file: '/a.test.js', testId: 1, parentId: 0, details: { passed: true, duration_ms: 1 } } },
+    { type: 'test:log', data: { name: 't', nesting: 0, file: '/a.test.js', testId: 1, parentId: 0, message: 'late' } },
+  ]);
+  const node = store.getSnapshot().root.children[0].children[0];
+  assert.strictEqual(node.status, 'passed');
+  assert.strictEqual(node.messages[0].message, 'late');
+});
+
+// The runner never interprets the payload, so a level is a reporter-side
+// convention read out of it.
+test('a log level comes from the payload when it names a known level', () => {
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:log', data: { name: 't', nesting: 0, file: '/a.test.js', testId: 1, parentId: 0, message: 'w', data: { level: 'warn', attempt: 2 } } },
+    { type: 'test:log', data: { name: 't', nesting: 0, file: '/a.test.js', testId: 1, parentId: 0, message: 'e', data: { level: 'error' } } },
+    { type: 'test:log', data: { name: 't', nesting: 0, file: '/a.test.js', testId: 1, parentId: 0, message: 'u', data: { level: 'nope' } } },
+    { type: 'test:log', data: { name: 't', nesting: 0, file: '/a.test.js', testId: 1, parentId: 0, message: 'n', data: { attempt: 2 } } },
+    { type: 'test:log', data: { name: 't', nesting: 0, file: '/a.test.js', testId: 1, parentId: 0, message: 'p', data: 'just a string' } },
+  ]);
+  const node = store.getSnapshot().root.children[0].children[0];
+  assert.deepStrictEqual(node.messages.map((m) => [m.message, m.level]), [
+    ['w', 'warn'], ['e', 'error'], ['u', 'info'], ['n', 'info'], ['p', 'info'],
+  ]);
+});
+
+test('the payload is kept on the message', () => {
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:log', data: { name: 't', nesting: 0, file: '/a.test.js', testId: 1, parentId: 0, message: 'm', data: { userId: 42 } } },
+  ]);
+  const node = store.getSnapshot().root.children[0].children[0];
+  assert.deepStrictEqual(node.messages[0].data, { userId: 42 });
+});
+
+test('logs and diagnostics share one array, in arrival order', () => {
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:start', data: { name: 't', nesting: 0, file: '/a.test.js', testId: 1, parentId: 0 } },
+    { type: 'test:log', data: { name: 't', nesting: 0, file: '/a.test.js', testId: 1, parentId: 0, message: 'live' } },
+    { type: 'test:diagnostic', data: { message: 'buffered', nesting: 0, file: '/a.test.js', level: 'warn' } },
+  ]);
+  const node = store.getSnapshot().root.children[0].children[0];
+  assert.deepStrictEqual(node.messages.map((m) => [m.kind, m.message, m.level]), [
+    ['log', 'live', 'info'], ['diagnostic', 'buffered', 'warn'],
+  ]);
+});
+
+test('a log without a testId attaches to its file node', () => {
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:start', data: { name: 't', nesting: 0, file: '/a.test.js', testId: 1, parentId: 0 } },
+    { type: 'test:log', data: { nesting: 0, file: '/a.test.js', message: 'orphan' } },
+  ]);
+  const fileNode = store.getSnapshot().root.children[0];
+  assert.deepStrictEqual(fileNode.messages.map((m) => m.message), ['orphan']);
+});
+
+test('a log with no message is ignored', () => {
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:dequeue', data: { name: 't', nesting: 0, file: '/a.test.js', testId: 1, parentId: 0 } },
+    { type: 'test:log', data: { name: 't', nesting: 0, file: '/a.test.js', testId: 1, parentId: 0 } },
+  ]);
+  const node = store.getSnapshot().root.children[0].children[0];
+  assert.deepStrictEqual(node.messages, []);
 });

@@ -11,17 +11,24 @@ function escapeContent(s = '') {
   return s.replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+function escapeComment(s = '') {
+  return s.replace(/--/g, '&#45;&#45;');
+}
+
 function treeToXML(tree) {
   if (typeof tree === 'string') {
     return `${escapeContent(tree)}\n`;
   }
   const {
-    tag, props, nesting, children,
+    tag, props, nesting, children, comment,
   } = tree;
+  const indent = '\t'.repeat(nesting + 1);
+  if (comment) {
+    return `${indent}<!-- ${escapeComment(comment)} -->\n`;
+  }
   const propsString = Object.entries(props)
     .map(([key, value]) => `${key}="${escapeProperty(String(value))}"`)
     .join(' ');
-  const indent = '\t'.repeat(nesting + 1);
   if (!children?.length) {
     return `${indent}<${tag} ${propsString}/>\n`;
   }
@@ -30,11 +37,11 @@ function treeToXML(tree) {
 }
 
 function isFailure(node) {
-  return node?.children.some((c) => c.tag === 'failure') || node?.props?.failures;
+  return (node?.children && node.children.some((c) => c.tag === 'failure')) || node?.props?.failures;
 }
 
 function isSkipped(node) {
-  return node?.children.some((c) => c.tag === 'skipped') || node?.props?.skipped;
+  return (node?.children && node.children.some((c) => c.tag === 'skipped')) || node?.props?.skipped;
 }
 
 export default async function* junitReporter(source) {
@@ -77,11 +84,12 @@ export default async function* junitReporter(source) {
           currentSuite = currentSuite.parent;
         }
         currentTest.props.time = (event.data.details.duration_ms / 1000).toFixed(6);
-        if (currentTest.children.length > 0) {
+        const nonCommentChildren = currentTest.children.filter((c) => c.comment == null);
+        if (nonCommentChildren.length > 0) {
           currentTest.tag = 'testsuite';
           currentTest.props.disabled = 0;
           currentTest.props.errors = 0;
-          currentTest.props.tests = currentTest.children.length;
+          currentTest.props.tests = nonCommentChildren.length;
           currentTest.props.failures = currentTest.children.filter(isFailure).length;
           currentTest.props.skipped = currentTest.children.filter(isSkipped).length;
           currentTest.props.hostname = HOSTNAME;
@@ -112,7 +120,11 @@ export default async function* junitReporter(source) {
         break;
       }
       case 'test:diagnostic':
+      case 'test:log': {
+        const parent = currentSuite?.children ?? roots;
+        parent.push({ nesting: event.data.nesting, comment: event.data.message });
         break;
+      }
       default:
         break;
     }
