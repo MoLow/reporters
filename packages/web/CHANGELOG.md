@@ -1,5 +1,16 @@
 # Changelog
 
+## [3.0.0](https://github.com/MoLow/reporters/compare/web-v2.2.1...web-v3.0.0) (2026-08-03)
+
+
+### ⚠ BREAKING CHANGES
+
+* `TestNode.diagnostics: Diagnostic[]` is replaced by `TestNode.messages: TestMessage[]`. The `Diagnostic` type is gone; use `TestMessage`, whose `kind` is `'diagnostic'` for `t.diagnostic()` messages.
+
+### Features
+
+* support test:log for real-time per-test logging ([#272](https://github.com/MoLow/reporters/issues/272)) ([e1c91a4](https://github.com/MoLow/reporters/commit/e1c91a42ff8900402c75290f4a869281b5cc998f))
+
 ## [2.2.1](https://github.com/MoLow/reporters/compare/web-v2.2.0...web-v2.2.1) (2026-07-27)
 
 
