@@ -4,7 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { createTreeStore } from '../src/store.ts';
 import { parseWireLines, serializeWireLine } from '../src/wire.ts';
 import type { TestEvent, TestNode } from '../src/types.ts';
-import { build, captureEvents } from './util.ts';
+import { build, captureEvents, findOne } from './util.ts';
 
 // `--test-isolation` was not available on older Node (e.g. v22), where it errors
 // with "bad option". Feature-detect so we can skip the isolation=none case there.
@@ -153,4 +153,57 @@ test('replaying the captured real stream into a fresh store is deterministic', (
     a.root.children.map((f) => [f.name, f.children.length]),
     b.root.children.map((f) => [f.name, f.children.length]),
   );
+});
+
+// `test:log` landed in Node v26.6.0; v22/v24 emit nothing for `t.log()`.
+const logStream = captureEvents(['fixtures/log-events.mjs']);
+const supportsLog = logStream.some((e) => e.type === 'test:log');
+const skipLog = supportsLog ? false : 'this Node build lacks test:log';
+
+test('real test:log events attach to the test that emitted them', { skip: skipLog }, () => {
+  const { root } = build(logStream);
+
+  assert.deepStrictEqual(
+    findOne(root, 'logging suite').node.messages.map((m) => [m.kind, m.message]),
+    [['log', 'from the suite']],
+  );
+
+  const leaf = findOne(root, 'logging leaf').node;
+  assert.deepStrictEqual(leaf.messages.map((m) => [m.kind, m.message, m.level]), [
+    ['log', 'plain', 'info'],
+    ['log', 'elevated', 'warn'],
+    ['log', 'structured', 'info'],
+  ]);
+  assert.deepStrictEqual(leaf.messages[1].data, { level: 'warn', attempt: 2 });
+  assert.deepStrictEqual(leaf.messages[2].data, { userId: 42 });
+});
+
+test('a log from a helper-defined subtest lands on that subtest', { skip: skipLog }, () => {
+  const { node, path } = findOne(build(logStream).root, 'helper-defined subtest');
+  assert.ok(path.includes('logging parent'), `expected it under its parent, got ${JSON.stringify(path)}`);
+  assert.deepStrictEqual(node.messages.map((m) => m.message), ['from a helper file']);
+});
+
+test('a log reaches the tree before its test\'s declaration-ordered start', { skip: skipLog }, () => {
+  // This is the whole point of the event: under process isolation test:start is
+  // buffered until the file's turn to report, while test:log is not. Replay only
+  // up to the first log and the message must already be on the tree.
+  const idx = logStream.findIndex((e) => e.type === 'test:log' && e.data.message === 'plain');
+  assert.ok(idx >= 0, 'expected a test:log for "plain"');
+  const startIdx = logStream.findIndex((e) => e.type === 'test:start' && e.data.name === 'logging leaf');
+  assert.ok(startIdx > idx, `test:log must precede test:start, got ${idx} and ${startIdx}`);
+
+  const store = createTreeStore();
+  for (const event of logStream.slice(0, idx + 1)) store.apply(event);
+  assert.deepStrictEqual(
+    findOne(store.getSnapshot().root, 'logging leaf').node.messages.map((m) => m.message),
+    ['plain'],
+  );
+});
+
+test('logs survive a wire round-trip (web/embedded path)', { skip: skipLog }, () => {
+  const roundTripped = parseWireLines(logStream.map(serializeWireLine).join(''));
+  const leaf = findOne(build(roundTripped).root, 'logging leaf').node;
+  assert.deepStrictEqual(leaf.messages.map((m) => m.message), ['plain', 'elevated', 'structured']);
+  assert.deepStrictEqual(leaf.messages[2].data, { userId: 42 });
 });
