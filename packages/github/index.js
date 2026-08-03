@@ -96,6 +96,13 @@ export function transformEvent(event) {
         return new Command('notice', toCommandProperties(extractLocation(event.data)), `${event.data.message}`).toString();
       }
       break;
+    case 'test:log':
+      // A log never carries the run-level counts a top-level diagnostic does,
+      // but annotations are rate-limited, so it stays behind the same opt-in.
+      if (process.env.GITHUB_ACTIONS_REPORTER_VERBOSE) {
+        return new Command('notice', toCommandProperties(extractLocation(event.data)), `${event.data.message}`).toString();
+      }
+      break;
     /* c8 ignore start */
     case 'test:interrupted': {
       const { tests } = event.data;

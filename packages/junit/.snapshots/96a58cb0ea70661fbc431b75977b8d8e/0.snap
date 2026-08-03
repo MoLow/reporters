@@ -20,6 +20,7 @@ Error [ERR_TEST_FAILURE]: this is an error
 			</failure>
 		</testcase>
 		<testcase name=\"is a diagnostic\" time=\"*\" classname=\"test\"/>
+		<!-- this is a diagnostic -->
 		<testcase name=\"should fail\" time=\"*\" classname=\"test\" failure=\"The expression evaluated to a falsy value:  assert(false)\">
 			<failure type=\"testCodeFailure\" message=\"The expression evaluated to a falsy value:  assert(false)\">
 [Error [ERR_TEST_FAILURE]: The expression evaluated to a falsy value:
@@ -80,6 +81,15 @@ Error [ERR_TEST_FAILURE]: this is an error
 		</failure>
 	</testcase>
 	<testcase name=\"top level diagnostic\" time=\"*\" classname=\"test\"/>
+	<!-- top level diagnostic -->
+	<!-- tests 9 -->
+	<!-- suites 2 -->
+	<!-- pass 4 -->
+	<!-- fail 2 -->
+	<!-- cancelled 0 -->
+	<!-- skipped 1 -->
+	<!-- todo 2 -->
+	<!-- duration_ms * -->
 </testsuites>
 ",
 }

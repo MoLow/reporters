@@ -78,3 +78,26 @@ describe('github reporter', () => {
     }));
   });
 });
+
+describe('test:log annotations', () => {
+  const LOG = {
+    type: 'test:log',
+    data: {
+      name: 't', nesting: 0, file: 'x.js', line: 3, column: 1, message: 'fetched user',
+    },
+  };
+
+  test('a log becomes a notice only when verbose is enabled', () => {
+    delete process.env.GITHUB_ACTIONS_REPORTER_VERBOSE;
+    assert.strictEqual(transformEvent(LOG), '');
+
+    process.env.GITHUB_ACTIONS_REPORTER_VERBOSE = '1';
+    try {
+      const out = transformEvent(LOG);
+      assert.match(out, /^::notice /);
+      assert.match(out, /fetched user/);
+    } finally {
+      delete process.env.GITHUB_ACTIONS_REPORTER_VERBOSE;
+    }
+  });
+});
