@@ -83,8 +83,9 @@ describe('test:log rendering', () => {
   });
 
   test('a payload JSON cannot render falls back instead of throwing', async () => {
-    // gh reads raw node events, not wire-sanitized ones, so a circular payload
-    // reaches it intact: under --test-isolation=none this is what a user gets.
+    // This reporter reads raw node events, not wire-sanitized ones, so a
+    // circular payload reaches it intact — what a user gets under
+    // --test-isolation=none.
     const circular = { name: 'c' };
     circular.self = circular;
     const out = await emit({
