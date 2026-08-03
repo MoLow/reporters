@@ -87,3 +87,11 @@ test('an explicitly undefined payload adds no data field', () => {
   const wire = toWireEvent({ type: 'test:log', data: { message: 'm', data: undefined } });
   assert.ok(!('data' in wire.data), 'no data key for an undefined payload');
 });
+
+test('a runaway object key count is capped', () => {
+  const wide: Record<string, number> = {};
+  for (let i = 0; i < 5000; i += 1) wide[`k${i}`] = i;
+  const payload = wirePayload(wide) as Record<string, unknown>;
+  assert.strictEqual(payload['[Truncated]'], true);
+  assert.ok(Object.keys(payload).length < 5000, 'expected truncation');
+});

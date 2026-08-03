@@ -4,7 +4,7 @@ import { inspect } from 'node:util';
 
 // eslint-disable-next-line no-control-regex
 const stripAnsi = (text: string) => text.replace(/\[[0-9;]*m/g, '');
-import { formatDuration } from '../src/format.ts';
+import { formatDuration, formatLogPayload } from '../src/format.ts';
 import { toWireEvent, serializeWireLine, parseWireLines } from '../src/wire.ts';
 import { defaultExpanded } from '../src/expand.ts';
 import * as api from '../src/index.ts';
@@ -331,4 +331,20 @@ test('defaultExpanded keeps every container expanded and leaves collapsed', () =
   assert.strictEqual(defaultExpanded(node({ type: 'suite', status: 'failed', children: kids })), true);
   // a childless leaf has nothing to expand
   assert.strictEqual(defaultExpanded(node({ type: 'test', status: 'failed' })), false);
+});
+
+test('formatLogPayload renders a compact payload and nothing for none', () => {
+  assert.strictEqual(formatLogPayload(undefined), '');
+  assert.strictEqual(formatLogPayload({ userId: 42 }), '{"userId":42}');
+  assert.strictEqual(formatLogPayload([1, 2]), '[1,2]');
+  assert.strictEqual(formatLogPayload('plain'), '"plain"');
+  assert.strictEqual(formatLogPayload(null), 'null');
+});
+
+test('formatLogPayload survives a value JSON cannot render', () => {
+  // Wire-sanitized payloads always stringify; a store fed raw events might not.
+  const circular: Record<string, unknown> = {};
+  circular.self = circular;
+  assert.strictEqual(formatLogPayload(circular), '[object Object]');
+  assert.strictEqual(formatLogPayload(() => {}), '');
 });

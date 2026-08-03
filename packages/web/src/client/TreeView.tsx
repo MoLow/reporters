@@ -2,7 +2,7 @@ import React, {
   useEffect, useMemo, useRef, useState,
 } from 'react';
 import {
-  carriedAttempt, formatDuration, isCarried, todoLabel, type Counts, type TestNode, type TestStatus, type TreeSnapshot,
+  carriedAttempt, formatDuration, formatLogPayload, isCarried, todoLabel, type Counts, type TestNode, type TestStatus, type TreeSnapshot,
 } from '@reporters/tree-core';
 import {
   buildRows, collectContainerKeys, computeMatches, displayName, isContainer, isSectionOpen, liveNodeDuration, reasonOf, realError, type FlatRow, type LiveClock,
@@ -68,7 +68,7 @@ interface DiagBlock {
   stack?: string;
   text?: string;
   lines?: OutLine[];
-  items?: { level: string; sev: TestStatus; text: string }[];
+  items?: { level: string; sev: TestStatus; text: string; payload?: string }[];
 }
 
 /** stdout + stderr merged into one line list, stream-tagged (ANSI kept — the
@@ -176,15 +176,20 @@ function computeDiagBlocks(node: TestNode): DiagBlock[] {
     });
   }
   if (node.messages.length > 0) {
-    const items = node.messages.map((d) => {
-      const level = extractLevel(d.message) ?? d.level;
-      return { level, sev: levelSeverity(level), text: d.message };
+    // Diagnostics and logs share one block in arrival order — which is execution
+    // order, since logs arrive live while diagnostics arrive buffered.
+    const items = node.messages.map((m) => {
+      const level = extractLevel(m.message) ?? m.level;
+      const payload = formatLogPayload(m.data);
+      return {
+        level, sev: levelSeverity(level), text: m.message, ...(payload === '' ? {} : { payload }),
+      };
     });
     const sev: TestStatus = items.some((i) => i.sev === 'failed') ? 'failed'
       : items.some((i) => i.sev === 'running') ? 'running' : 'skipped';
     blocks.push({
-      key: 'diag', title: 'Diagnostics', icon: '◇', sev, kind: 'list', items,
-      copyText: stripAnsi(node.messages.map((d) => d.message).join('\n')),
+      key: 'diag', title: 'Messages', icon: '◇', sev, kind: 'list', items,
+      copyText: stripAnsi(items.map((i) => (i.payload == null ? i.text : `${i.text} ${i.payload}`)).join('\n')),
     });
   }
   const reason = reasonOf(node);
@@ -297,7 +302,10 @@ function BlockContent({ block }: { block: DiagBlock }) {
             // eslint-disable-next-line react/no-array-index-key
             <div className="diag-item" key={i}>
               <span className="diag-level" data-soft={item.sev}>{item.level}</span>
-              <span className="txt"><Ansi text={item.text} /></span>
+              <span className="txt">
+                <Ansi text={item.text} />
+                {item.payload != null ? <span className="diag-payload">{item.payload}</span> : null}
+              </span>
             </div>
           ))}
         </div>
