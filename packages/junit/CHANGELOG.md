@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.0](https://github.com/MoLow/reporters/compare/junit-v2.0.2...junit-v2.1.0) (2026-08-03)
+
+
+### Features
+
+* support test:log for real-time per-test logging ([#272](https://github.com/MoLow/reporters/issues/272)) ([e1c91a4](https://github.com/MoLow/reporters/commit/e1c91a42ff8900402c75290f4a869281b5cc998f))
+
 ## [2.0.2](https://github.com/MoLow/reporters/compare/junit-v2.0.1...junit-v2.0.2) (2026-07-02)
 
 
