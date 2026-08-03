@@ -1,7 +1,6 @@
 import type {
   Counts,
   DiagnosticLevel,
-  NodeType,
   SerializedError,
   SummaryData,
   TestEvent,
@@ -12,48 +11,12 @@ import type {
   TreeSnapshot,
   TreeStore,
 } from './types.ts';
-
-const ROOT_KEY = '<root>';
-const REPL = '<repl>';
-const SEP = '\0';
-
-interface InternalNode {
-  key: string;
-  testId: number | undefined;
-  // Placed by a declaration-ordered test:start — the authoritative position.
-  // Execution-ordered events must never re-link such a node.
-  declPlaced?: boolean;
-  parentKey: string | null;
-  file: string | undefined;
-  name: string;
-  nesting: number;
-  type: NodeType;
-  status: TestStatus;
-  durationMs?: number;
-  startedAt?: number;
-  error?: SerializedError;
-  messages: TestNode['messages'];
-  stdout: string[];
-  stderr: string[];
-  line?: number;
-  column?: number;
-  tags?: string[];
-  todo?: boolean | string;
-  skip?: boolean | string;
-  passedOnAttempt?: number;
-  // File groups only: the file-level wrapper has started but not yet
-  // completed — the file is alive even when every test in it has settled
-  // (hooks, teardown, or subtests still to come).
-  wrapperOpen?: boolean;
-  // File groups only: the wrapper closed with its own failure — a hook threw
-  // or the child process died — which node reports only on the wrapper, so it
-  // must survive here or a file whose tests all passed renders green.
-  wrapperFailed?: boolean;
-  wrapperError?: SerializedError;
-  childKeys: string[];
-}
-
-const TERMINAL: ReadonlySet<TestStatus> = new Set(['passed', 'failed', 'skipped', 'todo']);
+import {
+  makeNode, REPL, ROOT_KEY, SEP, TERMINAL, type InternalNode,
+} from './internal.ts';
+import {
+  createExactResolver, createLegacyResolver, type Resolver, type ResolverContext,
+} from './resolve.ts';
 
 // A todo test that actually passes reports as passed (its `todo` marker is
 // kept on the node); `todo` status is reserved for todos that are failing
@@ -93,24 +56,6 @@ function serializeError(raw: unknown): SerializedError | undefined {
   };
 }
 
-function basename(path: string): string {
-  const parts = path.replace(/\\/g, '/').split('/');
-  return parts[parts.length - 1] || path;
-}
-
-/**
- * A file-level wrapper test is emitted by the parent runner under process
- * isolation: its `name` is the test file path (often CLI-relative, e.g.
- * `../../tests/example.js`) and its `file` is the resolved absolute path. They
- * mark the run as isolated but are not real tests. We match on basename because
- * the relative `name` and absolute `file` only reliably agree on the last
- * segment, and we can't resolve paths in the browser (the store runs there too).
- */
-function isFileLevel(data: TestEventData): boolean {
-  if (data.nesting !== 0 || data.name == null || data.file == null) return false;
-  return basename(data.name) === basename(data.file);
-}
-
 export function createTreeStore(): TreeStore {
   const nodes = new Map<string, InternalNode>();
   const listeners = new Set<() => void>();
@@ -119,12 +64,11 @@ export function createTreeStore(): TreeStore {
   // helper file is exercised by concurrent processes. Each such test is its own
   // instance under the (group, testId) base key.
   const instancesByBase = new Map<string, string[]>();
-  // The declaration-ordered events (test:start/pass/fail) are a depth-first
-  // traversal of the real tree, serialized across the whole run — so a single
-  // stack of the currently-open declaration nodes, keyed by nesting, resolves
-  // every parent exactly, including helper-file subtests whose parentId would
-  // otherwise be ambiguous across processes.
-  const declOpen = new Map<number, string>();
+  // Currently-open declaration nodes by nesting, per declaration stack. The
+  // resolver decides how many stacks there are: one shared stack when the
+  // stream gives no way to tell processes apart, one per entry file when it
+  // does.
+  const declOpenByBucket = new Map<string, Map<number, string>>();
   const lastStartedByGroupNesting = new Map<string, Map<number, string>>();
   const lastByGroupNesting = new Map<string, Map<number, string>>();
   // State for the testId-free path (Node builds that don't emit testId, e.g. v22):
@@ -160,23 +104,6 @@ export function createTreeStore(): TreeStore {
   root.status = 'running';
   nodes.set(ROOT_KEY, root);
 
-  function makeNode(key: string, type: NodeType): InternalNode {
-    return {
-      key,
-      testId: undefined,
-      parentKey: null,
-      file: undefined,
-      name: '',
-      nesting: type === 'root' || type === 'file' ? -1 : 0,
-      type,
-      status: type === 'root' || type === 'file' ? 'running' : 'queued',
-      messages: [],
-      stdout: [],
-      stderr: [],
-      childKeys: [],
-    };
-  }
-
   function link(child: InternalNode, parentKey: string): void {
     if (child.parentKey === parentKey) return;
     if (child.parentKey != null) {
@@ -186,15 +113,6 @@ export function createTreeStore(): TreeStore {
     const parent = nodes.get(parentKey);
     if (parent && !parent.childKeys.includes(child.key)) parent.childKeys.push(child.key);
     child.parentKey = parentKey;
-  }
-
-  // Group by the reported file. For tests defined in their own file this is the
-  // entry file; for tests defined in a shared imported helper it is that helper
-  // (so, under process isolation, the same helper run from two files can merge —
-  // a rare case; see docs/node-issue-entry-file-attribution.md).
-  function groupKey(data: TestEventData): string {
-    const file = data.file != null ? (fileAlias.get(data.file) ?? data.file) : undefined;
-    return `${SEP}file${SEP}${file ?? REPL}`;
   }
 
   function ensureGroupNode(key: string, file: string | undefined): InternalNode {
@@ -213,95 +131,67 @@ export function createTreeStore(): TreeStore {
     return `${gk}${SEP}#${testId}`;
   }
 
-  function instancesOf(gk: string, testId: number): InternalNode[] {
-    return (instancesByBase.get(baseKey(gk, testId)) ?? []).map((key) => nodes.get(key)!);
-  }
-
-  function newInstance(gk: string, testId: number, file: string | undefined): InternalNode {
-    const base = baseKey(gk, testId);
-    const list = instancesByBase.get(base) ?? [];
-    const key = list.length === 0 ? base : `${base}${SEP}~${list.length}`;
-    const node = makeNode(key, 'test');
-    node.testId = testId;
-    node.file = file;
-    nodes.set(key, node);
-    list.push(key);
-    instancesByBase.set(base, list);
-    link(node, ensureGroupNode(gk, file).key);
-    return node;
-  }
-
-  // Route an execution-ordered event to the instance it belongs to: same name
-  // (or a still-unnamed placeholder), preferring one still open. Identically
-  // named twins from colliding processes may share an instance here — their
-  // declaration-ordered starts split them later.
-  function eagerInstance(gk: string, testId: number, data: TestEventData): InternalNode {
-    const named = instancesOf(gk, testId)
-      .filter((n) => data.name == null || n.name === '' || n.name === data.name);
-    const open = named.filter((n) => !TERMINAL.has(n.status));
-    const node = open[open.length - 1] ?? named[named.length - 1];
-    return node ?? newInstance(gk, testId, data.file);
-  }
-
-  // A subtest defined in a shared helper reports the helper as its `file`, so
-  // its parentId points at a test in ANOTHER group. Candidates are the
-  // still-open (non-terminal) nodes with that testId: under process isolation
-  // testIds collide across files, and only a still-open candidate can be the
-  // real parent — a collided one from a file that already finished cannot. A
-  // real parent always sits one nesting level above its child, so when any
-  // candidate matches that, the ones that don't are ruled out.
-  // TODO(nodejs/node#64309): once events carry `entryFile`, (entryFile,
-  // parentId) resolves the parent exactly — no candidate search needed (and
-  // instances can be keyed by (entryFile, testId), retiring instancesByBase
-  // splitting). Requires passing entryFile through toWireEvent in wire.ts.
-  function findOpenParents(parentId: number, childNesting: number | undefined): InternalNode[] {
-    const open: InternalNode[] = [];
-    for (const node of nodes.values()) {
-      if (node.testId !== parentId || TERMINAL.has(node.status)) continue;
-      if (node.type !== 'test' && node.type !== 'suite') continue;
-      open.push(node);
-    }
-    if (childNesting != null) {
-      const exact = open.filter((n) => n.nesting === childNesting - 1);
-      if (exact.length > 0) return exact;
-    }
-    return open;
-  }
-
-  function resolveParentKey(data: TestEventData, gk: string): string {
-    const group = ensureGroupNode(gk, data.file);
-    // parentId is the in-process testId of the enclosing test; 0 is the root.
-    if (data.parentId != null) {
-      if (data.parentId === 0) return group.key;
-      const local = instancesOf(gk, data.parentId).filter((n) => !TERMINAL.has(n.status)).pop();
-      if (local) return local.key;
-      const candidates = findOpenParents(data.parentId, data.nesting);
-      if (candidates.length === 1) return candidates[0].key;
-      // Several concurrent processes have an open test with this id — the
-      // event doesn't say which one is the parent, so don't guess: park under
-      // the helper group. A later event re-resolves once the collision clears,
-      // and the declaration-ordered block settles it for good.
-      if (candidates.length > 1) return group.key;
-      return newInstance(gk, data.parentId, data.file).key;
-    }
-    // Fallback for Node builds that don't emit parentId: use the nesting stack.
-    const nesting = data.nesting ?? 0;
-    if (nesting > 0) {
-      const ancestor = lastByGroupNesting.get(gk)?.get(nesting - 1);
-      if (ancestor) return ancestor;
-      const crossGroup = findOpenAtNesting(nesting - 1);
-      if (crossGroup) return crossGroup;
-    }
-    return group.key;
-  }
-
   function findOpenAtNesting(nesting: number): string | undefined {
     const key = lastByNesting.get(nesting);
     const node = key ? nodes.get(key) : undefined;
     return node && !TERMINAL.has(node.status) ? node.key : undefined;
   }
 
+  const ctx: ResolverContext = {
+    nodes,
+    aliasFile(file) {
+      return file != null ? (fileAlias.get(file) ?? file) : undefined;
+    },
+    group(data) {
+      return ensureGroupNode(resolver.groupKey(data), resolver.groupFile(data));
+    },
+    instancesFor(gk, testId) {
+      return (instancesByBase.get(baseKey(gk, testId)) ?? []).map((key) => nodes.get(key)!);
+    },
+    createInstance(gk, testId, data) {
+      const base = baseKey(gk, testId);
+      const list = instancesByBase.get(base) ?? [];
+      const key = list.length === 0 ? base : `${base}${SEP}~${list.length}`;
+      const node = makeNode(key, 'test');
+      node.testId = testId;
+      // The definition site, which for a helper-defined test is not the file
+      // its group is named for.
+      node.file = data.file;
+      nodes.set(key, node);
+      list.push(key);
+      instancesByBase.set(base, list);
+      link(node, ctx.group(data).key);
+      return node;
+    },
+    lastAtGroupNesting(gk, nesting) {
+      return lastByGroupNesting.get(gk)?.get(nesting);
+    },
+    lastOpenAtNesting: findOpenAtNesting,
+  };
+
+  const legacyResolver = createLegacyResolver(ctx);
+  const exactResolver = createExactResolver(ctx);
+  // Latched, not per-event: the only events preceding the first `entryFile` are
+  // the parent's own file wrappers, which both resolvers key off `data.file`
+  // identically — so switching mid-stream cannot invalidate what came before.
+  let resolver: Resolver = legacyResolver;
+
+  function selectResolver(data: TestEventData): void {
+    if (data.entryFile != null) resolver = exactResolver;
+  }
+
+  function declOpenOf(data: TestEventData): Map<number, string> {
+    const bucket = resolver.declBucket(data);
+    let open = declOpenByBucket.get(bucket);
+    if (!open) {
+      open = new Map<number, string>();
+      declOpenByBucket.set(bucket, open);
+    }
+    return open;
+  }
+
   function assignFields(node: InternalNode, data: TestEventData): void {
+    if (data.entryFile != null) node.entryFile = data.entryFile;
     if (data.name != null) node.name = data.name;
     if (data.nesting != null) node.nesting = data.nesting;
     if (data.line != null) node.line = data.line;
@@ -313,13 +203,13 @@ export function createTreeStore(): TreeStore {
   }
 
   function upsertFromTestEvent(data: TestEventData, mutate: (node: InternalNode) => void): void {
-    const gk = groupKey(data);
-    const node = eagerInstance(gk, data.testId!, data);
+    const gk = resolver.groupKey(data);
+    const node = resolver.instance(data, gk);
     // Execution-ordered placement is provisional (parentId is ambiguous across
     // processes); once the declaration-ordered start has placed the node, its
     // position is settled — never re-link it from an eager event.
     if (!node.declPlaced) {
-      const parentKey = resolveParentKey(data, gk);
+      const parentKey = resolver.parentKey(data, gk);
       // A late, buffered event (test:pass after the parent finished) can resolve
       // only as far as the group root; never demote a node that already found
       // its real parent.
@@ -333,23 +223,6 @@ export function createTreeStore(): TreeStore {
     lastByNesting.set(data.nesting ?? 0, node.key);
     assignFields(node, data);
     mutate(node);
-  }
-
-  // Authoritative parent for a declaration-ordered start. A same-group parent
-  // that was itself declaration-placed is exact (and tolerates decl streams
-  // that interleave across files); otherwise the enclosing open declaration
-  // node one nesting level up is the parent — that is what report order means.
-  function resolveDeclParentKey(data: TestEventData, gk: string): string {
-    const nesting = data.nesting ?? 0;
-    if (data.parentId != null && data.parentId !== 0) {
-      const local = instancesOf(gk, data.parentId)
-        .filter((n) => n.declPlaced && !TERMINAL.has(n.status)).pop();
-      if (local) return local.key;
-    }
-    const enclosing = declOpen.get(nesting - 1);
-    const node = enclosing ? nodes.get(enclosing) : undefined;
-    if (node && (data.parentId == null || node.testId === data.parentId)) return node.key;
-    return resolveParentKey(data, gk);
   }
 
   // Declaration starts arrive in declaration order, so a node that decl-starts
@@ -384,17 +257,23 @@ export function createTreeStore(): TreeStore {
   }
 
   function declStart(data: TestEventData): void {
-    const gk = groupKey(data);
+    const gk = resolver.groupKey(data);
     const nesting = data.nesting ?? 0;
-    const parentKey = resolveDeclParentKey(data, gk);
-    const candidates = instancesOf(gk, data.testId!)
+    const declOpen = declOpenOf(data);
+    const enclosingKey = declOpen.get(nesting - 1);
+    const parentKey = resolver.declParentKey(
+      data,
+      gk,
+      enclosingKey ? nodes.get(enclosingKey) : undefined,
+    );
+    const candidates = ctx.instancesFor(gk, data.testId!)
       .filter((n) => n.name === data.name || n.name === '');
     // Same declaration position again is a replay; otherwise claim the eager
     // instance, or split off a new one when a colliding process already did.
     const settled = candidates.find((n) => n.declPlaced && n.parentKey === parentKey);
     const node = settled
       ?? candidates.find((n) => !n.declPlaced)
-      ?? newInstance(gk, data.testId!, data.file);
+      ?? ctx.createInstance(gk, data.testId!, data);
     link(node, parentKey);
     node.declPlaced = true;
     // A replayed start (watch-mode rerun, re-read stream) must not move a
@@ -436,12 +315,13 @@ export function createTreeStore(): TreeStore {
   }
 
   function declFinalize(status: TestStatus, data: TestEventData): void {
-    const gk = groupKey(data);
+    const gk = resolver.groupKey(data);
     const nesting = data.nesting ?? 0;
+    const declOpen = declOpenOf(data);
     const openKey = declOpen.get(nesting);
     const openNode = openKey ? nodes.get(openKey) : undefined;
     const matchesOpen = openNode && openNode.testId === data.testId && openNode.name === data.name;
-    const node = matchesOpen ? openNode : eagerInstance(gk, data.testId!, data);
+    const node = matchesOpen ? openNode : resolver.instance(data, gk);
     backdateStart(node, data);
     noteAttempt(node, data);
     assignFields(node, data);
@@ -461,8 +341,8 @@ export function createTreeStore(): TreeStore {
   // test:start and test:pass/fail are emitted in declaration order, so the
   // k-th start at a nesting pairs with the k-th result at that nesting.
   function stackStart(data: TestEventData): InternalNode {
-    const gk = groupKey(data);
-    const group = ensureGroupNode(gk, data.file);
+    const gk = resolver.groupKey(data);
+    const group = ctx.group(data);
     const nesting = data.nesting ?? 0;
     const open = openByGroupNesting.get(gk) ?? new Map<number, string>();
     openByGroupNesting.set(gk, open);
@@ -495,7 +375,7 @@ export function createTreeStore(): TreeStore {
   }
 
   function stackFinalize(status: TestStatus, data: TestEventData): void {
-    const gk = groupKey(data);
+    const gk = resolver.groupKey(data);
     const nesting = data.nesting ?? 0;
     const key = pendingByGroupNesting.get(gk)?.get(nesting)?.shift();
     let node = key ? nodes.get(key) : undefined;
@@ -520,7 +400,7 @@ export function createTreeStore(): TreeStore {
   }
 
   function recordLastStarted(data: TestEventData, key: string): void {
-    const gk = groupKey(data);
+    const gk = resolver.groupKey(data);
     const map = lastStartedByGroupNesting.get(gk) ?? new Map<number, string>();
     map.set(data.nesting ?? 0, key);
     lastStartedByGroupNesting.set(gk, map);
@@ -533,9 +413,12 @@ export function createTreeStore(): TreeStore {
       firstT = firstT == null ? event.t : Math.min(firstT, event.t);
       lastT = lastT == null ? event.t : Math.max(lastT, event.t);
     }
+    // A stream that stamps entryFile resolves exactly from here on. Latched
+    // before anything reads the resolver, so one event never mixes the two.
+    selectResolver(data);
     // The wrapper's relative `name` is the spelling stdout/stderr events use for
     // `file`; map it to the resolved absolute path so both group together.
-    if (isFileLevel(data) && data.name !== data.file) fileAlias.set(data.name!, data.file!);
+    if (resolver.isFileLevel(data) && data.name !== data.file) fileAlias.set(data.name!, data.file!);
     switch (type) {
       case 'test:enqueue':
       case 'test:dequeue':
@@ -544,7 +427,7 @@ export function createTreeStore(): TreeStore {
         // they start — grouped by file, they don't collide across files. The
         // terminal-status guard in upsert keeps this idempotent and lets the
         // later start/pass/fail settle the final state.
-        if (isFileLevel(data)) {
+        if (resolver.isFileLevel(data)) {
           sawFileWrapper = true;
           // The runner enqueues the file wrappers up front, in the order the
           // files will report. Claim the group slots now so file order doesn't
@@ -552,7 +435,7 @@ export function createTreeStore(): TreeStore {
           // the enqueue is that ordered signal — a dequeue seen without its
           // enqueue (mid-run attach) arrives at wall-clock position, and its
           // group must stay unplaced to settle in decl-stream order instead.
-          const group = ensureGroupNode(groupKey(data), data.file);
+          const group = ctx.group(data);
           if (type === 'test:enqueue') group.declPlaced = true;
           else group.wrapperOpen = true;
           break;
@@ -568,10 +451,10 @@ export function createTreeStore(): TreeStore {
         });
         break;
       case 'test:start':
-        if (isFileLevel(data)) {
+        if (resolver.isFileLevel(data)) {
           sawFileWrapper = true;
-          declOpen.clear();
-          ensureGroupNode(groupKey(data), data.file).wrapperOpen = true;
+          declOpenOf(data).clear();
+          ctx.group(data).wrapperOpen = true;
           break;
         }
         if (data.testId != null) {
@@ -586,9 +469,9 @@ export function createTreeStore(): TreeStore {
         // this is what lets the live tree mark tests done in real time. It
         // carries testId on modern Node; older builds (no testId) fall back to
         // the declaration-ordered pass/fail stack below.
-        if (isFileLevel(data)) {
+        if (resolver.isFileLevel(data)) {
           sawFileWrapper = true;
-          const group = ensureGroupNode(groupKey(data), data.file);
+          const group = ctx.group(data);
           group.wrapperOpen = false;
           // The wrapper measures the file's real wall-clock — the file's
           // concurrent tests sum to much more than the run actually took.
@@ -614,10 +497,10 @@ export function createTreeStore(): TreeStore {
       }
       case 'test:pass':
       case 'test:fail': {
-        if (isFileLevel(data)) {
+        if (resolver.isFileLevel(data)) {
           sawFileWrapper = true;
-          declOpen.clear();
-          const group = ensureGroupNode(groupKey(data), data.file);
+          declOpenOf(data).clear();
+          const group = ctx.group(data);
           group.wrapperOpen = false;
           if (data.details?.duration_ms != null) {
             group.durationMs = group.durationMs ?? data.details.duration_ms;
@@ -646,7 +529,7 @@ export function createTreeStore(): TreeStore {
         if (data.data !== undefined) message.data = data.data;
         if (currentT != null) message.t = currentT;
         if (data.testId == null) {
-          ensureGroupNode(groupKey(data), data.file).messages.push(message);
+          ctx.group(data).messages.push(message);
           break;
         }
         upsertFromTestEvent(data, (node) => { node.messages.push(message); });
@@ -654,10 +537,10 @@ export function createTreeStore(): TreeStore {
       }
       case 'test:diagnostic': {
         if (data.message == null) break;
-        const gk = groupKey(data);
+        const gk = resolver.groupKey(data);
         // Diagnostics are declaration-ordered, so the open declaration node at
         // this nesting is the reporting test; fall back to per-group recency.
-        const declKey = declOpen.get(data.nesting ?? 0);
+        const declKey = declOpenOf(data).get(data.nesting ?? 0);
         const targetKey = lastStartedByGroupNesting.get(gk)?.get(data.nesting ?? 0);
         const target = (declKey && nodes.get(declKey))
           || (targetKey && nodes.get(targetKey)) || nodes.get(gk);
@@ -665,18 +548,18 @@ export function createTreeStore(): TreeStore {
         break;
       }
       case 'test:stdout':
-        if (data.message != null) ensureGroupNode(groupKey(data), data.file).stdout.push(data.message);
+        if (data.message != null) ctx.group(data).stdout.push(data.message);
         break;
       case 'test:stderr':
-        if (data.message != null) ensureGroupNode(groupKey(data), data.file).stderr.push(data.message);
+        if (data.message != null) ctx.group(data).stderr.push(data.message);
         break;
       case 'test:summary':
         // A per-file summary trails its file's declaration block, closing it.
         // It also carries the file's wall-clock, for builds whose wrapper
         // completion lacks duration detail.
         if (data.file !== undefined) {
-          declOpen.clear();
-          const group = ensureGroupNode(groupKey(data), data.file);
+          declOpenOf(data).clear();
+          const group = ctx.group(data);
           group.wrapperOpen = false;
           if (data.duration_ms != null) {
             group.durationMs = group.durationMs ?? data.duration_ms;
@@ -774,6 +657,7 @@ export function createTreeStore(): TreeStore {
       testId: internal.testId,
       parentKey: internal.parentKey,
       file: internal.file,
+      entryFile: internal.entryFile,
       name: internal.name,
       nesting: internal.nesting,
       type: internal.type,

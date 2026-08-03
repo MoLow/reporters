@@ -95,3 +95,19 @@ test('a runaway object key count is capped', () => {
   assert.strictEqual(payload['[Truncated]'], true);
   assert.ok(Object.keys(payload).length < 5000, 'expected truncation');
 });
+
+test('entryFile survives the wire', () => {
+  const wire = toWireEvent({
+    type: 'test:start',
+    data: {
+      name: 't', nesting: 0, testId: 1, parentId: 0, file: '/helper.mjs', entryFile: '/a.test.mjs',
+    },
+  });
+  assert.strictEqual(wire.data.entryFile, '/a.test.mjs');
+  assert.strictEqual(wire.data.file, '/helper.mjs');
+});
+
+test('an absent entryFile adds no field (pre-v26.6 streams)', () => {
+  const wire = toWireEvent({ type: 'test:start', data: { name: 't', nesting: 0, file: '/a.test.mjs' } });
+  assert.ok(!('entryFile' in wire.data));
+});

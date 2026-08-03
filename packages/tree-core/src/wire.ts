@@ -115,6 +115,7 @@ export function toWireEvent(event: TestEvent): TestEvent {
   if (d.name != null) data.name = d.name;
   if (d.nesting != null) data.nesting = d.nesting;
   if (d.file != null) data.file = d.file;
+  if (d.entryFile != null) data.entryFile = d.entryFile;
   if (d.testId != null) data.testId = d.testId;
   if (d.parentId != null) data.parentId = d.parentId;
   if (d.line != null) data.line = d.line;
