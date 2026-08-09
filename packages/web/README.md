@@ -2,17 +2,23 @@
 
 # Web Reporter
 
-Read your `node:test` run in the browser — a rich, interactive tree with live
-updates, search, and inline failure diffs.
+Read your `node:test` run in the browser — a dense, interactive tree with live
+updates, search, and failures you can scan without opening anything.
 
 `@reporters/web` streams the run as an **NDJSON** event log, and ships a React
 **viewer** that renders it: pass/fail counts and progress at a glance, the full
-suite tree with per-test durations, ANSI-colored error output, and failing
-tests auto-expanded with their assertion diff and stack trace.
+suite tree with per-test durations and rolled-up failure counts, and every
+failure previewed on one line under the row that produced it.
 
-[![the @reporters/web viewer showing a run with an expanded failure](https://raw.githubusercontent.com/MoLow/reporters/5393ed7b104f42d90bb930ad89854d8fdff6785b/packages/web/assets/viewer.png)](https://molow.github.io/reporters/?src=https://raw.githubusercontent.com/MoLow/reporters/5393ed7b104f42d90bb930ad89854d8fdff6785b/packages/web/assets/demo-run.ndjson)
+[![the @reporters/web viewer showing a run with a failure previewed inline](https://raw.githubusercontent.com/MoLow/reporters/4772c1bd6e09677e2608ec42e08a22461532912b/packages/web/assets/viewer.png)](https://molow.github.io/reporters/?src=https://raw.githubusercontent.com/MoLow/reporters/4772c1bd6e09677e2608ec42e08a22461532912b/packages/web/assets/demo-run.ndjson)
 
-**[▶ Open the live demo](https://molow.github.io/reporters/?src=https://raw.githubusercontent.com/MoLow/reporters/5393ed7b104f42d90bb930ad89854d8fdff6785b/packages/web/assets/demo-run.ndjson)** — the screenshot above, in the hosted viewer.
+**[▶ Open the live demo](https://molow.github.io/reporters/?src=https://raw.githubusercontent.com/MoLow/reporters/4772c1bd6e09677e2608ec42e08a22461532912b/packages/web/assets/demo-run.ndjson)** — the screenshot above, in the hosted viewer.
+
+A row's log button (with its line count) opens that node's **Error**, **Output**
+and **Messages** in one dialog over the tree — closed with `Esc`, the scrim, or
+`✕`. Clicking a failure's preview line opens it straight to the error:
+
+![the logs dialog showing a failing test's assertion error and stack](https://raw.githubusercontent.com/MoLow/reporters/4772c1bd6e09677e2608ec42e08a22461532912b/packages/web/assets/logs-popup.png)
 
 ## Usage
 
@@ -106,6 +112,7 @@ const filters = memoryFilterState();
   fetch={authenticatedFetch}  // optional; receives the Range header
   pollMs={250}                // optional; default 1000
   filters={filters}           // optional; defaults to the shareable page URL
+  dense="cozy"                // optional; 'compact' (default) or 'cozy'
   renderNodeActions={(node: TestNode) => (node.type === 'test'
     ? <button onClick={() => rerun(node)}>↻ rerun</button>
     : null)}
@@ -129,6 +136,10 @@ interface FilterStore {
 
 The store instance must be stable for the life of the component — create it
 outside the render (or in `useState`/`useMemo`).
+
+`dense` picks the row metrics: `compact` (26px rows, the default — a real run is
+hundreds of rows) or `cozy` (34px, a roomier hit area). Below 640px both give
+way to 40px touch rows.
 
 ### `startViewer()` — a full viewer page
 
@@ -161,11 +172,11 @@ flight.
 ### `renderNodeActions`
 
 Renders custom content on every tree row — containers and tests alike; return
-`null` to render nothing for a node. The result sits between the test name and
-the row's built-in trailing indicators (status pills, duration), wrapped in a
-`.node-actions` element that swallows clicks and keystrokes so your buttons
-never toggle the row's disclosure. It is called on every render (which is
-frequent during a live run), so keep it cheap.
+`null` to render nothing for a node. The result sits after the row's log button
+and before its status pills and duration, wrapped in a `.node-actions` element
+that swallows clicks and keystrokes so your buttons never toggle the row's
+disclosure or open its logs. It is called on every render (which is frequent
+during a live run), so keep it cheap.
 
 Visibility is yours to style — e.g. reveal on row hover:
 
