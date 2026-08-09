@@ -4,7 +4,7 @@ import { createTreeStore } from '@reporters/tree-core';
 import type { Counts, TestEvent, TestNode } from '@reporters/tree-core';
 import {
   buildRows, collectContainerKeys, computeMatches, displayName, hasDiagnostics,
-  isExpanded, isPassingTodo, isSectionOpen, liveNodeDuration, nodeDuration, reasonOf, realError, rollup,
+  isCancelled, isExpanded, isPassingTodo, isSectionOpen, isSubtestsRollup, liveNodeDuration, nodeDuration, reasonOf, realError, rollup,
 } from '../src/client/rowModel.ts';
 
 const zeroCounts = (): Counts => ({
@@ -224,6 +224,42 @@ test('realError shows every recorded error — leaves, containers, and rollups a
   assert.strictEqual(realError(container), containerError);
   // a leaf with no error has none
   assert.strictEqual(realError(node()), undefined);
+});
+
+test('realError drops a cancellation — the runner wrote it, the test never ran', () => {
+  for (const failureType of ['cancelledByParent', 'testAborted']) {
+    const cancelled = node({
+      error: { message: 'test did not finish before its parent and was cancelled', failureType },
+    });
+    assert.ok(isCancelled(cancelled), `${failureType} reads as cancelled`);
+    assert.strictEqual(realError(cancelled), undefined);
+    assert.strictEqual(hasDiagnostics(cancelled), false, 'nothing left to expand');
+  }
+});
+
+test('realError keeps every failure the test actually produced', () => {
+  // The rollup is kept — the viewer renders it as a chip rather than a panel.
+  const rollup = { message: '3 subtests failed', failureType: 'subtestsFailed' };
+  assert.strictEqual(realError(node({ error: rollup })), rollup);
+  assert.ok(isSubtestsRollup(node({ error: rollup })));
+  // A failed before hook is the case that made suppression a bug: it holds the
+  // only real cause while its children carry the generic cancellation text.
+  const hook = { message: 'HTTP-Code: 401 Unauthorized', failureType: 'hookFailed' };
+  assert.strictEqual(realError(node({ error: hook })), hook);
+  assert.ok(!isCancelled(node({ error: hook })));
+  const code = { message: 'expected 3 to equal 4', failureType: 'testCodeFailure' };
+  assert.strictEqual(realError(node({ error: code })), code);
+});
+
+test('an unannotated error is never dropped — old logs carry no failureType', () => {
+  // Matching the message text instead would suppress these; only the runner's
+  // own classification may hide anything.
+  for (const message of ['3 subtests failed', 'test did not finish before its parent and was cancelled']) {
+    const legacy = node({ error: { message } });
+    assert.strictEqual(isCancelled(legacy), false);
+    assert.strictEqual(isSubtestsRollup(legacy), false);
+    assert.deepStrictEqual(realError(legacy), { message });
+  }
 });
 
 test('hasDiagnostics sees a container error', () => {

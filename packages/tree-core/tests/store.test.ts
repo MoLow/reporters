@@ -67,6 +67,39 @@ test('failed test carries the unwrapped cause error', () => {
   assert.strictEqual(node.error?.message, 'actual failure');
 });
 
+test('failureType comes off the wrapper, which is where the runner puts it', () => {
+  const store = createTreeStore();
+  // node:test's own synthetic failures wrap a bare string, so unwrapping to the
+  // cause first would lose the classification entirely.
+  const rollup = Object.assign(new Error('3 subtests failed'), {
+    code: 'ERR_TEST_FAILURE', failureType: 'subtestsFailed', cause: '3 subtests failed',
+  });
+  const real = Object.assign(new Error('wrapper'), {
+    code: 'ERR_TEST_FAILURE', failureType: 'testCodeFailure', cause: new Error('actual failure'),
+  });
+  apply(store, [
+    { type: 'test:start', data: { name: 'suite', nesting: 0, file: '/a.test.js', testId: 1 } },
+    { type: 'test:start', data: { name: 't', nesting: 1, file: '/a.test.js', testId: 2, parentId: 1 } },
+    { type: 'test:fail', data: { name: 't', nesting: 1, file: '/a.test.js', testId: 2, parentId: 1, details: { error: real } } },
+    { type: 'test:fail', data: { name: 'suite', nesting: 0, file: '/a.test.js', testId: 1, details: { error: rollup } } },
+  ]);
+  const suite = store.getSnapshot().root.children[0].children[0];
+  assert.strictEqual(suite.error?.failureType, 'subtestsFailed');
+  assert.strictEqual(suite.error?.message, '3 subtests failed');
+  assert.strictEqual(suite.children[0].error?.failureType, 'testCodeFailure');
+  assert.strictEqual(suite.children[0].error?.message, 'actual failure', 'unwrapping to the cause still wins for the message');
+});
+
+test('an error with no failureType leaves the field off', () => {
+  const store = createTreeStore();
+  apply(store, [
+    { type: 'test:start', data: { name: 't', nesting: 0, file: '/a.test.js', testId: 1 } },
+    { type: 'test:fail', data: { name: 't', nesting: 0, file: '/a.test.js', testId: 1, details: { error: new Error('boom') } } },
+  ]);
+  const node = store.getSnapshot().root.children[0].children[0];
+  assert.ok(!('failureType' in node.error!), 'logs written before the wire carried it stay unannotated');
+});
+
 test('empty-message cause falls back to the stack first line', () => {
   const store = createTreeStore();
   // A DOMException cause (e.g. AbortSignal.timeout's TimeoutError) crossing the

@@ -45,7 +45,7 @@ function logLevel(data: TestEventData): DiagnosticLevel {
 
 function serializeError(raw: unknown): SerializedError | undefined {
   if (raw == null) return undefined;
-  const err = raw as { message?: string; stack?: string; name?: string; cause?: unknown };
+  const err = raw as { message?: string; stack?: string; name?: string; cause?: unknown; failureType?: unknown };
   const cause = (err.cause ?? err) as { message?: string; stack?: string; name?: string };
   // A cause whose message/name live on prototype getters (e.g. DOMException) loses them
   // when v8-serialized across the test-runner IPC boundary; the stack string keeps the
@@ -54,6 +54,9 @@ function serializeError(raw: unknown): SerializedError | undefined {
     message: cause?.message || cause?.stack?.split('\n', 1)[0] || String(cause),
     stack: cause?.stack,
     name: cause?.name,
+    // Read off the ERR_TEST_FAILURE wrapper, not the cause we unwrap to: for the
+    // runner's own synthetic failures the cause is a bare string carrying nothing.
+    ...(typeof err.failureType === 'string' ? { failureType: err.failureType } : {}),
   };
 }
 

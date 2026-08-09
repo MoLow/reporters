@@ -133,13 +133,35 @@ export function reasonOf(node: TestNode): string | undefined {
   return undefined;
 }
 
+// A test the runner cancelled before its body ever ran, per node:test's own
+// classification: the parent settled first, or the test's signal aborted. Its
+// error is a fixed sentence about the cancellation with no cause underneath.
+const CANCELLED: ReadonlySet<string> = new Set(['cancelledByParent', 'testAborted']);
+
+export function isCancelled(node: TestNode): boolean {
+  return node.error?.failureType != null && CANCELLED.has(node.error.failureType);
+}
+
+/** Node's "N subtests failed" rollup — the node's own body was fine, a child
+ *  failed. The child rows say which, so the row shows the count, not a panel. */
+export function isSubtestsRollup(node: TestNode): boolean {
+  return node.error?.failureType === 'subtestsFailed';
+}
+
 /**
  * Any error the node reported is shown — containers included. A container's
  * error can be the only place the real cause lives (a suite whose before hook
- * failed cancels its children with a generic message), so nothing is filtered.
+ * failed cancels its children with a generic message), so nothing is filtered
+ * on message text.
+ *
+ * The one exception is a cancellation, which the runner writes in place of an
+ * error the test never got to produce. It is identified structurally, by the
+ * runner's own `failureType`, so a real cause is never at risk: a failed hook
+ * reports `hookFailed` and stays fully visible, and a log written before the
+ * wire carried `failureType` keeps every error it has.
  */
 export function realError(node: TestNode): { message: string; stack?: string } | undefined {
-  return node.error;
+  return isCancelled(node) ? undefined : node.error;
 }
 
 export function hasDiagnostics(node: TestNode): boolean {

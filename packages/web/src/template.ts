@@ -5,6 +5,7 @@ const DARK = `
   --row-hover:rgba(255,255,255,.04);
   --accent:#8b7cff; --accent-ink:#0c0a1f;
   --st-passed:#34d27b; --st-failed:#fb5a6a; --st-skipped:#8a93a1; --st-todo:#7c9cff; --st-running:#ffb13d; --st-queued:#5d6573;
+  --st-cancelled:#8a93a1;
   --soft-passed:rgba(52,210,123,.15); --soft-failed:rgba(251,90,106,.16); --soft-skipped:rgba(138,147,161,.16); --soft-todo:rgba(124,156,255,.16); --soft-running:rgba(255,177,61,.17); --soft-queued:rgba(93,101,115,.18);
   --fail-tint:rgba(251,90,106,.07);
   --carry-fg:#a2a9b5; --carry-bg:rgba(255,255,255,.06); --carry-border:rgba(255,255,255,.14);
@@ -21,6 +22,7 @@ const LIGHT = `
   --row-hover:rgba(17,24,33,.035);
   --accent:#6357e6; --accent-ink:#ffffff;
   --st-passed:#16a34a; --st-failed:#e23744; --st-skipped:#697381; --st-todo:#3f63d6; --st-running:#bf7400; --st-queued:#97a0ad;
+  --st-cancelled:#697381;
   --soft-passed:rgba(22,163,74,.12); --soft-failed:rgba(226,55,68,.10); --soft-skipped:rgba(105,115,129,.12); --soft-todo:rgba(63,99,214,.11); --soft-running:rgba(191,116,0,.13); --soft-queued:rgba(151,160,173,.14);
   --fail-tint:rgba(226,55,68,.05);
   --carry-fg:#586170; --carry-bg:rgba(17,24,33,.05); --carry-border:rgba(17,24,33,.14);
@@ -58,7 +60,7 @@ button { font-family: inherit; } input { font-family: inherit; }
 ::-webkit-scrollbar-track { background: transparent; }
 
 /* status color helpers */
-[data-stc="passed"]{color:var(--st-passed)} [data-stc="failed"]{color:var(--st-failed)} [data-stc="skipped"]{color:var(--st-skipped)} [data-stc="todo"]{color:var(--st-todo)} [data-stc="running"]{color:var(--st-running)} [data-stc="queued"]{color:var(--st-queued)}
+[data-stc="passed"]{color:var(--st-passed)} [data-stc="failed"]{color:var(--st-failed)} [data-stc="skipped"]{color:var(--st-skipped)} [data-stc="todo"]{color:var(--st-todo)} [data-stc="running"]{color:var(--st-running)} [data-stc="queued"]{color:var(--st-queued)} [data-stc="cancelled"]{color:var(--st-cancelled)}
 [data-stf="passed"]{background:var(--st-passed)} [data-stf="failed"]{background:var(--st-failed)} [data-stf="skipped"]{background:var(--st-skipped)} [data-stf="todo"]{background:var(--st-todo)} [data-stf="running"]{background:var(--st-running)} [data-stf="queued"]{background:var(--st-queued)}
 [data-soft="passed"]{background:var(--soft-passed);color:var(--st-passed)} [data-soft="failed"]{background:var(--soft-failed);color:var(--st-failed)} [data-soft="skipped"]{background:var(--soft-skipped);color:var(--st-skipped)} [data-soft="todo"]{background:var(--soft-todo);color:var(--st-todo)} [data-soft="running"]{background:var(--soft-running);color:var(--st-running)} [data-soft="queued"]{background:var(--soft-queued);color:var(--st-queued)}
 
@@ -188,6 +190,8 @@ button { font-family: inherit; } input { font-family: inherit; }
 .diag-head:hover { background: var(--raise); }
 .diag-icon { font-weight: 800; font-size: 12px; }
 .diag-title { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--dim); }
+.diag-chip { display: flex; align-items: center; gap: 7px; padding: 5px 13px 5px 6px; background: var(--panel-2); }
+.diag-chip-text { font-size: 11.5px; font-weight: 600; color: var(--dim); }
 .diag-count { font-size: 10.5px; font-weight: 600; color: var(--faint); font-variant-numeric: tabular-nums; }
 .diag-tools { margin-left: auto; display: flex; gap: 6px; align-items: center; }
 .hbtn { background: transparent; border: 1px solid var(--line); color: var(--dim); border-radius: 7px; padding: 2px 8px; font-size: 10.5px; font-weight: 600; cursor: pointer; transition: background .13s, color .13s; }

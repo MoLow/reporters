@@ -27,6 +27,11 @@ export interface SerializedError {
   message: string;
   stack?: string;
   name?: string;
+  /** How `node:test` itself classified the failure — `'testCodeFailure'`,
+   *  `'subtestsFailed'`, `'cancelledByParent'`, `'hookFailed'`, … Absent on
+   *  logs written before the wire carried it, and on errors the runner did not
+   *  wrap. */
+  failureType?: string;
 }
 
 export interface Counts {

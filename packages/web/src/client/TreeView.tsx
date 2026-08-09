@@ -5,7 +5,7 @@ import {
   carriedAttempt, formatDuration, formatLogPayload, isCarried, todoLabel, type Counts, type TestNode, type TestStatus, type TreeSnapshot,
 } from '@reporters/tree-core';
 import {
-  buildRows, collectContainerKeys, computeMatches, displayName, isContainer, isSectionOpen, liveNodeDuration, reasonOf, realError, type FlatRow, type LiveClock,
+  buildRows, collectContainerKeys, computeMatches, displayName, isCancelled, isContainer, isSectionOpen, isSubtestsRollup, liveNodeDuration, reasonOf, realError, type FlatRow, type LiveClock,
 } from './rowModel.ts';
 
 // node:test captures colored output verbatim; render the ANSI SGR codes as real
@@ -19,6 +19,9 @@ import { urlFilterState, type FilterState, type FilterStore } from './urlState.t
 const GLYPH: Record<TestStatus, string> = {
   passed: '✓', failed: '✕', skipped: '⊘', todo: '◇', running: '◐', queued: '○',
 };
+/** Shown in place of ✕ for a failure the runner recorded because the test never
+ *  ran (see `isCancelled`). Not a status of its own — such a node stays failed. */
+const CANCEL_GLYPH = '⊗';
 const STATUS_ORDER: TestStatus[] = ['passed', 'failed', 'skipped', 'todo', 'running', 'queued'];
 const STATUS_LABEL: Record<TestStatus, string> = {
   passed: 'passed', failed: 'failed', skipped: 'skipped', todo: 'todo', running: 'running', queued: 'queued',
@@ -42,7 +45,7 @@ function statusTip(node: TestNode, status: TestStatus, ms: number): string | und
   const reason = reasonOf(node);
   switch (status) {
     case 'passed': return `Passed in ${formatDuration(ms) || '—'}`;
-    case 'failed': return 'Failed';
+    case 'failed': return isCancelled(node) ? 'Cancelled — did not run before its parent finished' : 'Failed';
     case 'skipped': return reason ? `Skipped — ${shortReason(reason)}` : 'Skipped';
     case 'todo': return reason ? `Todo — ${shortReason(reason)}` : 'Todo — does not fail the run';
     case 'queued': return 'Queued — waiting to run';
@@ -57,7 +60,8 @@ interface DiagBlock {
   title: string;
   icon: string;
   sev: TestStatus;
-  kind: 'error' | 'output' | 'list' | 'text';
+  /** `chip` renders as a bare labelled line — no disclosure, no toolbar. */
+  kind: 'error' | 'output' | 'list' | 'text' | 'chip';
   /** Header count (`Output · 1.9k lines`), also surfaced on the row chip. */
   count?: { n: number; unit: string };
   /** Row-chip text when it should differ from the title (e.g. the trimmed skip reason). */
@@ -160,7 +164,14 @@ function Stack({ stack }: { stack: string }) {
 function computeDiagBlocks(node: TestNode): DiagBlock[] {
   const blocks: DiagBlock[] = [];
   const error = realError(node);
-  if (error) {
+  if (error && isSubtestsRollup(node)) {
+    // "N subtests failed" says nothing a stack could add — the failing children
+    // are the rows right below — so it stays a bare label.
+    blocks.push({
+      key: 'rollup', title: 'Error', chip: error.message, icon: '✕', sev: 'failed',
+      kind: 'chip', copyText: '',
+    });
+  } else if (error) {
     const stack = error.stack ?? error.message;
     blocks.push({
       key: 'error', title: 'Error', icon: '✕', sev: 'failed', kind: 'error',
@@ -491,7 +502,13 @@ function OutputPanel({
       aria-label={`Output of ${displayName(node)}`}
       style={style}
     >
-      {blocks.map((block) => (
+      {blocks.map((block) => (block.kind === 'chip' ? (
+        // Nothing to disclose and nothing worth copying — a label, not a section.
+        <div className="diag-chip" key={block.key}>
+          <span className="diag-icon" data-stc={block.sev}>{block.icon}</span>
+          <span className="diag-chip-text">{block.chip}</span>
+        </div>
+      ) : (
         <DiagSection
           block={block}
           node={node}
@@ -499,7 +516,7 @@ function OutputPanel({
           onToggle={() => toggle(`${node.key}::diag:${block.key}`, isSectionOpen(node, block.key, overrides))}
           key={block.key}
         />
-      ))}
+      )))}
     </div>
   );
 }
@@ -585,9 +602,14 @@ function RowView({
   const counts = node.counts;
   const isTest = node.type === 'test';
   const container = isContainer(node);
-  const nameColor = isTest && status === 'failed' ? 'var(--st-failed)'
-    : isTest && (status === 'skipped' || status === 'todo' || status === 'queued') ? 'var(--dim)'
-      : 'var(--fg)';
+  // A cancelled node still counts as failed — it just never ran, so it reads
+  // muted and wears its own glyph instead of competing with the real failure
+  // above it for attention.
+  const cancelled = status === 'failed' && isCancelled(node);
+  const nameColor = isTest && cancelled ? 'var(--dim)'
+    : isTest && status === 'failed' ? 'var(--st-failed)'
+      : isTest && (status === 'skipped' || status === 'todo' || status === 'queued') ? 'var(--dim)'
+        : 'var(--fg)';
   const carried = isTest && !container && node.passedOnAttempt != null;
   const rollupMark = container && isCarried(node);
   const markAttempt = carried ? node.passedOnAttempt : rollupMark ? carriedAttempt(node) : undefined;
@@ -599,7 +621,7 @@ function RowView({
 
   const rowClass = `row${enter !== null ? ' row-enter' : ''}${settled ? ` settle-${status}` : ''}`;
   const rowStyle = enter !== null ? { animationDelay: `${Math.min(enter, 8) * 18}ms` } : undefined;
-  const hasError = hasDiag && diagBlocks(node).some((b) => b.key === 'error');
+  const hasError = hasDiag && diagBlocks(node).some((b) => b.key === 'error' || b.key === 'rollup');
   const ms = liveNodeDuration(node, now, since, clock);
   const durTip = carried || rollupMark
     ? `${formatDuration(ms) || '—'} — measured on ${markAttempt != null ? `attempt ${markAttempt + 1}` : 'an earlier attempt'}`
@@ -614,7 +636,7 @@ function RowView({
       aria-label={`${displayName(node)}, ${status}${container ? `, ${counts.total} tests` : ''}`}
       tabIndex={0}
       data-clickable={expandable}
-      data-fail={isTest && status === 'failed'}
+      data-fail={isTest && status === 'failed' && !cancelled}
       data-running={status === 'running' ? 'true' : undefined}
       onClick={expandable ? () => { if (!selectionClick()) activate(); } : undefined}
       onMouseDown={markPointerFocus}
@@ -630,7 +652,7 @@ function RowView({
       ) : (
         // One visual language for pass/fail at every level: containers and leaf
         // tests both use the status glyph (design mobile-review ruling).
-        <span className="cglyph indicator" data-stc={status} data-spin={!isTest && status === 'running' ? 'true' : undefined} data-tip={!container ? statusTip(node, status, ms) : undefined}>{GLYPH[status]}</span>
+        <span className="cglyph indicator" data-stc={cancelled ? 'cancelled' : status} data-spin={!isTest && status === 'running' ? 'true' : undefined} data-tip={!container ? statusTip(node, status, ms) : undefined}>{cancelled ? CANCEL_GLYPH : GLYPH[status]}</span>
       )}
       <span className="name" data-kind={node.type} data-tip-clipped={node.type === 'file' ? node.file ?? displayName(node) : displayName(node)} style={{ color: nameColor }}>{displayName(node)}</span>
       {hasDiag ? (

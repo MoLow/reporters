@@ -220,3 +220,59 @@ test('a warn payload level drives the item severity', async () => {
   );
   await act(async () => root.unmount());
 });
+
+/** The shape of your everyday cascade: a suite whose before hook blew up, a
+ *  failing test with a real stack, and children the runner cancelled. */
+const CASCADE = [
+  '{"type":"test:start","data":{"name":"EKS Namespace","nesting":0,"file":"eks.test.js","testId":1}}',
+  '{"type":"test:start","data":{"name":"with S3 vault","nesting":1,"file":"eks.test.js","testId":2,"parentId":1}}',
+  '{"type":"test:fail","data":{"name":"with S3 vault","nesting":1,"file":"eks.test.js","testId":2,"parentId":1,"details":{"duration_ms":0,"error":{"message":"test did not finish before its parent and was cancelled","failureType":"cancelledByParent","code":"ERR_TEST_FAILURE"}}}}',
+  '{"type":"test:start","data":{"name":"discovers pg","nesting":1,"file":"eks.test.js","testId":3,"parentId":1}}',
+  '{"type":"test:fail","data":{"name":"discovers pg","nesting":1,"file":"eks.test.js","testId":3,"parentId":1,"details":{"duration_ms":4,"error":{"message":"expected 3 to equal 4","stack":"AssertionError: expected 3 to equal 4\\n    at eks.test.js:12:3","failureType":"testCodeFailure","code":"ERR_TEST_FAILURE"}}}}',
+  '{"type":"test:fail","data":{"name":"EKS Namespace","nesting":0,"file":"eks.test.js","testId":1,"details":{"duration_ms":9,"error":{"message":"2 subtests failed","failureType":"subtestsFailed","code":"ERR_TEST_FAILURE"}}}}',
+].join('\n');
+
+async function renderCascade() {
+  const { fetchImpl } = fakeSource(`${CASCADE}\n`);
+  const { root, el } = mount();
+  await act(async () => {
+    root.render(React.createElement(TestReportViewer, { src: '/run.ndjson', fetch: fetchImpl, pollMs: 10, filterState: memoryFilterState() }));
+  });
+  await tick(20);
+  return { root, el };
+}
+
+const rowOf = (el: HTMLElement, name: string) => [...el.querySelectorAll('.row')]
+  .find((n) => n.getAttribute('aria-label')!.startsWith(`${name},`)) as HTMLElement;
+
+test('a cancelled test renders muted, with no error panel to expand', async () => {
+  const { root, el } = await renderCascade();
+  const row = rowOf(el, 'with S3 vault');
+  const glyph = row.querySelector('.cglyph')!;
+  assert.strictEqual(glyph.textContent, '⊗', 'cancelled wears its own glyph, not ✕');
+  assert.strictEqual(glyph.getAttribute('data-stc'), 'cancelled', 'and its own muted tone');
+  assert.strictEqual(row.getAttribute('data-fail'), 'false', 'no red row tint');
+  assert.strictEqual(row.getAttribute('data-clickable'), 'false', 'nothing left to disclose');
+  assert.ok(!el.textContent!.includes('did not finish before its parent'), 'the runner’s cancellation text is gone');
+  await act(async () => root.unmount());
+});
+
+test('a real failure keeps its glyph, its tint and its full stack', async () => {
+  const { root, el } = await renderCascade();
+  const row = rowOf(el, 'discovers pg');
+  assert.strictEqual(row.querySelector('.cglyph')!.textContent, '✕');
+  assert.strictEqual(row.getAttribute('data-fail'), 'true');
+  assert.ok(el.querySelector('.stack')!.textContent!.includes('at eks.test.js:12:3'), 'the stack still renders');
+  await act(async () => root.unmount());
+});
+
+test('a subtests rollup renders as a bare chip, not a panel', async () => {
+  const { root, el } = await renderCascade();
+  const chip = el.querySelector('.diag-chip') as HTMLElement;
+  assert.ok(chip, 'the rollup gets a chip');
+  assert.strictEqual(chip.querySelector('.diag-chip-text')!.textContent, '2 subtests failed');
+  assert.strictEqual(chip.querySelector('.diag-tools'), null, 'nothing to copy or open full-screen');
+  assert.ok(!el.textContent!.includes('ERROR2 subtests failed'), 'and no ERROR panel header');
+  assert.strictEqual(rowOf(el, 'EKS Namespace').querySelector('.outbadge')!.textContent, '✕');
+  await act(async () => root.unmount());
+});
