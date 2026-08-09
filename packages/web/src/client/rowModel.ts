@@ -176,12 +176,34 @@ export function realError(node: TestNode): { message: string; stack?: string } |
   return node.error;
 }
 
+export interface OutLine { stream: 'out' | 'err'; text: string; }
+
+/** stdout + stderr merged into one line list, stream-tagged (ANSI kept — the
+ *  renderer colors it). The one place output becomes lines, so the count on the
+ *  row button and the count on the Output tab can never disagree. */
+export function outputLines(node: TestNode): OutLine[] {
+  const lines: OutLine[] = [];
+  const add = (chunks: string[], stream: 'out' | 'err'): void => {
+    if (chunks.length === 0) return;
+    for (const line of chunks.join('').split('\n')) lines.push({ stream, text: line });
+  };
+  add(node.stdout, 'out');
+  add(node.stderr, 'err');
+  while (lines.length > 0 && lines[lines.length - 1].text === '') lines.pop();
+  return lines;
+}
+
+/** How much there is to read inside a node: the error, its output lines and its
+ *  messages. This is what the row's log button shows, and it is by construction
+ *  the sum of the popup's three tab counts. */
+export function logCount(node: TestNode): number {
+  return (realError(node) ? 1 : 0) + outputLines(node).length + node.messages.length;
+}
+
+/** The node has something the popup can show. A skip/todo reason alone doesn't
+ *  count — that lives on the row chip, not behind a button. */
 export function hasDiagnostics(node: TestNode): boolean {
-  return Boolean(realError(node))
-    || node.messages.length > 0
-    || node.stdout.length > 0
-    || node.stderr.length > 0
-    || Boolean(reasonOf(node));
+  return logCount(node) > 0;
 }
 
 function defaultExpanded(node: TestNode): boolean {
@@ -196,12 +218,11 @@ export interface FlatRow {
   node: TestNode;
   depth: number;
   status: TestStatus;
-  /** 'node' = a file/suite/test row; 'output' = its nested own-output panel slot. */
-  kind: 'node' | 'output';
-  /** The row has a region to reveal: children and/or its own output. */
+  /** The row has children to reveal. Output is no longer a disclosure — it
+   *  opens in the popup — so this is exactly "is a container". */
   expandable: boolean;
   expanded: boolean;
-  /** Node rows: the node carries its own output (drives the passive badge). */
+  /** The node carries logs, so the row shows a log button. */
   hasDiag: boolean;
 }
 
@@ -278,46 +299,41 @@ export function isExpanded(node: TestNode, opts: BuildOptions): boolean {
   return overrides.has(node.key) ? overrides.get(node.key)! : defaultExpanded(node);
 }
 
-/** Open state of one panel section inside a node's output region. Error opens
- *  by default (failures surface with zero clicks) and so does the one-line
- *  skip/todo reason; heavy Output/Diagnostics need a deliberate click. */
-export function isSectionOpen(node: TestNode, blockKey: string, overrides: Map<string, boolean>): boolean {
-  const key = `${node.key}::diag:${blockKey}`;
-  if (overrides.has(key)) return overrides.get(key)!;
-  return blockKey === 'error' || blockKey === 'reason';
-}
-
-// One disclosure per row: expanding a node reveals ONE region holding its own
-// output (boxed panel sections, never tree rows) followed by its child rows.
-// A pure leaf reveals only its output; a pure container only children; a
-// both-node reveals output then children.
+// The tree is one row per node, nothing else. A node's own output is not a
+// disclosure any more — it opens in the logs popup — so expanding only ever
+// reveals children.
 export function buildRows(files: TestNode[], opts: BuildOptions): FlatRow[] {
   const rows: FlatRow[] = [];
   const push = (node: TestNode, depth: number): void => {
     if (filtering(opts) && !opts.matches!.visible.has(node.key)) return;
-    const diag = hasDiagnostics(node);
-    const expandable = isContainer(node) || diag;
+    const expandable = isContainer(node);
     const expanded = expandable && isExpanded(node, opts);
-    const status = rollup(node);
     rows.push({
-      node, depth, status, kind: 'node', expandable, expanded, hasDiag: diag,
+      node, depth, status: rollup(node), expandable, expanded, hasDiag: hasDiagnostics(node),
     });
     if (!expanded) return;
-    if (diag) {
-      rows.push({
-        node, depth: depth + 1, status, kind: 'output', expandable: false, expanded: false, hasDiag: true,
-      });
-    }
     for (const child of node.children) push(child, depth + 1);
   };
   for (const file of files) push(file, 0);
   return rows;
 }
 
-/** Keys of every expandable row — containers plus nodes with their own output. */
+/** The node with this key, anywhere in the tree. The popup holds a key rather
+ *  than a node so it survives a live run rebuilding the snapshot underneath it,
+ *  and re-reads the node — with its newest output — on every poll. */
+export function findNode(nodes: TestNode[], key: string): TestNode | undefined {
+  for (const node of nodes) {
+    if (node.key === key) return node;
+    const hit = findNode(node.children, key);
+    if (hit) return hit;
+  }
+  return undefined;
+}
+
+/** Keys of every expandable row. */
 export function collectContainerKeys(nodes: TestNode[], into: string[]): void {
   for (const node of nodes) {
-    if (isContainer(node) || hasDiagnostics(node)) into.push(node.key);
+    if (isContainer(node)) into.push(node.key);
     collectContainerKeys(node.children, into);
   }
 }

@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { afterEach, test } from 'node:test';
 import assert from 'node:assert';
 import { JSDOM } from 'jsdom';
 import type ReactTypes from 'react';
@@ -43,10 +43,22 @@ function fakeSource(initial: string) {
   return { state, fetchImpl };
 }
 
+// Every mounted root is torn down after its test, pass or fail. Without this a
+// throwing assertion leaks the viewer's poll timer, and node:test waits out the
+// whole file timeout instead of reporting the failure — one bad assert used to
+// cost 200s.
+const mounted: Root[] = [];
+afterEach(async () => {
+  const roots = mounted.splice(0);
+  await act(async () => { for (const r of roots) r.unmount(); });
+});
+
 function mount(): { root: Root; el: HTMLElement } {
   const el = dom.window.document.createElement('div');
   dom.window.document.body.appendChild(el);
-  return { root: createRoot(el), el };
+  const root = createRoot(el);
+  mounted.push(root);
+  return { root, el };
 }
 
 const tick = (ms: number) => act(async () => { await new Promise((r) => { setTimeout(r, ms); }); });
@@ -182,15 +194,15 @@ async function openMessages(): Promise<{ root: Root; el: HTMLElement; list: Elem
   const row = [...el.querySelectorAll('[role="treeitem"]')]
     .find((n) => n.getAttribute('aria-label')!.startsWith('uploads,')) as HTMLElement;
   assert.ok(row, 'the uploads row should render');
-  await act(async () => { row.click(); });
+  await act(async () => { (row.querySelector('.logbtn') as HTMLElement).click(); });
 
-  const head = [...el.querySelectorAll('.diag-head')]
-    .find((n) => n.textContent!.includes('Messages')) as HTMLElement;
-  assert.ok(head, 'a Messages section should render');
-  await act(async () => { head.click(); });
+  const tab = [...el.querySelectorAll('.pop-tab')]
+    .find((n) => n.textContent!.startsWith('Messages')) as HTMLElement;
+  assert.ok(tab, 'a Messages tab should render');
+  await act(async () => { tab.click(); });
 
   const list = el.querySelector('.diag-list');
-  assert.ok(list, 'the Messages list body should mount once opened');
+  assert.ok(list, 'the Messages list should render in the popup body');
   return { root, el, list: list! };
 }
 
@@ -225,6 +237,7 @@ test('a warn payload level drives the item severity', async () => {
  *  failing test with a real stack, and children the runner cancelled. */
 const CASCADE = [
   '{"type":"test:start","data":{"name":"EKS Namespace","nesting":0,"file":"eks.test.js","testId":1}}',
+  '{"type":"test:stdout","data":{"file":"eks.test.js","message":"creating namespace\\nwaiting for pods\\n"}}',
   '{"type":"test:start","data":{"name":"with S3 vault","nesting":1,"file":"eks.test.js","testId":2,"parentId":1}}',
   '{"type":"test:fail","data":{"name":"with S3 vault","nesting":1,"file":"eks.test.js","testId":2,"parentId":1,"details":{"duration_ms":0,"error":{"message":"test did not finish before its parent and was cancelled","failureType":"cancelledByParent","code":"ERR_TEST_FAILURE"}}}}',
   '{"type":"test:start","data":{"name":"discovers pg","nesting":1,"file":"eks.test.js","testId":3,"parentId":1}}',
@@ -257,12 +270,80 @@ test('a cancelled test renders muted, with no error panel to expand', async () =
   await act(async () => root.unmount());
 });
 
-test('a real failure keeps its mark, its tint and its full stack', async () => {
+test('a real failure keeps its mark and its tint, and opens on its stack', async () => {
   const { root, el } = await renderCascade();
   const row = rowOf(el, 'discovers pg');
   assert.strictEqual(row.querySelector('.tdot')!.getAttribute('data-stf'), 'failed', 'a test is a dot, not a glyph');
   assert.strictEqual(row.getAttribute('data-fail'), 'true');
-  assert.ok(el.querySelector('.stack')!.textContent!.includes('at eks.test.js:12:3'), 'the stack still renders');
+  assert.strictEqual(el.querySelector('.stack'), null, 'nothing is printed inline any more');
+  // The row itself is the affordance for a leaf — no caret to hunt for.
+  await act(async () => { row.click(); });
+  assert.strictEqual(el.querySelector('.pop-tab[data-on]')!.textContent, 'Error1', 'opens on the first tab it has');
+  assert.ok(el.querySelector('.stack')!.textContent!.includes('at eks.test.js:12:3'));
+  assert.strictEqual(el.querySelector('.pop-path')!.textContent, 'eks.test.js › EKS Namespace › discovers pg');
+  await act(async () => root.unmount());
+});
+
+test('Escape and the scrim both close the popup, and focus goes back to the button', async () => {
+  const { root, el } = await renderCascade();
+  const btn = rowOf(el, 'discovers pg').querySelector('.logbtn') as HTMLElement;
+  await act(async () => { btn.focus(); btn.click(); });
+  assert.ok(el.querySelector('.pop'), 'the popup is open');
+  assert.strictEqual(btn.getAttribute('data-on'), 'true', 'and its button reads as active');
+  await act(async () => { dom.window.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Escape' })); });
+  assert.strictEqual(el.querySelector('.pop'), null, 'Escape closes it');
+  assert.strictEqual(dom.window.document.activeElement, btn, 'focus returns to where it came from');
+
+  await act(async () => { btn.click(); });
+  await act(async () => { (el.querySelector('.scrim') as HTMLElement).click(); });
+  assert.strictEqual(el.querySelector('.pop'), null, 'a scrim click closes it too');
+  await act(async () => root.unmount());
+});
+
+test('a node with no error opens on Output, since there is no Error tab', async () => {
+  const { root, el } = await renderCascade();
+  // The file wrapper: it owns the run's stdout but reported no error of its own.
+  const row = rowOf(el, 'eks.test.js');
+  await act(async () => { (row.querySelector('.logbtn') as HTMLElement).click(); });
+  assert.deepStrictEqual(
+    [...el.querySelectorAll('.pop-tab')].map((n) => n.textContent),
+    ['Output2'],
+    'only tabs with content are rendered',
+  );
+  assert.strictEqual(el.querySelector('.pop-tab[data-on]')!.textContent, 'Output2');
+  await act(async () => root.unmount());
+});
+
+test('the error message is printed once, not repeated by its own stack', async () => {
+  const { root, el } = await renderCascade();
+  await act(async () => { rowOf(el, 'discovers pg').click(); });
+  const body = el.querySelector('.pop-body')!.textContent!;
+  assert.strictEqual(body.match(/expected 3 to equal 4/g)!.length, 1, 'headline only — the stack drops its preamble');
+  assert.ok(el.querySelector('.stack')!.textContent!.startsWith('    at '), 'the stack starts at the first frame');
+  await act(async () => root.unmount());
+});
+
+test('a synthetic error whose stack is just its message renders no stack at all', async () => {
+  const orphan = '{"type":"test:fail","data":{"name":"lonely","nesting":0,"file":"x.test.js","testId":9,"details":{"duration_ms":1,"error":{"message":"1 subtest failed","failureType":"subtestsFailed"}}}}';
+  const { fetchImpl } = fakeSource(`${orphan}\n`);
+  const { root, el } = mount();
+  await act(async () => {
+    root.render(React.createElement(TestReportViewer, { src: '/run.ndjson', fetch: fetchImpl, pollMs: 10, filterState: memoryFilterState() }));
+  });
+  await tick(20);
+  await act(async () => { (rowOf(el, 'lonely').querySelector('.logbtn') as HTMLElement).click(); });
+  assert.strictEqual(el.querySelector('.pop-msg')!.textContent, '1 subtest failed');
+  assert.strictEqual(el.querySelector('.stack'), null, 'nothing left to print below it');
+  await act(async () => root.unmount());
+});
+
+test('the log button counts exactly what the tabs add up to', async () => {
+  const { root, el } = await renderCascade();
+  const row = rowOf(el, 'discovers pg');
+  const shown = Number(row.querySelector('.logbtn-n')!.textContent);
+  await act(async () => { (row.querySelector('.logbtn') as HTMLElement).click(); });
+  const tabTotal = [...el.querySelectorAll('.pop-tab-n')].reduce((sum, n) => sum + Number(n.textContent), 0);
+  assert.strictEqual(shown, tabTotal, 'one source, no separate math');
   await act(async () => root.unmount());
 });
 
@@ -278,7 +359,7 @@ test('the subtests rollup becomes a fail chip on the row, with no panel left', a
   const row = rowOf(el, 'EKS Namespace');
   assert.strictEqual(row.querySelector('.failchip')!.textContent, '2 failed');
   assert.ok(!el.textContent!.includes('2 subtests failed'), 'the runner’s wording is gone entirely');
-  assert.strictEqual(row.querySelector('.outbadge'), null, 'and nothing is left to disclose on that row');
+  assert.strictEqual(row.querySelector('.failchip')!.textContent, '2 failed');
   await act(async () => root.unmount());
 });
 
@@ -292,7 +373,9 @@ test('a rollup with no failing descendant to point at keeps its error', async ()
     root.render(React.createElement(TestReportViewer, { src: '/run.ndjson', fetch: fetchImpl, pollMs: 10, filterState: memoryFilterState() }));
   });
   await tick(20);
-  assert.strictEqual(rowOf(el, 'lonely').querySelector('.failchip'), null, 'no chip to stand in for it');
-  assert.ok(el.textContent!.includes('1 subtest failed'), 'so the error still shows');
+  const row = rowOf(el, 'lonely');
+  assert.strictEqual(row.querySelector('.failchip'), null, 'no chip to stand in for it');
+  await act(async () => { (row.querySelector('.logbtn') as HTMLElement).click(); });
+  assert.ok(el.querySelector('.pop-msg')!.textContent!.includes('1 subtest failed'), 'so the error still shows');
   await act(async () => root.unmount());
 });

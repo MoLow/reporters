@@ -4,7 +4,7 @@ import { createTreeStore } from '@reporters/tree-core';
 import type { Counts, TestEvent, TestNode } from '@reporters/tree-core';
 import {
   buildRows, collectContainerKeys, computeMatches, displayName, hasDiagnostics,
-  hasFailChip, isCancelled, isExpanded, isPassingTodo, isSectionOpen, isSubtestsRollup, liveNodeDuration, nodeDuration, reasonOf, realError, rollup,
+  hasFailChip, isCancelled, isExpanded, isPassingTodo, isSubtestsRollup, liveNodeDuration, logCount, nodeDuration, outputLines, reasonOf, realError, rollup,
 } from '../src/client/rowModel.ts';
 
 const zeroCounts = (): Counts => ({
@@ -46,40 +46,25 @@ test('a file node with its own stdout/stderr reports diagnostics', () => {
   assert.strictEqual(hasDiagnostics(fileNode()), true);
 });
 
-test('buildRows nests an output header row inside an expanded node with output', () => {
+test('the tree is one row per node — output is no longer a row', () => {
   const file = fileNode();
   const rows = buildRows([file], noQuery);
-  const fileRow = rows.find((r) => r.kind === 'node' && r.node.type === 'file')!;
-  assert.strictEqual(fileRow.expandable, true);
+  assert.strictEqual(rows.length, 2, 'the file and its one test, nothing else');
+  const fileRow = rows.find((r) => r.node.type === 'file')!;
+  assert.strictEqual(fileRow.expandable, true, 'it has children to reveal');
   assert.strictEqual(fileRow.expanded, true, 'a file defaults to expanded');
-  assert.strictEqual(fileRow.hasDiag, true, 'the row carries the passive output badge');
-  const outRow = rows.find((r) => r.kind === 'output')!;
-  assert.strictEqual(outRow.node.key, file.key, 'the output row belongs to the file node');
-  assert.strictEqual(outRow.depth, fileRow.depth + 1, 'own output is indented one level, before children');
-  assert.strictEqual(rows.indexOf(outRow), rows.indexOf(fileRow) + 1, 'output comes first inside the region');
+  assert.strictEqual(fileRow.hasDiag, true, 'and its own output drives the log button');
 });
 
-test('a collapsed node hides its output panel slot', () => {
-  const file = fileNode();
-  const collapsed = buildRows([file], { overrides: new Map([[file.key, false]]), query: '', matches: null });
-  assert.strictEqual(collapsed.some((r) => r.kind === 'output'), false, 'collapsed region hides the output panel');
-  assert.strictEqual(collapsed[0].hasDiag, true, 'the badge still marks that output exists');
-});
-
-test('a pure leaf with output is expandable and reveals only its output row', () => {
-  const leaf = node({
-    key: 'f/t', status: 'failed', error: { message: 'boom' },
-  });
+test('a leaf with logs is not expandable — its row opens the popup instead', () => {
+  const leaf = node({ key: 'f/t', status: 'failed', error: { message: 'boom' } });
   const file = node({
     key: 'f', type: 'file', file: '/repo/f.test.js', children: [leaf],
     counts: { ...zeroCounts(), failed: 1, total: 1 },
   });
-  const rows = buildRows([file], noQuery);
-  const leafRow = rows.find((r) => r.kind === 'node' && r.node.key === 'f/t')!;
-  assert.strictEqual(leafRow.expandable, true, 'a leaf with output can be expanded');
-  assert.strictEqual(leafRow.expanded, true, 'a failed node defaults to expanded');
-  assert.ok(rows.some((r) => r.kind === 'output' && r.node.key === 'f/t'), 'its output panel slot is present');
-  assert.strictEqual(isSectionOpen(leaf, 'error', new Map()), true, 'a failed leaf opens with its error visible');
+  const leafRow = buildRows([file], noQuery).find((r) => r.node.key === 'f/t')!;
+  assert.strictEqual(leafRow.expandable, false, 'nothing nested to disclose');
+  assert.strictEqual(leafRow.hasDiag, true, 'but there is something to read');
 });
 
 test('displayName shows the basename for files and the raw name otherwise', () => {
@@ -173,17 +158,27 @@ test('isExpanded honors query force, overrides, then per-type defaults', () => {
   assert.strictEqual(isExpanded(node({ key: 't', type: 'test' }), opts()), false);
 });
 
-test('isSectionOpen defaults open only for the error section, overrides win', () => {
-  const n = node({ key: 'a', status: 'failed' });
-  assert.strictEqual(isSectionOpen(n, 'error', new Map()), true, 'the error section surfaces with zero clicks');
-  assert.strictEqual(isSectionOpen(n, 'reason', new Map()), true, 'the one-line skip/todo reason is cheap — open it');
-  assert.strictEqual(isSectionOpen(n, 'diag', new Map()), false, 'heavy sections need a deliberate click');
-  assert.strictEqual(isSectionOpen(n, 'output', new Map()), false);
-  assert.strictEqual(isSectionOpen(n, 'error', new Map([['a::diag:error', false]])), false);
-  assert.strictEqual(isSectionOpen(n, 'diag', new Map([['a::diag:diag', true]])), true);
+test('logCount is the sum of what the three tabs will show', () => {
+  const n = node({
+    error: { message: 'boom' },
+    stdout: ['one\ntwo\n'],
+    stderr: ['three\n'],
+    messages: [
+      { kind: 'diagnostic', message: 'a', level: 'info' },
+      { kind: 'log', message: 'b', level: 'info' },
+    ],
+  });
+  // 1 error + 4 output lines + 2 messages. Four, not three: stdout's trailing
+  // newline leaves a blank line where stderr picks up, and only the very last
+  // empty line is trimmed.
+  assert.deepStrictEqual(outputLines(n).map((l) => l.text), ['one', 'two', '', 'three']);
+  assert.strictEqual(logCount(n), 7);
+  assert.strictEqual(logCount(node()), 0);
+  // A suppressed error is not counted — the popup would have no Error tab.
+  assert.strictEqual(logCount(node({ error: { message: 'cancelled', failureType: 'cancelledByParent' } })), 0);
 });
 
-test('collectContainerKeys includes leaves that carry their own output', () => {
+test('collectContainerKeys is containers only — a leaf has nothing to expand', () => {
   const file = node({
     key: 'f',
     type: 'file',
@@ -196,7 +191,7 @@ test('collectContainerKeys includes leaves that carry their own output', () => {
   });
   const keys: string[] = [];
   collectContainerKeys([file], keys);
-  assert.deepStrictEqual(keys, ['f', 'f/t1'], 'the plain passed leaf is not expandable');
+  assert.deepStrictEqual(keys, ['f'], 'a leaf with output opens the popup, it does not expand');
 });
 
 test('buildRows drops nodes filtered out by an active query', () => {
@@ -283,6 +278,8 @@ test('hasDiagnostics sees a container error', () => {
   assert.strictEqual(hasDiagnostics(node({ error: { message: 'real' } })), true);
   // and a node with nothing recorded has none
   assert.strictEqual(hasDiagnostics(node()), false);
+  // A skip reason is not output — it rides on the row chip, not behind a button.
+  assert.strictEqual(hasDiagnostics(node({ status: 'skipped', skip: 'needs a cluster' })), false);
 });
 
 test('nodeDuration prefers a measured wall-clock over summing concurrent children', () => {
