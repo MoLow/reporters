@@ -111,16 +111,16 @@ button { font-family: inherit; } input { font-family: inherit; }
 
 /* header */
 .hdr { flex: none; background: var(--panel); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 5; }
-.hdr-row { display: flex; align-items: center; gap: 16px; padding: 15px 18px 13px; flex-wrap: wrap; }
-.verdict { display: inline-flex; align-items: center; gap: 9px; padding: 8px 15px 8px 12px; border-radius: 12px; }
-.verdict-glyph { font-size: 17px; font-weight: 800; line-height: 1; }
+.hdr-row { display: flex; align-items: center; gap: 16px; padding: 13px 18px 11px; flex-wrap: wrap; }
+.verdict { display: inline-flex; align-items: center; gap: 9px; padding: 6px 13px 6px 10px; border-radius: 11px; }
+.verdict-glyph { font-size: 15px; font-weight: 800; line-height: 1; }
 .verdict-text { display: flex; flex-direction: column; line-height: 1.15; }
-.verdict-main { font-size: 15px; font-weight: 700; letter-spacing: .01em; }
+.verdict-main { font-size: 14px; font-weight: 700; letter-spacing: .01em; }
 /* secondary text stays neutral ink; the saturated status color is reserved
    for the glyph and status word (designer contrast ruling) */
 .verdict-sub { font-size: 11px; color: var(--dim); font-variant-numeric: tabular-nums; }
 .chips { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
-.chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; border: 1px solid transparent; cursor: pointer; font-family: inherit; }
+.chip { display: inline-flex; align-items: center; gap: 7px; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; border: 1px solid transparent; cursor: pointer; font-family: inherit; }
 .chip:hover { filter: brightness(1.12); }
 .chip[data-active] { border-color: currentColor; }
 .chip-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
@@ -130,13 +130,13 @@ button { font-family: inherit; } input { font-family: inherit; }
 .tools { margin-left: auto; display: flex; gap: 9px; align-items: center; }
 .search { position: relative; display: flex; align-items: center; }
 .search svg { position: absolute; left: 11px; color: var(--faint); pointer-events: none; }
-.search input { background: var(--panel-2); border: 1px solid var(--line); color: var(--fg); font-size: 13px; padding: 8px 12px 8px 32px; border-radius: 10px; width: 188px; outline: none; }
-.btn { display: inline-flex; align-items: center; gap: 6px; background: var(--panel-2); border: 1px solid var(--line); color: var(--dim); border-radius: 10px; padding: 8px 11px; font-size: 12px; cursor: pointer; transition: background .13s, color .13s, transform .13s; }
+.search input { background: var(--panel-2); border: 1px solid var(--line); color: var(--fg); font-size: 13px; padding: 7px 12px 7px 32px; border-radius: 10px; width: 188px; outline: none; }
+.btn { display: inline-flex; align-items: center; gap: 6px; background: var(--panel-2); border: 1px solid var(--line); color: var(--dim); border-radius: 10px; padding: 7px 11px; font-size: 12px; cursor: pointer; transition: background .13s, color .13s, transform .13s; }
 .btn[data-on="true"] { color: var(--fg); border-color: var(--line-2); background: var(--raise); }
 .btn:hover { background: var(--raise); color: var(--fg); }
 .btn:active { transform: scale(.97); }
 .hdr-bar-row { padding: 0 18px 13px; display: flex; align-items: center; gap: 14px; }
-.bar { flex: 1; min-width: 220px; height: 9px; display: flex; gap: 2px; border-radius: 999px; overflow: hidden; background: var(--panel-2); }
+.bar { flex: 1; min-width: 220px; height: 8px; display: flex; gap: 2px; border-radius: 999px; overflow: hidden; background: var(--panel-2); }
 .bar > span { height: 100%; }
 
 /* tree */
@@ -147,6 +147,12 @@ button { font-family: inherit; } input { font-family: inherit; }
 .logbtn:hover { color: var(--fg); background: var(--row-hover); }
 .logbtn[data-on] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
 .logbtn-n { font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; }
+/* one-line "what broke", under the row that broke */
+.errline { display: flex; align-items: center; gap: 7px; margin: 1px 10px 3px; padding: 3px 10px; border-radius: 8px; background: var(--fail-tint); cursor: pointer; }
+.errline:hover { background: var(--soft-failed); }
+.errline-x { flex: none; font-size: 11px; font-weight: 800; color: var(--st-failed); }
+.errline-msg { flex: 1; min-width: 0; font-family: var(--mono); font-size: 12px; color: var(--st-failed); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.errline-open { flex: none; font-size: 11px; font-weight: 600; color: var(--st-failed); opacity: .7; }
 .row { display: flex; align-items: center; gap: 8px; min-height: var(--rh); padding: 0 10px 0 12px; border-radius: 9px; }
 .row[data-clickable="true"] { cursor: pointer; }
 .row:hover { background: var(--row-hover); }

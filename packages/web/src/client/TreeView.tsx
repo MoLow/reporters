@@ -480,11 +480,13 @@ interface RowViewProps {
   /** The only-re-run filter is active (collapsed pills show re-run counts). */
   onlyRerun: boolean;
   renderNodeActions?: RenderNodeActions;
-  /** Open this node's logs popup, on its first available tab. */
-  openLogs: (node: TestNode) => void;
+  /** Open this node's logs popup; `prefer` forces a tab, else the last one wins. */
+  openLogs: (node: TestNode, prefer?: TabKey) => void;
   /** This row's logs are the ones currently open. */
   selected: boolean;
 }
+
+const oneLine = (s: string): string => stripAnsi(s).replace(/\s+/g, ' ').trim();
 
 function RowView({
   row, toggle, enter, now, since, clock, carriedRun, onlyRerun, renderNodeActions, openLogs, selected,
@@ -528,18 +530,27 @@ function RowView({
   const rowClass = `row${enter !== null ? ' row-enter' : ''}${settled ? ` settle-${status}` : ''}`;
   const rowStyle = enter !== null ? { animationDelay: `${Math.min(enter, 8) * 18}ms` } : undefined;
   const logs = hasDiag ? logCount(node) : 0;
+  // What broke, on one line, under the row that broke. Any node with a real
+  // error of its own qualifies, containers included: a suite whose before hook
+  // died holds the only cause its cancelled children will never have, and
+  // burying that behind a click is what the whole cascade rule exists to stop.
+  // `realError` has already dropped the two the runner writes itself, so a
+  // rollup previews nothing (its fail chip says it) and neither does a
+  // cancellation — it never ran, so nothing broke.
+  const preview = status === 'failed' ? realError(node) : undefined;
+  const previewText = preview ? oneLine(preview.message) : '';
   const ms = liveNodeDuration(node, now, since, clock);
   const durTip = carried || rollupMark
     ? `${formatDuration(ms) || '—'} — measured on ${markAttempt != null ? `attempt ${markAttempt + 1}` : 'an earlier attempt'}`
     : status !== 'running' && ms >= 1000 ? `${Math.round(ms).toLocaleString('en-US')} ms` : undefined;
 
-  return (
+  const rowEl = (
     <div
       className={rowClass}
       style={rowStyle}
       role="treeitem"
       aria-expanded={expandable ? expanded : undefined}
-      aria-label={`${displayName(node)}, ${status}${container ? `, ${counts.total} tests` : ''}`}
+      aria-label={`${displayName(node)}, ${status}${container ? `, ${counts.total} tests` : ''}${previewText ? `: ${previewText}` : ''}`}
       tabIndex={0}
       data-clickable={expandable || hasDiag}
       data-fail={isTest && status === 'failed' && !cancelled}
@@ -627,6 +638,28 @@ function RowView({
       ) : null}
       <span className="dur" data-carried={carried || rollupMark ? 'true' : undefined} data-tip={durTip}>{formatDuration(ms) || '—'}</span>
     </div>
+  );
+
+  if (!preview) return rowEl;
+  return (
+    <>
+      {rowEl}
+      {/* A redundant affordance, not a second control: the row it belongs to
+          already opens the same popup on click or Enter, so this stays out of
+          the tab order and out of the a11y tree — the message is on the row's
+          own label instead. That also keeps the tree's children all treeitems. */}
+      {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events */}
+      <div
+        className="errline"
+        aria-hidden="true"
+        style={{ marginLeft: `calc(${depth} * var(--ind) + 46px)` }}
+        onClick={() => { if (!selectionClick()) openLogs(node, 'error'); }}
+      >
+        <span className="errline-x">✕</span>
+        <span className="errline-msg">{previewText}</span>
+        <span className="errline-open">Open</span>
+      </div>
+    </>
   );
 }
 
@@ -749,8 +782,11 @@ export function TreeView({
   const trigger = useRef<HTMLElement | null>(null);
   const selNode = sel != null ? findNode(files, sel) : undefined;
   const selTabs = selNode ? logTabs(selNode) : [];
-  const openLogs = (node: TestNode) => {
+  const openLogs = (node: TestNode, prefer?: TabKey) => {
     trigger.current = document.activeElement as HTMLElement | null;
+    // The error line asks for Error specifically; the log button takes whatever
+    // tab was last used and lets the popup fall back.
+    if (prefer) setTab(prefer);
     setSel(node.key);
   };
   const closeLogs = () => {

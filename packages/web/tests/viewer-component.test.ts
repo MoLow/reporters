@@ -337,6 +337,65 @@ test('a synthetic error whose stack is just its message renders no stack at all'
   await act(async () => root.unmount());
 });
 
+test('a failed leaf previews what broke, on one line, under its row', async () => {
+  const { root, el } = await renderCascade();
+  const lines = [...el.querySelectorAll('.errline')];
+  assert.deepStrictEqual(
+    lines.map((n) => n.querySelector('.errline-msg')!.textContent),
+    ['expected 3 to equal 4'],
+    'the rollup on EKS Namespace previews nothing — its fail chip already says it',
+  );
+  assert.strictEqual(lines[0].getAttribute('aria-hidden'), 'true', 'the row already carries this for AT');
+  assert.ok(
+    rowOf(el, 'discovers pg').getAttribute('aria-label')!.endsWith(': expected 3 to equal 4'),
+    'so the message rides on the row label instead',
+  );
+  await act(async () => root.unmount());
+});
+
+test('a container previews its own failure — the cascade\u2019s only real cause', async () => {
+  // A suite whose hook died: its children are cancelled with a generic sentence,
+  // so this row holds the only explanation in the subtree.
+  const hook = [
+    '{"type":"test:start","data":{"name":"EKS Namespace","nesting":0,"file":"eks.test.js","testId":1}}',
+    '{"type":"test:start","data":{"name":"with S3 vault","nesting":1,"file":"eks.test.js","testId":2,"parentId":1}}',
+    '{"type":"test:fail","data":{"name":"with S3 vault","nesting":1,"file":"eks.test.js","testId":2,"parentId":1,"details":{"duration_ms":0,"error":{"message":"test did not finish before its parent and was cancelled","failureType":"cancelledByParent"}}}}',
+    '{"type":"test:fail","data":{"name":"EKS Namespace","nesting":0,"file":"eks.test.js","testId":1,"details":{"duration_ms":9,"error":{"message":"HTTP-Code: 401 Message: Unauthorized","stack":"Error: HTTP-Code: 401 Message: Unauthorized\\n    at readStorageClass (k8s.js:4009:19)","failureType":"hookFailed"}}}}',
+  ].join('\n');
+  const { fetchImpl } = fakeSource(`${hook}\n`);
+  const { root, el } = mount();
+  await act(async () => {
+    root.render(React.createElement(TestReportViewer, { src: '/run.ndjson', fetch: fetchImpl, pollMs: 10, filterState: memoryFilterState() }));
+  });
+  await tick(20);
+  assert.deepStrictEqual(
+    [...el.querySelectorAll('.errline-msg')].map((n) => n.textContent),
+    ['HTTP-Code: 401 Message: Unauthorized'],
+    'the suite previews its 401; its cancelled child previews nothing',
+  );
+  await act(async () => root.unmount());
+});
+
+test('the preview opens the popup on Error even when another tab was last used', async () => {
+  const { root, el } = await renderCascade();
+  // Leave the popup on Output, then close it, so the sticky tab is not Error.
+  await act(async () => { (rowOf(el, 'eks.test.js').querySelector('.logbtn') as HTMLElement).click(); });
+  assert.strictEqual(el.querySelector('.pop-tab[data-on]')!.textContent, 'Output2');
+  await act(async () => { (el.querySelector('.scrim') as HTMLElement).click(); });
+
+  await act(async () => { (el.querySelector('.errline') as HTMLElement).click(); });
+  assert.strictEqual(el.querySelector('.pop-tab[data-on]')!.textContent, 'Error1');
+  await act(async () => root.unmount());
+});
+
+test('a cancelled test gets no preview — it never ran, so nothing broke', async () => {
+  const { root, el } = await renderCascade();
+  const row = rowOf(el, 'with S3 vault');
+  assert.ok(!row.nextElementSibling?.classList.contains('errline'), 'no line follows it');
+  assert.ok(!row.getAttribute('aria-label')!.includes('did not finish'), 'and nothing on its label');
+  await act(async () => root.unmount());
+});
+
 test('the log button counts exactly what the tabs add up to', async () => {
   const { root, el } = await renderCascade();
   const row = rowOf(el, 'discovers pg');
