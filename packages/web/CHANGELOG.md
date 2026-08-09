@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.1](https://github.com/MoLow/reporters/compare/web-v3.1.0...web-v3.1.1) (2026-08-09)
+
+
+### Bug Fixes
+
+* **web:** keep the hover cue visible on a row that is updating ([#286](https://github.com/MoLow/reporters/issues/286)) ([8b6fad7](https://github.com/MoLow/reporters/commit/8b6fad71ecefed5782f9b1734ee1cacbfa482fc3))
+
 ## [3.1.0](https://github.com/MoLow/reporters/compare/web-v3.0.0...web-v3.1.0) (2026-08-09)
 
 
