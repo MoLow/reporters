@@ -628,7 +628,10 @@ export function createTreeStore(): TreeStore {
       // its subtests so far may all have settled while it awaits more (or runs
       // teardown). Count it, so ancestors and the header can't read done early.
       // Once it settles it leaves the counts again: totals stay leaves-only.
-      if ((internal.type === 'test' || internal.type === 'suite') && !TERMINAL.has(internal.status)) {
+      // Only the deepest such node in a branch counts: an ancestor that is
+      // merely awaiting a running descendant is already represented by it.
+      if ((internal.type === 'test' || internal.type === 'suite') && !TERMINAL.has(internal.status)
+        && counts[internal.status] === 0) {
         counts[internal.status] += 1;
         counts.total += 1;
       }

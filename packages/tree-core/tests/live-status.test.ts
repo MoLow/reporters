@@ -79,6 +79,21 @@ test('a file-level start opens the wrapper too (streams without eager wrapper ev
   assert.strictEqual(file.status, 'running', 'the wrapper started and has not completed');
 });
 
+test('a chain of open ancestors counts as one running test, not one per level', () => {
+  const { counts } = build([
+    ev('test:enqueue', WRAP),
+    ev('test:dequeue', WRAP),
+    ev('test:enqueue', { name: 'RDS On-PR E2E', nesting: 0, file: ENTRY, testId: 1, parentId: 0, type: 'suite' }),
+    ev('test:dequeue', { name: 'RDS On-PR E2E', nesting: 0, file: ENTRY, testId: 1, parentId: 0, type: 'suite' }),
+    ev('test:enqueue', { name: 'backup flow', nesting: 1, file: ENTRY, testId: 2, parentId: 1, type: 'suite' }),
+    ev('test:dequeue', { name: 'backup flow', nesting: 1, file: ENTRY, testId: 2, parentId: 1, type: 'suite' }),
+    ev('test:enqueue', { name: 'db2pq restore', nesting: 2, file: ENTRY, testId: 3, parentId: 2, type: 'test' }),
+    ev('test:dequeue', { name: 'db2pq restore', nesting: 2, file: ENTRY, testId: 3, parentId: 2, type: 'test' }),
+  ]);
+  assert.strictEqual(counts.running, 1, 'only the deepest open node is running; ancestors merely await it');
+  assert.strictEqual(counts.total, 1);
+});
+
 test('settled parents leave the final counts as leaves-only', () => {
   const { counts } = build([
     ev('test:enqueue', WRAP),
