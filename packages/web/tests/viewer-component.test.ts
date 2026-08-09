@@ -249,7 +249,7 @@ async function renderCascade() {
   const { fetchImpl } = fakeSource(`${CASCADE}\n`);
   const { root, el } = mount();
   await act(async () => {
-    root.render(React.createElement(TestReportViewer, { src: '/run.ndjson', fetch: fetchImpl, pollMs: 10, filterState: memoryFilterState() }));
+    root.render(React.createElement(TestReportViewer, { src: '/run.ndjson', fetch: fetchImpl, pollMs: 10, filters: memoryFilterState() }));
   });
   await tick(20);
   return { root, el };
@@ -328,7 +328,7 @@ test('a synthetic error whose stack is just its message renders no stack at all'
   const { fetchImpl } = fakeSource(`${orphan}\n`);
   const { root, el } = mount();
   await act(async () => {
-    root.render(React.createElement(TestReportViewer, { src: '/run.ndjson', fetch: fetchImpl, pollMs: 10, filterState: memoryFilterState() }));
+    root.render(React.createElement(TestReportViewer, { src: '/run.ndjson', fetch: fetchImpl, pollMs: 10, filters: memoryFilterState() }));
   });
   await tick(20);
   await act(async () => { (rowOf(el, 'lonely').querySelector('.logbtn') as HTMLElement).click(); });
@@ -365,7 +365,7 @@ test('a container previews its own failure — the cascade\u2019s only real caus
   const { fetchImpl } = fakeSource(`${hook}\n`);
   const { root, el } = mount();
   await act(async () => {
-    root.render(React.createElement(TestReportViewer, { src: '/run.ndjson', fetch: fetchImpl, pollMs: 10, filterState: memoryFilterState() }));
+    root.render(React.createElement(TestReportViewer, { src: '/run.ndjson', fetch: fetchImpl, pollMs: 10, filters: memoryFilterState() }));
   });
   await tick(20);
   assert.deepStrictEqual(
@@ -393,6 +393,28 @@ test('a cancelled test gets no preview — it never ran, so nothing broke', asyn
   const row = rowOf(el, 'with S3 vault');
   assert.ok(!row.nextElementSibling?.classList.contains('errline'), 'no line follows it');
   assert.ok(!row.getAttribute('aria-label')!.includes('did not finish'), 'and nothing on its label');
+  await act(async () => root.unmount());
+});
+
+test('rows still collapse and expand while a filter is active', async () => {
+  const { fetchImpl } = fakeSource(`${CASCADE}\n`);
+  const { root, el } = mount();
+  const filters = memoryFilterState({ query: 'vault' });
+  await act(async () => {
+    root.render(React.createElement(TestReportViewer, { src: '/run.ndjson', fetch: fetchImpl, pollMs: 10, filters }));
+  });
+  await tick(20);
+
+  const suite = rowOf(el, 'EKS Namespace');
+  assert.strictEqual(suite.getAttribute('aria-expanded'), 'true', 'the query forced it open to reveal the matches');
+  assert.ok(rowOf(el, 'with S3 vault'), 'and the matching child is on screen');
+
+  await act(async () => { suite.click(); });
+  assert.strictEqual(rowOf(el, 'EKS Namespace').getAttribute('aria-expanded'), 'false', 'the caret still works under a filter');
+  assert.strictEqual(rowOf(el, 'with S3 vault'), undefined, 'so its children are gone');
+
+  await act(async () => { rowOf(el, 'EKS Namespace').click(); });
+  assert.strictEqual(rowOf(el, 'EKS Namespace').getAttribute('aria-expanded'), 'true', 'and opens again');
   await act(async () => root.unmount());
 });
 
@@ -429,7 +451,7 @@ test('a rollup with no failing descendant to point at keeps its error', async ()
   const { fetchImpl } = fakeSource(`${orphan}\n`);
   const { root, el } = mount();
   await act(async () => {
-    root.render(React.createElement(TestReportViewer, { src: '/run.ndjson', fetch: fetchImpl, pollMs: 10, filterState: memoryFilterState() }));
+    root.render(React.createElement(TestReportViewer, { src: '/run.ndjson', fetch: fetchImpl, pollMs: 10, filters: memoryFilterState() }));
   });
   await tick(20);
   const row = rowOf(el, 'lonely');

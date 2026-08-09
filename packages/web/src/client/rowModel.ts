@@ -293,10 +293,20 @@ function filtering(opts: BuildOptions): boolean {
   return opts.query !== '' || (opts.statuses?.size ?? 0) > 0 || opts.onlyRerun === true;
 }
 
+/**
+ * Open state, most specific first: what the reader asked for, then what the
+ * active filter needs, then the per-type default.
+ *
+ * The filter's force-expand is a default, not a lock. It exists so a match is
+ * on screen without being hunted for — but it used to sit above `overrides`,
+ * which meant every caret under an active search or status chip computed a new
+ * state and then had it overwritten. Rows simply would not close.
+ */
 export function isExpanded(node: TestNode, opts: BuildOptions): boolean {
-  if (filtering(opts) && opts.matches?.force.has(node.key)) return true;
   const { overrides } = opts;
-  return overrides.has(node.key) ? overrides.get(node.key)! : defaultExpanded(node);
+  if (overrides.has(node.key)) return overrides.get(node.key)!;
+  if (filtering(opts) && opts.matches?.force.has(node.key)) return true;
+  return defaultExpanded(node);
 }
 
 // The tree is one row per node, nothing else. A node's own output is not a

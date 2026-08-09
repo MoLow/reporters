@@ -139,14 +139,32 @@ test('collectContainerKeys gathers file and suite keys, skipping leaves', () => 
   assert.deepStrictEqual(keys, ['f', 's']);
 });
 
-test('isExpanded honors query force, overrides, then per-type defaults', () => {
+test('a filter force-expands as a default, never as a lock', () => {
+  const forced = {
+    overrides: new Map<string, boolean>(), query: 'x', matches: { visible: new Set<string>(), force: new Set(['s']) },
+  };
+  const suite = node({ key: 's', type: 'suite', children: [node()], counts: { ...zeroCounts(), failed: 1, total: 1 } });
+  assert.strictEqual(isExpanded(suite, forced), true, 'a match is revealed without asking');
+  // ...but the reader can still close it, which is the whole point of a caret.
+  const closed = { ...forced, overrides: new Map([['s', false]]) };
+  assert.strictEqual(isExpanded(suite, closed), false, 'an explicit collapse outranks the filter');
+  // And re-open it against a default that would have kept it shut.
+  const leaf = node({ key: 't', type: 'suite', children: [node()] });
+  assert.strictEqual(isExpanded(leaf, { ...forced, overrides: new Map([['t', true]]) }), true);
+});
+
+test('isExpanded honors overrides, then query force, then per-type defaults', () => {
   const opts = (over: Partial<Parameters<typeof isExpanded>[1]> = {}) => ({
     overrides: new Map<string, boolean>(), query: '', matches: null, ...over,
   });
   const suite = node({ key: 's', type: 'suite', children: [node()], counts: { ...zeroCounts(), failed: 1, total: 1 } });
 
-  // A query match force-expands regardless of type/default.
+  // A query match force-expands past the type/default...
   assert.strictEqual(isExpanded(suite, opts({ query: 'x', matches: { visible: new Set(), force: new Set(['s']) } })), true);
+  // ...but not past the reader.
+  assert.strictEqual(isExpanded(suite, opts({
+    query: 'x', matches: { visible: new Set(), force: new Set(['s']) }, overrides: new Map([['s', false]]),
+  })), false);
   // An explicit override wins over the default.
   assert.strictEqual(isExpanded(suite, opts({ overrides: new Map([['s', false]]) })), false);
   // Defaults: a failing suite opens, a fully-queued file stays closed, a leaf is closed.
