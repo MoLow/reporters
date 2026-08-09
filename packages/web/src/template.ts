@@ -109,7 +109,11 @@ button { font-family: inherit; } input { font-family: inherit; }
 }
 
 /* app shell */
-.app { height: 100%; display: flex; flex-direction: column; --rh: 34px; --fs: 13.5px; --ind: 20px; --diag-mr: 12px; --diag-gap: 18px; }
+.app { height: 100%; display: flex; flex-direction: column; --diag-mr: 12px; --diag-gap: 18px; }
+/* Row density. Compact is the shipping default — a real run is hundreds of
+   rows, and the tree is for scanning them. */
+.app, .app[data-dense="compact"] { --rh: 26px; --fs: 12.5px; --ind: 15px; }
+.app[data-dense="cozy"] { --rh: 34px; --fs: 13.5px; --ind: 20px; }
 .loading { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--faint); font-size: 13px; }
 
 /* header */
@@ -144,15 +148,17 @@ button { font-family: inherit; } input { font-family: inherit; }
 
 /* tree */
 .tree { flex: 1; overflow: auto; min-height: 0; padding: 8px 10px 28px; }
-.row { display: flex; align-items: center; gap: 8px; min-height: var(--rh); padding: 0 12px; border-radius: 9px; }
+.row { display: flex; align-items: center; gap: 8px; min-height: var(--rh); padding: 0 10px 0 12px; border-radius: 9px; }
 .row[data-clickable="true"] { cursor: pointer; }
 .row:hover { background: var(--row-hover); }
 .row[data-fail="true"] { background: var(--fail-tint); }
 .guides { display: flex; flex: none; align-self: stretch; }
 .guide { width: var(--ind); align-self: stretch; border-left: 1px solid var(--line); }
-.caret { width: 16px; flex: none; display: flex; align-items: center; justify-content: center; color: var(--faint); font-size: 10px; transition: transform 160ms var(--ease-out); }
+.caret { width: 14px; flex: none; display: flex; align-items: center; justify-content: center; color: var(--faint); font-size: 10px; transition: transform 160ms var(--ease-out); }
 .caret[data-open="true"] { transform: rotate(90deg); }
 .cglyph { font-size: 13px; font-weight: 700; width: 14px; flex: none; text-align: center; }
+/* A test's status mark: one result, so a dot rather than a verdict glyph. */
+.tdot { width: 9px; height: 9px; border-radius: 50%; flex: none; margin: 0 2.5px; }
 .name { font-size: var(--fs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .name[data-kind="file"] { font-family: var(--mono); font-weight: 700; }
 .name[data-kind="suite"] { font-weight: 600; }
@@ -160,7 +166,8 @@ button { font-family: inherit; } input { font-family: inherit; }
 /* passive badge on a node row (right after the name): output exists inside
    this node — never a control */
 .outbadge { flex: none; color: var(--faint); font-size: 11px; font-weight: 700; margin-left: 2px; }
-.todotag { flex: none; font-size: 10px; font-weight: 600; border-radius: 6px; padding: 1px 6px; }
+.failchip { flex: none; font-size: 10.5px; font-weight: 700; border-radius: 6px; padding: 1px 7px; }
+.todotag { flex: none; font-size: 10.5px; font-weight: 600; border-radius: 6px; padding: 1px 7px; }
 .spacer { flex: 1; min-width: 10px; }
 .pills { display: inline-flex; gap: 5px; flex: none; margin-right: 9px; }
 .pill { font-size: 11px; font-weight: 700; border-radius: 999px; padding: 1px 8px; font-variant-numeric: tabular-nums; }
@@ -190,8 +197,6 @@ button { font-family: inherit; } input { font-family: inherit; }
 .diag-head:hover { background: var(--raise); }
 .diag-icon { font-weight: 800; font-size: 12px; }
 .diag-title { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--dim); }
-.diag-chip { display: flex; align-items: center; gap: 7px; padding: 5px 13px 5px 6px; background: var(--panel-2); }
-.diag-chip-text { font-size: 11.5px; font-weight: 600; color: var(--dim); }
 .diag-count { font-size: 10.5px; font-weight: 600; color: var(--faint); font-variant-numeric: tabular-nums; }
 .diag-tools { margin-left: auto; display: flex; gap: 6px; align-items: center; }
 .hbtn { background: transparent; border: 1px solid var(--line); color: var(--dim); border-radius: 7px; padding: 2px 8px; font-size: 10.5px; font-weight: 600; cursor: pointer; transition: background .13s, color .13s; }
@@ -253,7 +258,9 @@ button { font-family: inherit; } input { font-family: inherit; }
 /* mobile (~phone widths): reclaim the indent budget, let names wrap, keep
    everything on-screen, and pad tap targets */
 @media (max-width: 640px) {
-  .app { --ind: 12px; --rh: 40px; --fs: 13px; --diag-mr: 8px; --diag-gap: 8px; }
+  /* Touch targets win over density: 40px rows at any data-dense setting, so
+     this must out-specify the .app[data-dense=…] rules above. */
+  .app, .app[data-dense] { --ind: 12px; --rh: 40px; --fs: 13px; --diag-mr: 8px; --diag-gap: 8px; }
   .guide { border-left: none; }
   .tree { padding: 6px 4px 24px; }
   .row { padding: 0 8px; gap: 6px; }

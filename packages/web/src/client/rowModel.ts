@@ -148,20 +148,32 @@ export function isSubtestsRollup(node: TestNode): boolean {
   return node.error?.failureType === 'subtestsFailed';
 }
 
+/** The row carries a rolled-up `N failed` chip. Containers only: a failed leaf
+ *  counts itself, and "1 failed" beside a red test row says nothing. */
+export function hasFailChip(node: TestNode): boolean {
+  return isContainer(node) && node.counts.failed > 0;
+}
+
 /**
  * Any error the node reported is shown — containers included. A container's
  * error can be the only place the real cause lives (a suite whose before hook
  * failed cancels its children with a generic message), so nothing is filtered
  * on message text.
  *
- * The one exception is a cancellation, which the runner writes in place of an
- * error the test never got to produce. It is identified structurally, by the
- * runner's own `failureType`, so a real cause is never at risk: a failed hook
- * reports `hookFailed` and stays fully visible, and a log written before the
- * wire carried `failureType` keeps every error it has.
+ * The exceptions are the two errors the runner writes itself, both identified
+ * structurally by its own `failureType` so a real cause is never at risk:
+ *
+ *  - a cancellation, written in place of an error the test never produced;
+ *  - the "N subtests failed" rollup, but only while the row's fail chip is
+ *    there to say the same thing. No count, no chip, no suppression.
+ *
+ * A failed hook reports `hookFailed` and stays fully visible, and a log written
+ * before the wire carried `failureType` keeps every error it has.
  */
 export function realError(node: TestNode): { message: string; stack?: string } | undefined {
-  return isCancelled(node) ? undefined : node.error;
+  if (isCancelled(node)) return undefined;
+  if (isSubtestsRollup(node) && hasFailChip(node)) return undefined;
+  return node.error;
 }
 
 export function hasDiagnostics(node: TestNode): boolean {

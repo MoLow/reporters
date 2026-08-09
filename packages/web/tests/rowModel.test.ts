@@ -4,7 +4,7 @@ import { createTreeStore } from '@reporters/tree-core';
 import type { Counts, TestEvent, TestNode } from '@reporters/tree-core';
 import {
   buildRows, collectContainerKeys, computeMatches, displayName, hasDiagnostics,
-  isCancelled, isExpanded, isPassingTodo, isSectionOpen, isSubtestsRollup, liveNodeDuration, nodeDuration, reasonOf, realError, rollup,
+  hasFailChip, isCancelled, isExpanded, isPassingTodo, isSectionOpen, isSubtestsRollup, liveNodeDuration, nodeDuration, reasonOf, realError, rollup,
 } from '../src/client/rowModel.ts';
 
 const zeroCounts = (): Counts => ({
@@ -237,11 +237,21 @@ test('realError drops a cancellation — the runner wrote it, the test never ran
   }
 });
 
+test('the subtests rollup is dropped only while the fail chip replaces it', () => {
+  const error = { message: '3 subtests failed', failureType: 'subtestsFailed' };
+  const suite = node({
+    error, children: [node({ key: 'c' })], counts: { ...zeroCounts(), failed: 3, total: 3 },
+  });
+  assert.ok(isSubtestsRollup(suite) && hasFailChip(suite));
+  assert.strictEqual(realError(suite), undefined, 'the row shows "3 failed" instead');
+  // A leaf counts its own failure, so counts alone would wrongly suppress here —
+  // the chip is containers-only, and so is the suppression.
+  const leaf = node({ error, counts: { ...zeroCounts(), failed: 1, total: 1 } });
+  assert.strictEqual(hasFailChip(leaf), false, '"1 failed" beside a red test row says nothing');
+  assert.strictEqual(realError(leaf), error);
+});
+
 test('realError keeps every failure the test actually produced', () => {
-  // The rollup is kept — the viewer renders it as a chip rather than a panel.
-  const rollup = { message: '3 subtests failed', failureType: 'subtestsFailed' };
-  assert.strictEqual(realError(node({ error: rollup })), rollup);
-  assert.ok(isSubtestsRollup(node({ error: rollup })));
   // A failed before hook is the case that made suppression a bug: it holds the
   // only real cause while its children carry the generic cancellation text.
   const hook = { message: 'HTTP-Code: 401 Unauthorized', failureType: 'hookFailed' };

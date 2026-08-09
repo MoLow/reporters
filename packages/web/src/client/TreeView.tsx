@@ -5,7 +5,7 @@ import {
   carriedAttempt, formatDuration, formatLogPayload, isCarried, todoLabel, type Counts, type TestNode, type TestStatus, type TreeSnapshot,
 } from '@reporters/tree-core';
 import {
-  buildRows, collectContainerKeys, computeMatches, displayName, isCancelled, isContainer, isSectionOpen, isSubtestsRollup, liveNodeDuration, reasonOf, realError, type FlatRow, type LiveClock,
+  buildRows, collectContainerKeys, computeMatches, displayName, hasFailChip, isCancelled, isContainer, isSectionOpen, liveNodeDuration, reasonOf, realError, type FlatRow, type LiveClock,
 } from './rowModel.ts';
 
 // node:test captures colored output verbatim; render the ANSI SGR codes as real
@@ -22,6 +22,7 @@ const GLYPH: Record<TestStatus, string> = {
 /** Shown in place of ✕ for a failure the runner recorded because the test never
  *  ran (see `isCancelled`). Not a status of its own — such a node stays failed. */
 const CANCEL_GLYPH = '⊗';
+export type Density = 'compact' | 'cozy';
 const STATUS_ORDER: TestStatus[] = ['passed', 'failed', 'skipped', 'todo', 'running', 'queued'];
 const STATUS_LABEL: Record<TestStatus, string> = {
   passed: 'passed', failed: 'failed', skipped: 'skipped', todo: 'todo', running: 'running', queued: 'queued',
@@ -60,8 +61,7 @@ interface DiagBlock {
   title: string;
   icon: string;
   sev: TestStatus;
-  /** `chip` renders as a bare labelled line — no disclosure, no toolbar. */
-  kind: 'error' | 'output' | 'list' | 'text' | 'chip';
+  kind: 'error' | 'output' | 'list' | 'text';
   /** Header count (`Output · 1.9k lines`), also surfaced on the row chip. */
   count?: { n: number; unit: string };
   /** Row-chip text when it should differ from the title (e.g. the trimmed skip reason). */
@@ -164,14 +164,7 @@ function Stack({ stack }: { stack: string }) {
 function computeDiagBlocks(node: TestNode): DiagBlock[] {
   const blocks: DiagBlock[] = [];
   const error = realError(node);
-  if (error && isSubtestsRollup(node)) {
-    // "N subtests failed" says nothing a stack could add — the failing children
-    // are the rows right below — so it stays a bare label.
-    blocks.push({
-      key: 'rollup', title: 'Error', chip: error.message, icon: '✕', sev: 'failed',
-      kind: 'chip', copyText: '',
-    });
-  } else if (error) {
+  if (error) {
     const stack = error.stack ?? error.message;
     blocks.push({
       key: 'error', title: 'Error', icon: '✕', sev: 'failed', kind: 'error',
@@ -502,13 +495,7 @@ function OutputPanel({
       aria-label={`Output of ${displayName(node)}`}
       style={style}
     >
-      {blocks.map((block) => (block.kind === 'chip' ? (
-        // Nothing to disclose and nothing worth copying — a label, not a section.
-        <div className="diag-chip" key={block.key}>
-          <span className="diag-icon" data-stc={block.sev}>{block.icon}</span>
-          <span className="diag-chip-text">{block.chip}</span>
-        </div>
-      ) : (
+      {blocks.map((block) => (
         <DiagSection
           block={block}
           node={node}
@@ -516,7 +503,7 @@ function OutputPanel({
           onToggle={() => toggle(`${node.key}::diag:${block.key}`, isSectionOpen(node, block.key, overrides))}
           key={block.key}
         />
-      )))}
+      ))}
     </div>
   );
 }
@@ -647,14 +634,22 @@ function RowView({
         {Array.from({ length: depth }, (_, i) => <span className="guide" key={i} />)}
       </span>
       <span className="caret" data-open={expandable && expanded ? 'true' : undefined}>{expandable ? '▸' : ''}</span>
-      {isTest && status === 'running' ? (
-        <span className="spinner indicator" />
+      {/* Two status marks, split on leaf vs container rather than node type: a
+          leaf is one result, so a dot; anything with children carries a verdict
+          over everything beneath it, so it keeps the glyph — including a
+          `test()` that nests subtests. A cancellation always takes the glyph,
+          since ⊗ is the whole point. */}
+      {!container && !cancelled ? (
+        <span className="tdot indicator" data-stf={status} data-pulse={status === 'running' ? 'true' : undefined} data-tip={!container ? statusTip(node, status, ms) : undefined} />
       ) : (
-        // One visual language for pass/fail at every level: containers and leaf
-        // tests both use the status glyph (design mobile-review ruling).
-        <span className="cglyph indicator" data-stc={cancelled ? 'cancelled' : status} data-spin={!isTest && status === 'running' ? 'true' : undefined} data-tip={!container ? statusTip(node, status, ms) : undefined}>{cancelled ? CANCEL_GLYPH : GLYPH[status]}</span>
+        <span className="cglyph indicator" data-stc={cancelled ? 'cancelled' : status} data-spin={container && status === 'running' ? 'true' : undefined} data-tip={!container ? statusTip(node, status, ms) : undefined}>{cancelled ? CANCEL_GLYPH : GLYPH[status]}</span>
       )}
       <span className="name" data-kind={node.type} data-tip-clipped={node.type === 'file' ? node.file ?? displayName(node) : displayName(node)} style={{ color: nameColor }}>{displayName(node)}</span>
+      {hasFailChip(node) ? (
+        // The rolled-up count, on the row and always visible — it replaces the
+        // runner's "N subtests failed" card that used to restate it below.
+        <span className="failchip" data-soft="failed" data-tip={`${counts.failed} failing ${counts.failed === 1 ? 'test' : 'tests'} inside`}>{counts.failed} failed</span>
+      ) : null}
       {hasDiag ? (
         // Passive badge (never a control): output exists inside this node.
         <span className="outbadge" data-stc={hasError ? 'failed' : undefined} data-tip={hasError ? 'Has error output — expand the row to view' : 'Has output — expand the row to view'}>
@@ -666,6 +661,9 @@ function RowView({
       ) : typeof node.skip === 'string' && node.skip ? (
         <span className="todotag" data-soft="skipped">⊘ {trimTag(node.skip)}</span>
       ) : null}
+      {node.tags?.map((tag) => (
+        <span className="todotag" data-soft="todo" key={tag}>{trimTag(tag)}</span>
+      ))}
       <span className="spacer" />
       {renderNodeActions ? (
         // Custom content is interactive on its own terms: clicks and keys
@@ -681,7 +679,9 @@ function RowView({
       ) : null}
       {container && !expanded ? (
         <span className="pills">
-          {STATUS_ORDER.filter((s) => (s === 'passed' && onlyRerun ? counts.passed - counts.carried : counts[s]) > 0).map((s) => (
+          {/* `failed` is omitted: the fail chip beside the name already carries
+              it, at every expansion state rather than only when collapsed. */}
+          {STATUS_ORDER.filter((s) => s !== 'failed' && (s === 'passed' && onlyRerun ? counts.passed - counts.carried : counts[s]) > 0).map((s) => (
             <span className="pill" data-soft={s} data-tip={`${s === 'passed' && onlyRerun ? counts.passed - counts.carried : counts[s]} ${STATUS_LABEL[s]}`} key={s}>{s === 'passed' && onlyRerun ? counts.passed - counts.carried : counts[s]}</span>
           ))}
         </span>
@@ -754,10 +754,14 @@ export interface TreeViewProps {
    *  ?status, ?rerun). Pass memoryFilterState() (or your own store) when the
    *  host app owns the address bar. Must be stable across renders. */
   filters?: FilterStore;
+  /** Row density. `compact` (the default) is built for scanning a long run;
+   *  `cozy` trades rows-per-screen for a roomier hit area. Under 640px both
+   *  give way to 40px touch rows. */
+  dense?: Density;
 }
 
 export function TreeView({
-  snapshot, streaming = false, pending = false, loadError = false, onRetry, renderNodeActions, renderHeaderActions, filters,
+  snapshot, streaming = false, pending = false, loadError = false, onRetry, renderNodeActions, renderHeaderActions, filters, dense = 'compact',
 }: TreeViewProps) {
   const [theme, toggleTheme] = useTheme();
   // The default store is per-mount so its debounce timer dies with the view.
@@ -869,7 +873,7 @@ export function TreeView({
 
   if (loadError) {
     return (
-      <div className="app">
+      <div className="app" data-dense={dense}>
         <CenteredState icon="⚠" iconStatus="failed" title="Couldn’t load the live log">
           <div className="state-sub">
             The viewer needs a <code style={{ fontFamily: 'var(--mono)', color: 'var(--st-todo)' }}>?src=</code>
@@ -890,7 +894,7 @@ export function TreeView({
   const barSegments = STATUS_ORDER.filter((s) => counts[s] > 0);
 
   return (
-    <div className="app">
+    <div className="app" data-dense={dense}>
       <header className="hdr">
         <div className="hdr-row">
           <Verdict counts={counts} inProgress={inProgress} duration={duration} />

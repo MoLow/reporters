@@ -257,22 +257,42 @@ test('a cancelled test renders muted, with no error panel to expand', async () =
   await act(async () => root.unmount());
 });
 
-test('a real failure keeps its glyph, its tint and its full stack', async () => {
+test('a real failure keeps its mark, its tint and its full stack', async () => {
   const { root, el } = await renderCascade();
   const row = rowOf(el, 'discovers pg');
-  assert.strictEqual(row.querySelector('.cglyph')!.textContent, '✕');
+  assert.strictEqual(row.querySelector('.tdot')!.getAttribute('data-stf'), 'failed', 'a test is a dot, not a glyph');
   assert.strictEqual(row.getAttribute('data-fail'), 'true');
   assert.ok(el.querySelector('.stack')!.textContent!.includes('at eks.test.js:12:3'), 'the stack still renders');
   await act(async () => root.unmount());
 });
 
-test('a subtests rollup renders as a bare chip, not a panel', async () => {
+test('a suite keeps the verdict glyph its tests trade for a dot', async () => {
   const { root, el } = await renderCascade();
-  const chip = el.querySelector('.diag-chip') as HTMLElement;
-  assert.ok(chip, 'the rollup gets a chip');
-  assert.strictEqual(chip.querySelector('.diag-chip-text')!.textContent, '2 subtests failed');
-  assert.strictEqual(chip.querySelector('.diag-tools'), null, 'nothing to copy or open full-screen');
-  assert.ok(!el.textContent!.includes('ERROR2 subtests failed'), 'and no ERROR panel header');
-  assert.strictEqual(rowOf(el, 'EKS Namespace').querySelector('.outbadge')!.textContent, '✕');
+  assert.strictEqual(rowOf(el, 'EKS Namespace').querySelector('.cglyph')!.textContent, '✕');
+  assert.strictEqual(rowOf(el, 'EKS Namespace').querySelector('.tdot'), null);
+  await act(async () => root.unmount());
+});
+
+test('the subtests rollup becomes a fail chip on the row, with no panel left', async () => {
+  const { root, el } = await renderCascade();
+  const row = rowOf(el, 'EKS Namespace');
+  assert.strictEqual(row.querySelector('.failchip')!.textContent, '2 failed');
+  assert.ok(!el.textContent!.includes('2 subtests failed'), 'the runner’s wording is gone entirely');
+  assert.strictEqual(row.querySelector('.outbadge'), null, 'and nothing is left to disclose on that row');
+  await act(async () => root.unmount());
+});
+
+test('a rollup with no failing descendant to point at keeps its error', async () => {
+  // The chip is the replacement; with no count there is no chip, so suppressing
+  // would lose the only thing the node said.
+  const orphan = '{"type":"test:fail","data":{"name":"lonely","nesting":0,"file":"x.test.js","testId":9,"details":{"duration_ms":1,"error":{"message":"1 subtest failed","failureType":"subtestsFailed"}}}}';
+  const { fetchImpl } = fakeSource(`${orphan}\n`);
+  const { root, el } = mount();
+  await act(async () => {
+    root.render(React.createElement(TestReportViewer, { src: '/run.ndjson', fetch: fetchImpl, pollMs: 10, filterState: memoryFilterState() }));
+  });
+  await tick(20);
+  assert.strictEqual(rowOf(el, 'lonely').querySelector('.failchip'), null, 'no chip to stand in for it');
+  assert.ok(el.textContent!.includes('1 subtest failed'), 'so the error still shows');
   await act(async () => root.unmount());
 });

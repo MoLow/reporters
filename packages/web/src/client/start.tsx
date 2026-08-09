@@ -6,13 +6,13 @@ import { createTreeStore, type TreeSnapshot } from '@reporters/tree-core';
 import { createNdjsonReader, DEFAULT_POLL_MS, type FetchLike } from '../poll.ts';
 import { resolveReportSource, type ViewerOptions as SourceOptions } from '../source.ts';
 import { STYLES } from '../template.ts';
-import { TreeView, type RenderHeaderActions, type RenderNodeActions } from './TreeView.tsx';
+import { TreeView, type Density, type RenderHeaderActions, type RenderNodeActions } from './TreeView.tsx';
 import { initTooltips } from './tooltip.ts';
 import type { FilterStore } from './urlState.ts';
 
 export type { ReportSource } from '../source.ts';
 export type { FetchLike } from '../poll.ts';
-export type { RenderHeaderActions, RenderNodeActions } from './TreeView.tsx';
+export type { Density, RenderHeaderActions, RenderNodeActions } from './TreeView.tsx';
 export type { TestNode } from '@reporters/tree-core';
 export { memoryFilterState, urlFilterState, type FilterState, type FilterStore } from './urlState.ts';
 
@@ -128,13 +128,15 @@ export interface TestReportViewerProps {
    *  e.g. re-run the host's own source resolution. With no `src` there is no
    *  stream to restart, so without this the retry button is hidden. */
   onRetry?: () => void;
+  /** Row density: `compact` (default) or `cozy`. */
+  dense?: Density;
 }
 
 /** The report viewer as a React component: render it anywhere in a host app.
  *  Polls `src`, live-updates until the run's summary, and stops polling on
  *  unmount. Injects its stylesheet into document.head before first paint. */
 export function TestReportViewer({
-  src, fetch: fetchImpl, pollMs = DEFAULT_POLL_MS, renderNodeActions, renderHeaderActions, filters, onRetry,
+  src, fetch: fetchImpl, pollMs = DEFAULT_POLL_MS, renderNodeActions, renderHeaderActions, filters, onRetry, dense,
 }: TestReportViewerProps) {
   useInsertionEffect(() => { injectStyles(); }, []);
   useEffect(() => { initTooltips(); }, []);
@@ -151,6 +153,7 @@ export function TestReportViewer({
       renderNodeActions={renderNodeActions}
       renderHeaderActions={renderHeaderActions}
       filters={filters}
+      dense={dense}
     />
   );
 }
