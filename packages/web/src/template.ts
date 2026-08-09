@@ -153,10 +153,16 @@ button { font-family: inherit; } input { font-family: inherit; }
 .errline-x { flex: none; font-size: 11px; font-weight: 800; color: var(--st-failed); }
 .errline-msg { flex: 1; min-width: 0; font-family: var(--mono); font-size: 12px; color: var(--st-failed); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .errline-open { flex: none; font-size: 11px; font-weight: 600; color: var(--st-failed); opacity: .7; }
-.row { display: flex; align-items: center; gap: 8px; min-height: var(--rh); padding: 0 10px 0 12px; border-radius: 9px; }
+.row { display: flex; align-items: center; gap: 8px; min-height: var(--rh); padding: 0 10px 0 12px; border-radius: 9px; position: relative; isolation: isolate; }
 .row[data-clickable="true"] { cursor: pointer; }
-.row:hover { background: var(--row-hover); }
 .row[data-fail="true"] { background: var(--fail-tint); }
+/* Hover is a layer over the row background, never another writer of it: the
+   running pulse animates that background (and an animated value outranks any
+   rule), the fail tint sets it, and either would swallow the hover cue. The
+   row isolates so this negative layer lands above its own background and
+   below its content. */
+.row::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--row-hover); opacity: 0; pointer-events: none; }
+.row:hover::before { opacity: 1; }
 .guides { display: flex; flex: none; align-self: stretch; }
 .guide { width: var(--ind); align-self: stretch; border-left: 1px solid var(--line); }
 .caret { width: 14px; flex: none; display: flex; align-items: center; justify-content: center; color: var(--faint); font-size: 10px; transition: transform 160ms var(--ease-out); }
