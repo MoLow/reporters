@@ -15,7 +15,7 @@ function node(over: Partial<TestNode> = {}): TestNode {
   return {
     key: 'k', testId: undefined, parentKey: null, file: undefined, name: '',
     nesting: 0, type: 'test', status: 'passed', messages: [], stdout: [], stderr: [],
-    children: [], counts: zeroCounts(), ...over,
+    children: [], counts: zeroCounts(), ancestors: () => [], ...over,
   };
 }
 

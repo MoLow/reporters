@@ -31,6 +31,10 @@ npm i @reporters/tree-core
   of suites and tests with statuses (queued → running → passed/failed/skipped),
   durations, counts, and per-test detail (errors, stdout/stderr, and a
   `messages` stream carrying both `diagnostic()` and `log()` output).
+- **Upward traversal** — every node in a snapshot carries `parent` and
+  `ancestors()` (root-first, the node itself excluded), so you can walk back up
+  from a test without threading a path down through your own recursion. Both
+  are non-enumerable, so a snapshot still serializes as plain, acyclic data.
 - **Wire format** — `toWireEvent` / `serializeWireLine` / `parseWireLines`
   convert runner events to and from the JSON-safe NDJSON lines that
   `@reporters/web` streams, so a run can be replayed anywhere.

@@ -22,6 +22,7 @@ function node(over: Partial<TestNode> = {}): TestNode {
     stderr: [],
     children: [],
     counts: COUNTS,
+    ancestors: () => [],
     ...over,
   };
 }

@@ -71,6 +71,12 @@ export interface TestNode {
    *  was carried — reported passed without executing this attempt. */
   passedOnAttempt?: number;
   counts: Counts;
+  /** The node above this one in the snapshot it was built from; absent on the
+   *  root. Non-enumerable, so it stays out of serialization. */
+  parent?: TestNode;
+  /** The path from the root down to this node's parent — outermost first, this
+   *  node excluded. Empty on the root. */
+  ancestors(): TestNode[];
 }
 
 export interface SummaryData {

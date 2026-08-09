@@ -17,6 +17,7 @@ import {
 import {
   createExactResolver, createLegacyResolver, type Resolver, type ResolverContext,
 } from './resolve.ts';
+import { withLineage } from './lineage.ts';
 
 // A todo test that actually passes reports as passed (its `todo` marker is
 // kept on the node); `todo` status is reserved for todos that are failing
@@ -652,7 +653,7 @@ export function createTreeStore(): TreeStore {
       else if (counts.queued > 0 && counts.passed + counts.skipped + counts.todo === 0) status = 'queued';
       else status = 'passed';
     }
-    return {
+    return withLineage({
       key: internal.key,
       testId: internal.testId,
       parentKey: internal.parentKey,
@@ -676,7 +677,7 @@ export function createTreeStore(): TreeStore {
       skip: internal.skip,
       passedOnAttempt: internal.passedOnAttempt,
       counts,
-    };
+    });
   }
 
   function getSnapshot(): TreeSnapshot {

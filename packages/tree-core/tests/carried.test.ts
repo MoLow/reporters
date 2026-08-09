@@ -17,7 +17,7 @@ function leaf(over: Partial<TestNode> = {}): TestNode {
   return {
     key: 'k', testId: undefined, parentKey: null, file: undefined, name: '',
     nesting: 0, type: 'test', status: 'passed', messages: [], stdout: [], stderr: [],
-    children: [], counts: { ...zero(), passed: 1, total: 1 }, ...over,
+    children: [], counts: { ...zero(), passed: 1, total: 1 }, ancestors: () => [], ...over,
   };
 }
 
