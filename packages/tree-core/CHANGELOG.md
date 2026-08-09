@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.1.0](https://github.com/MoLow/reporters/compare/tree-core-v2.0.0...tree-core-v2.1.0) (2026-08-09)
+
+
+### Features
+
+* **tree-core,web:** quiet the runner's own synthetic failures ([#281](https://github.com/MoLow/reporters/issues/281)) ([552b4e3](https://github.com/MoLow/reporters/commit/552b4e3ede3c928d76d0f195c067cf10f2ecbfed))
+* **tree-core:** give every snapshot node parent and ancestors() ([#279](https://github.com/MoLow/reporters/issues/279)) ([6c3b705](https://github.com/MoLow/reporters/commit/6c3b7059fb7ea8c1fd571b556c62abde3bc90dd6))
+
+
+### Bug Fixes
+
+* **tree-core:** count only the deepest open node as running ([#280](https://github.com/MoLow/reporters/issues/280)) ([dae017e](https://github.com/MoLow/reporters/commit/dae017e192f3b269c046e0e49ead4d4aa9eba9d4))
+
 ## [2.0.0](https://github.com/MoLow/reporters/compare/tree-core-v1.0.0...tree-core-v2.0.0) (2026-08-03)
 
 

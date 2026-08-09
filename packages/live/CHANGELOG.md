@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/MoLow/reporters/compare/live-v1.3.0...live-v1.4.0) (2026-08-09)
+
+
+### Features
+
+* **tree-core:** give every snapshot node parent and ancestors() ([#279](https://github.com/MoLow/reporters/issues/279)) ([6c3b705](https://github.com/MoLow/reporters/commit/6c3b7059fb7ea8c1fd571b556c62abde3bc90dd6))
+
 ## [1.3.0](https://github.com/MoLow/reporters/compare/live-v1.2.0...live-v1.3.0) (2026-08-03)
 
 

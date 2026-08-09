@@ -1,5 +1,21 @@
 # Changelog
 
+## [3.1.0](https://github.com/MoLow/reporters/compare/web-v3.0.0...web-v3.1.0) (2026-08-09)
+
+
+### Features
+
+* **tree-core,web:** quiet the runner's own synthetic failures ([#281](https://github.com/MoLow/reporters/issues/281)) ([552b4e3](https://github.com/MoLow/reporters/commit/552b4e3ede3c928d76d0f195c067cf10f2ecbfed))
+* **tree-core:** give every snapshot node parent and ancestors() ([#279](https://github.com/MoLow/reporters/issues/279)) ([6c3b705](https://github.com/MoLow/reporters/commit/6c3b7059fb7ea8c1fd571b556c62abde3bc90dd6))
+* **web:** compact rows, dot leaves, and a fail chip that replaces the rollup card ([#282](https://github.com/MoLow/reporters/issues/282)) ([45e6484](https://github.com/MoLow/reporters/commit/45e6484b5df7634608106a6e544d22819c7a482a))
+* **web:** move logs out of the tree and into a popup ([#283](https://github.com/MoLow/reporters/issues/283)) ([719a144](https://github.com/MoLow/reporters/commit/719a144b4dcdc575c56273bc976ffed2ae7381f3))
+* **web:** preview each failure inline, plus docs and new screenshots ([#284](https://github.com/MoLow/reporters/issues/284)) ([2ff8e1c](https://github.com/MoLow/reporters/commit/2ff8e1cbf1ad979c3f3c4e234561062b0aabee7a))
+
+
+### Bug Fixes
+
+* **web:** let rows collapse and expand while a filter is active ([#285](https://github.com/MoLow/reporters/issues/285)) ([38269ba](https://github.com/MoLow/reporters/commit/38269ba80b4eb765b3d9757e84ad23ed82296bd3))
+
 ## [3.0.0](https://github.com/MoLow/reporters/compare/web-v2.2.1...web-v3.0.0) (2026-08-03)
 
 
