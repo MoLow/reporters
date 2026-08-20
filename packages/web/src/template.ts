@@ -179,6 +179,9 @@ button { font-family: inherit; } input { font-family: inherit; }
 .outbadge { flex: none; color: var(--faint); font-size: 11px; font-weight: 700; margin-left: 2px; }
 .failchip { flex: none; font-size: 10.5px; font-weight: 700; border-radius: 6px; padding: 1px 7px; }
 .todotag { flex: none; font-size: 10.5px; font-weight: 600; border-radius: 6px; padding: 1px 7px; }
+.tagchip { flex: none; display: inline-flex; align-items: center; gap: 2px; color: var(--faint); line-height: 1; cursor: default; transition: color .13s; }
+.tagchip:hover { color: var(--dim); }
+.tagchip-n { font-size: 10px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .spacer { flex: 1; min-width: 10px; }
 .pills { display: inline-flex; gap: 5px; flex: none; margin-right: 9px; }
 .pill { font-size: 11px; font-weight: 700; border-radius: 999px; padding: 1px 8px; font-variant-numeric: tabular-nums; }

@@ -270,6 +270,13 @@ const SearchIcon = () => (
   </svg>
 );
 
+const TagIcon = () => (
+  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20.6 13.6l-7 7a2 2 0 0 1-2.8 0l-7.4-7.4A2 2 0 0 1 3 11.8V4a1 1 0 0 1 1-1h7.8a2 2 0 0 1 1.4.6l7.4 7.4a2 2 0 0 1 0 2.6z" />
+    <circle cx="7.5" cy="7.5" r="1.3" fill="currentColor" stroke="none" />
+  </svg>
+);
+
 const CarryIcon = () => (
   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <path d="M3 12a9 9 0 1 0 2.6-6.4" />
@@ -441,6 +448,10 @@ function useSettle(status: TestStatus): boolean {
 
 const trimTag = (s: string): string => (s.length > 32 ? `${s.slice(0, 31)}…` : s);
 
+const tagTip = (tags: readonly string[]): string => (tags.length === 1
+  ? `Tag: ${tags[0]}`
+  : `${tags.length} tags: ${tags.join(' · ')}`);
+
 /** Focus that arrived from a pointer press gets tagged so CSS can skip the
  *  ring (Safari matches :focus-visible on clicked tabindex elements); we
  *  can't preventDefault the mousedown instead — that blocks text selection. */
@@ -550,7 +561,7 @@ function RowView({
       style={rowStyle}
       role="treeitem"
       aria-expanded={expandable ? expanded : undefined}
-      aria-label={`${displayName(node)}, ${status}${container ? `, ${counts.total} tests` : ''}${previewText ? `: ${previewText}` : ''}`}
+      aria-label={`${displayName(node)}, ${status}${container ? `, ${counts.total} tests` : ''}${node.tags?.length ? `, ${tagTip(node.tags)}` : ''}${previewText ? `: ${previewText}` : ''}`}
       tabIndex={0}
       data-clickable={expandable || hasDiag}
       data-fail={isTest && status === 'failed' && !cancelled}
@@ -586,9 +597,12 @@ function RowView({
       ) : typeof node.skip === 'string' && node.skip ? (
         <span className="todotag" data-soft="skipped">⊘ {trimTag(node.skip)}</span>
       ) : null}
-      {node.tags?.map((tag) => (
-        <span className="todotag" data-soft="todo" key={tag}>{trimTag(tag)}</span>
-      ))}
+      {node.tags?.length ? (
+        <span className="tagchip" data-tip={tagTip(node.tags)} aria-hidden="true">
+          <TagIcon />
+          {node.tags.length > 1 ? <span className="tagchip-n">{node.tags.length}</span> : null}
+        </span>
+      ) : null}
       <span className="spacer" />
       {logs > 0 ? (
         <button

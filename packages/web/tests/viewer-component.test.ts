@@ -96,6 +96,35 @@ test('unmount stops polling a live stream', async () => {
   assert.strictEqual(state.calls, atUnmount, 'no fetches after unmount');
 });
 
+test('tags collapse to one chip whose tooltip and row label carry the names', async () => {
+  const tags = ['aws-rds-workflow-test', 'rds-tests-workflow-test'];
+  const tagged = [
+    `{"type":"test:pass","data":{"name":"tagged","nesting":0,"file":"t.test.js","tags":${JSON.stringify(tags)},"details":{"duration_ms":1},"testNumber":1}}`,
+    '{"type":"test:pass","data":{"name":"single","nesting":0,"file":"t.test.js","tags":["smoke"],"details":{"duration_ms":1},"testNumber":2}}',
+    '{"type":"test:pass","data":{"name":"plain","nesting":0,"file":"t.test.js","details":{"duration_ms":1},"testNumber":3}}',
+    SUMMARY,
+  ].join('\n');
+  const { fetchImpl } = fakeSource(`${tagged}\n`);
+  const { root, el } = mount();
+  await act(async () => {
+    root.render(React.createElement(TestReportViewer, { src: '/run.ndjson', fetch: fetchImpl, pollMs: 10 }));
+  });
+  await tick(30);
+  const rowOf = (name: string) => [...el.querySelectorAll('.row')]
+    .find((r) => r.querySelector('.name')?.textContent === name)!;
+  const many = rowOf('tagged');
+  assert.strictEqual(many.querySelectorAll('.tagchip').length, 1, 'one chip stands for every tag');
+  assert.ok(!many.textContent!.includes(tags[0]), 'tag names stay out of the row title');
+  assert.strictEqual(many.querySelector('.tagchip')!.getAttribute('data-tip'), `2 tags: ${tags.join(' · ')}`);
+  assert.strictEqual(many.querySelector('.tagchip-n')!.textContent, '2');
+  assert.ok(many.getAttribute('aria-label')!.includes(`2 tags: ${tags.join(' · ')}`));
+  const one = rowOf('single');
+  assert.strictEqual(one.querySelector('.tagchip')!.getAttribute('data-tip'), 'Tag: smoke');
+  assert.strictEqual(one.querySelector('.tagchip-n'), null, 'a lone tag needs no count');
+  assert.strictEqual(rowOf('plain').querySelector('.tagchip'), null);
+  await act(async () => root.unmount());
+});
+
 test('renderNodeActions and renderHeaderActions render in the embedded component', async () => {
   const { fetchImpl } = fakeSource(`${LOG}\n${SUMMARY}\n`);
   const { root, el } = mount();
