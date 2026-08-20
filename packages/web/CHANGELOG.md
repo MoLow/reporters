@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.2.0](https://github.com/MoLow/reporters/compare/web-v3.1.1...web-v3.2.0) (2026-08-20)
+
+
+### Features
+
+* **web:** collapse row tags into one chip ([#288](https://github.com/MoLow/reporters/issues/288)) ([3623d1e](https://github.com/MoLow/reporters/commit/3623d1e3e0e131a1ddd7683b691d90a2d65c0f11))
+
 ## [3.1.1](https://github.com/MoLow/reporters/compare/web-v3.1.0...web-v3.1.1) (2026-08-09)
 
 
