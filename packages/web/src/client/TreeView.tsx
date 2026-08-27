@@ -390,7 +390,7 @@ function LogsPopup({
         className="pop"
         role="dialog"
         aria-modal="true"
-        aria-label={`Logs for ${displayName(node)}`}
+        aria-label={`Logs for ${displayName(node)}${node.tags?.length ? `, ${tagTip(node.tags)}` : ''}`}
         ref={boxRef}
         tabIndex={-1}
         onKeyDown={onKeyDown}
@@ -398,7 +398,15 @@ function LogsPopup({
         <div className="pop-head">
           <span className="pop-badge" data-soft={status}>{GLYPH[status]}</span>
           <div className="pop-heading">
-            <div className="pop-title">{displayName(node)}</div>
+            <div className="pop-titlerow">
+              <div className="pop-title">{displayName(node)}</div>
+              {node.tags?.length ? (
+                <span className="tagchip" data-tip={tagTip(node.tags)} aria-hidden="true">
+                  <TagIcon />
+                  {node.tags.length > 1 ? <span className="tagchip-n">{node.tags.length}</span> : null}
+                </span>
+              ) : null}
+            </div>
             <div className="pop-path">{path.join(' › ')}</div>
           </div>
           <div className="pop-tools">

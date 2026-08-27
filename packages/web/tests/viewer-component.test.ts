@@ -99,9 +99,9 @@ test('unmount stops polling a live stream', async () => {
 test('tags collapse to one chip whose tooltip and row label carry the names', async () => {
   const tags = ['aws-rds-workflow-test', 'rds-tests-workflow-test'];
   const tagged = [
-    `{"type":"test:pass","data":{"name":"tagged","nesting":0,"file":"t.test.js","tags":${JSON.stringify(tags)},"details":{"duration_ms":1},"testNumber":1}}`,
+    `{"type":"test:pass","data":{"name":"tagged","nesting":0,"file":"t.test.js","testId":1,"tags":${JSON.stringify(tags)},"details":{"duration_ms":1},"testNumber":1}}`,
     '{"type":"test:pass","data":{"name":"single","nesting":0,"file":"t.test.js","tags":["smoke"],"details":{"duration_ms":1},"testNumber":2}}',
-    '{"type":"test:pass","data":{"name":"plain","nesting":0,"file":"t.test.js","details":{"duration_ms":1},"testNumber":3}}',
+    '{"type":"test:pass","data":{"name":"plain","nesting":0,"file":"t.test.js","testId":2,"details":{"duration_ms":1},"testNumber":3}}',
     SUMMARY,
   ].join('\n');
   const { fetchImpl } = fakeSource(`${tagged}\n`);
@@ -122,6 +122,41 @@ test('tags collapse to one chip whose tooltip and row label carry the names', as
   assert.strictEqual(one.querySelector('.tagchip')!.getAttribute('data-tip'), 'Tag: smoke');
   assert.strictEqual(one.querySelector('.tagchip-n'), null, 'a lone tag needs no count');
   assert.strictEqual(rowOf('plain').querySelector('.tagchip'), null);
+  await act(async () => root.unmount());
+});
+
+test('the logs popup header carries the same tag chip as the row', async () => {
+  const tags = ['aws-rds-workflow-test', 'rds-tests-workflow-test'];
+  const tagged = [
+    `{"type":"test:dequeue","data":{"name":"tagged","nesting":0,"file":"t.test.js","testId":1,"tags":${JSON.stringify(tags)}}}`,
+    '{"type":"test:log","data":{"name":"tagged","nesting":0,"file":"t.test.js","testId":1,"message":"a line of output"}}',
+    `{"type":"test:pass","data":{"name":"tagged","nesting":0,"file":"t.test.js","testId":1,"tags":${JSON.stringify(tags)},"details":{"duration_ms":1},"testNumber":1}}`,
+    '{"type":"test:dequeue","data":{"name":"plain","nesting":0,"file":"t.test.js","testId":2}}',
+    '{"type":"test:log","data":{"name":"plain","nesting":0,"file":"t.test.js","testId":2,"message":"another line"}}',
+    '{"type":"test:pass","data":{"name":"plain","nesting":0,"file":"t.test.js","testId":2,"details":{"duration_ms":1},"testNumber":2}}',
+    SUMMARY,
+  ].join('\n');
+  const { fetchImpl } = fakeSource(`${tagged}\n`);
+  const { root, el } = mount();
+  await act(async () => {
+    root.render(React.createElement(TestReportViewer, { src: '/run.ndjson', fetch: fetchImpl, pollMs: 10 }));
+  });
+  await tick(30);
+  const rowOf = (name: string) => [...el.querySelectorAll('.row')]
+    .find((r) => r.querySelector('.name')?.textContent === name)!;
+
+  await act(async () => { (rowOf('tagged').querySelector('.logbtn') as HTMLElement).click(); });
+  const head = el.querySelector('.pop-head')!;
+  const chip = head.querySelector('.tagchip')!;
+  assert.ok(head.querySelector('.pop-titlerow')!.contains(chip), 'the chip sits beside the title');
+  assert.strictEqual(chip.getAttribute('data-tip'), `2 tags: ${tags.join(' · ')}`);
+  assert.strictEqual(head.querySelector('.tagchip-n')!.textContent, '2');
+  assert.ok(!head.textContent!.includes(tags[0]), 'tag names stay out of the header text');
+  assert.ok(el.querySelector('.pop')!.getAttribute('aria-label')!.includes(`2 tags: ${tags.join(' · ')}`));
+
+  await act(async () => { (el.querySelector('.pbtn-x') as HTMLElement).click(); });
+  await act(async () => { (rowOf('plain').querySelector('.logbtn') as HTMLElement).click(); });
+  assert.strictEqual(el.querySelector('.pop-head')!.querySelector('.tagchip'), null, 'no tags, no chip');
   await act(async () => root.unmount());
 });
 
