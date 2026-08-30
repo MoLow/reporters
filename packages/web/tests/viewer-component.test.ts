@@ -489,3 +489,58 @@ test('a rollup with no failing descendant to point at keeps its error', async ()
   assert.ok(el.querySelector('.pop-msg')!.textContent!.includes('1 subtest failed'), 'so the error still shows');
   await act(async () => root.unmount());
 });
+
+test('the tab is left alone unless the host asks for it', async () => {
+  dom.window.document.title = 'host app';
+  const { fetchImpl } = fakeSource(`${LOG}\n${SUMMARY}\n`);
+  const { root } = mount();
+  await act(async () => {
+    root.render(React.createElement(TestReportViewer, { src: '/run.ndjson', fetch: fetchImpl, pollMs: 10, filters: memoryFilterState() }));
+  });
+  await tick(30);
+  assert.strictEqual(dom.window.document.title, 'host app');
+  assert.strictEqual(dom.window.document.head.querySelector('link[rel="icon"]'), null);
+  await act(async () => root.unmount());
+});
+
+test('documentTitle and favicon follow the run, and hand the page back on unmount', async () => {
+  dom.window.document.title = 'host app';
+  const { state, fetchImpl } = fakeSource(`${LOG}\n`);
+  const { root } = mount();
+  await act(async () => {
+    root.render(React.createElement(TestReportViewer, {
+      src: '/run.ndjson', fetch: fetchImpl, pollMs: 10, filters: memoryFilterState(), documentTitle: true, favicon: true,
+    }));
+  });
+  await tick(30);
+  assert.strictEqual(dom.window.document.title, '100% · host app');
+  const icon = dom.window.document.head.querySelector('link[rel="icon"]') as HTMLLinkElement;
+  assert.match(icon.getAttribute('href')!, /^data:image\/svg\+xml,/);
+
+  state.body += `${SUMMARY}\n`;
+  await tick(30);
+  assert.strictEqual(dom.window.document.title, '✓ · host app');
+
+  await act(async () => root.unmount());
+  assert.strictEqual(dom.window.document.title, 'host app');
+  assert.strictEqual(dom.window.document.head.querySelector('link[rel="icon"]'), null);
+});
+
+test('a documentTitle function owns the whole title', async () => {
+  dom.window.document.title = 'host app';
+  const { fetchImpl } = fakeSource(`${LOG}\n${SUMMARY}\n`);
+  const { root } = mount();
+  await act(async () => {
+    root.render(React.createElement(TestReportViewer, {
+      src: '/run.ndjson',
+      fetch: fetchImpl,
+      pollMs: 10,
+      filters: memoryFilterState(),
+      documentTitle: (progress: { counts: { passed: number } }, base: string) => `${progress.counts.passed} passed — ${base}`,
+    }));
+  });
+  await tick(30);
+  assert.strictEqual(dom.window.document.title, '1 passed — host app');
+  await act(async () => root.unmount());
+  assert.strictEqual(dom.window.document.title, 'host app');
+});

@@ -8,13 +8,23 @@ import { resolveReportSource, type ViewerOptions as SourceOptions } from '../sou
 import { STYLES } from '../template.ts';
 import { TreeView, type Density, type RenderHeaderActions, type RenderNodeActions } from './TreeView.tsx';
 import { initTooltips } from './tooltip.ts';
+import {
+  progressFavicon, progressTitle, runProgress, useDocumentTitle, useFavicon, type RunProgress,
+} from './tabStatus.ts';
 import type { FilterStore } from './urlState.ts';
 
 export type { ReportSource } from '../source.ts';
 export type { FetchLike } from '../poll.ts';
 export type { Density, RenderHeaderActions, RenderNodeActions } from './TreeView.tsx';
+export { progressFavicon, progressTitle, type RunProgress } from './tabStatus.ts';
 export type { TestNode } from '@reporters/tree-core';
 export { memoryFilterState, urlFilterState, type FilterState, type FilterStore } from './urlState.ts';
+
+/** How the browser tab's title reflects the run: `true` for the built-in
+ *  `62% 3✕ · <page title>` format, or a function returning the whole title —
+ *  it receives the same progress the header renders, plus the title the page
+ *  was serving when the viewer mounted. */
+export type DocumentTitle = boolean | ((progress: RunProgress, baseTitle: string) => string);
 
 export interface ViewerOptions extends SourceOptions {
   /** Render custom trailing content (e.g. action buttons) at the end of every
@@ -28,6 +38,11 @@ export interface ViewerOptions extends SourceOptions {
    *  buttons (search, theme, collapse all), inside a `.header-actions` wrapper.
    *  Called on each render (frequent during a live run), so keep it cheap. */
   renderHeaderActions?: RenderHeaderActions;
+  /** Keep the run in the page's title. On by default — the page is the
+   *  viewer's own. Pass `false` to leave the title alone. */
+  documentTitle?: DocumentTitle;
+  /** Keep the run in the page's icon, as a ring of status arcs. On by default. */
+  favicon?: boolean;
 }
 
 const delay = (ms: number) => new Promise((resolve) => { setTimeout(resolve, ms); });
@@ -130,6 +145,19 @@ export interface TestReportViewerProps {
   onRetry?: () => void;
   /** Row density: `compact` (default) or `cozy`. */
   dense?: Density;
+  /** Put the run in the browser tab's title, restoring the page's own on
+   *  unmount. Off by default: an embedded viewer shares the tab with its host,
+   *  which owns what the tab says. */
+  documentTitle?: DocumentTitle;
+  /** Put the run in the browser tab's icon — a ring of failed/passed/skipped/
+   *  todo/running arcs over the not-yet-run remainder — restoring the page's
+   *  own icon on unmount. Off by default, for the same reason. */
+  favicon?: boolean;
+}
+
+function titleFor(option: DocumentTitle, progress: RunProgress, baseTitle: string): string | undefined {
+  if (!option) return undefined;
+  return typeof option === 'function' ? option(progress, baseTitle) : progressTitle(progress, baseTitle);
 }
 
 /** The report viewer as a React component: render it anywhere in a host app.
@@ -137,12 +165,19 @@ export interface TestReportViewerProps {
  *  unmount. Injects its stylesheet into document.head before first paint. */
 export function TestReportViewer({
   src, fetch: fetchImpl, pollMs = DEFAULT_POLL_MS, renderNodeActions, renderHeaderActions, filters, onRetry, dense,
+  documentTitle = false, favicon = false,
 }: TestReportViewerProps) {
   useInsertionEffect(() => { injectStyles(); }, []);
   useEffect(() => { initTooltips(); }, []);
   const {
     snapshot, streaming, pending, loadError, retry,
   } = useReportStream(src, fetchImpl, pollMs);
+  // Read before the first badge is written, so restoring can't hand back a
+  // title of our own making.
+  const [baseTitle] = useState(() => document.title);
+  const progress = runProgress(snapshot, streaming);
+  useDocumentTitle(titleFor(documentTitle, progress, baseTitle), baseTitle);
+  useFavicon(favicon ? progressFavicon(progress) : undefined);
   return (
     <TreeView
       snapshot={snapshot}
@@ -176,6 +211,8 @@ export async function startViewer(options: ViewerOptions = {}): Promise<void> {
       pollMs={source?.pollMs}
       renderNodeActions={options.renderNodeActions}
       renderHeaderActions={options.renderHeaderActions}
+      documentTitle={options.documentTitle ?? true}
+      favicon={options.favicon ?? true}
       // No usable source (missing/rejected ?src=): a retry must re-run source
       // resolution, so reload the page rather than restart a stream.
       onRetry={source ? undefined : () => window.location.reload()}

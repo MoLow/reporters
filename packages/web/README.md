@@ -113,6 +113,8 @@ const filters = memoryFilterState();
   pollMs={250}                // optional; default 1000
   filters={filters}           // optional; defaults to the shareable page URL
   dense="cozy"                // optional; 'compact' (default) or 'cozy'
+  documentTitle                // optional; off by default — see below
+  favicon                      // optional; off by default — see below
   renderNodeActions={(node: TestNode) => (node.type === 'test'
     ? <button onClick={() => rerun(node)}>↻ rerun</button>
     : null)}
@@ -140,6 +142,43 @@ outside the render (or in `useState`/`useMemo`).
 `dense` picks the row metrics: `compact` (26px rows, the default — a real run is
 hundreds of rows) or `cozy` (34px, a roomier hit area). Below 640px both give
 way to 40px touch rows.
+
+### `documentTitle` and `favicon` — the run in the browser tab
+
+A long run is usually watched from another tab, so the viewer can put its state
+where a background tab still shows it.
+
+`documentTitle` prefixes the page's own title with the run: `62% · CI #841`
+while it streams, `62% 3✕ · CI #841` once something fails, and `✓ · CI #841` or
+`3✕ · CI #841` when it ends. State leads because a tab strip truncates from the
+right, and the percentage floors — a run with one test left never reads 100%.
+Pass a function to build the whole title yourself:
+
+```tsx
+<TestReportViewer
+  src={reportUrl}
+  documentTitle={({ counts, inProgress }, baseTitle) => (
+    inProgress ? `${counts.failed} ✕ so far · ${baseTitle}` : baseTitle
+  )}
+/>
+```
+
+It receives the same progress the header renders — `counts`, `progress` (the
+finished share of the tests discovered *so far*), `inProgress`, `idle` — plus
+the title the page was serving when the viewer mounted.
+
+`favicon` draws the run as a ring: failed, passed, skipped, todo and running
+arcs over the not-yet-run remainder, with failed at 12 o'clock so a failing run
+always paints red in the same place. It is an SVG `data:` URI on a `<link
+rel="icon">` of the viewer's own, appended after the page's — browsers honour
+the last icon declared, so removing it restores whatever the page shipped with.
+Safari has historically ignored favicons swapped at runtime; the title works
+everywhere.
+
+Both are **off by default** in the component: an embedded viewer shares the tab
+with its host, and the host owns what the tab says. Both restore the page's
+title and icon when the viewer unmounts. `startViewer()` turns both on — that
+page is the viewer's own — and takes the same options to turn them off.
 
 ### `startViewer()` — a full viewer page
 
