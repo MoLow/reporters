@@ -259,6 +259,14 @@ test('useFavicon: adds one icon link and re-points that same element', async () 
   assert.strictEqual(link.getAttribute('href'), 'data:image/svg+xml,%3Csvg%20id%3D%222%22%3E');
 });
 
+test('useFavicon: an href that does not carry its type is given no type hint', async () => {
+  const { update } = await render({ icon: 'data:image/png;base64,STUB' });
+  assert.strictEqual(icons()[0].getAttribute('type'), 'image/png');
+  await update({ icon: '/favicon.ico' });
+  assert.strictEqual(icons()[0].getAttribute('href'), '/favicon.ico');
+  assert.strictEqual(icons()[0].getAttribute('type'), null, 'a wrong hint is worse than none');
+});
+
 test('useFavicon: drops its link when switched off, and on unmount', async () => {
   const { root, update } = await render({ icon: 'data:image/svg+xml,%3Csvg%3E' });
   await update({});
@@ -356,4 +364,22 @@ test('useProgressFavicon: the dot breathes while the run does, and holds still o
 test('useProgressFavicon: no progress leaves the page\'s own icon alone', async () => {
   await renderIcon({});
   assert.deepStrictEqual(icons(), []);
+});
+
+
+test('useProgressFavicon: prefers-reduced-motion leaves the dot still', async (t) => {
+  t.mock.timers.enable({ apis: ['setInterval', 'Date'] });
+  (dom.window as any).matchMedia = (query: string) => ({ matches: query.includes('prefers-reduced-motion') });
+  try {
+    await renderIcon({
+      progress: runProgress(snapshot({ passed: 5, running: 1, queued: 4, total: 10 }), true),
+    });
+    const shapes = painted.length;
+    assert.strictEqual(dotRadius(), DOT);
+    await act(async () => { t.mock.timers.tick(5_000); });
+    assert.strictEqual(painted.length, shapes, 'a run that would breathe is never repainted');
+    assert.strictEqual(dotRadius(), DOT);
+  } finally {
+    delete (dom.window as any).matchMedia;
+  }
 });

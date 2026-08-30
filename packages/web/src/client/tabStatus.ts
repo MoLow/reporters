@@ -232,9 +232,10 @@ export function useDocumentTitle(next: string | undefined, baseTitle: string): v
 }
 
 /** A `<link rel="icon">`'s `type`, which browsers use to skip icons they cannot decode — so it has
- *  to follow the href across the raster/vector fallback rather than being fixed at either. */
-function iconType(href: string): string {
-  return /^data:([^;,]+)/.exec(href)?.[1] ?? 'image/svg+xml';
+ *  to follow the href across the raster/vector fallback rather than being fixed at either. Absent
+ *  for an href that does not carry its type: no hint beats a wrong one, and the browser sniffs. */
+function iconType(href: string): string | undefined {
+  return /^data:([^;,]+)/.exec(href)?.[1];
 }
 
 /** Show `href` as the tab's icon. Appended as a second `<link rel="icon">`
@@ -256,7 +257,9 @@ export function useFavicon(href: string | undefined): void {
     // Re-assigning an unchanged href re-fetches the icon in some browsers, and
     // a live run re-renders several times a second.
     if (link.current.getAttribute('href') !== href) {
-      link.current.type = iconType(href);
+      const type = iconType(href);
+      if (type) link.current.type = type;
+      else link.current.removeAttribute('type');
       link.current.setAttribute('href', href);
     }
   }, [href]);
