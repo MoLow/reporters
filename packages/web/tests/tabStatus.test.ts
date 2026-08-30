@@ -212,6 +212,8 @@ async function render(props: HarnessProps): Promise<{ root: Root; update: (next:
 }
 
 const icons = () => [...dom.window.document.head.querySelectorAll('link[rel="icon"]')] as HTMLLinkElement[];
+/** The whole candidate set the browser would choose between, not just ours. */
+const candidates = () => [...dom.window.document.head.querySelectorAll('link[rel~="icon"]')] as HTMLLinkElement[];
 
 test('useDocumentTitle: follows the title it is given', async () => {
   dom.window.document.title = 'host app';
@@ -257,6 +259,46 @@ test('useFavicon: adds one icon link and re-points that same element', async () 
   await update({ icon: 'data:image/svg+xml,%3Csvg%20id%3D%222%22%3E' });
   assert.deepStrictEqual(icons(), [link], 'the same link, re-pointed');
   assert.strictEqual(link.getAttribute('href'), 'data:image/svg+xml,%3Csvg%20id%3D%222%22%3E');
+});
+
+test("useFavicon: takes the page's own icons down while ours is up, and hands them back", async () => {
+  const { head } = dom.window.document;
+  const shortcut = dom.window.document.createElement('link');
+  shortcut.rel = 'shortcut icon';
+  shortcut.href = '/favicon.ico';
+  const touch = dom.window.document.createElement('link');
+  touch.rel = 'apple-touch-icon';
+  touch.href = '/touch.png';
+  head.append(shortcut, touch);
+  try {
+    const { root } = await render({ icon: 'data:image/png;base64,STUB' });
+    assert.deepStrictEqual(
+      candidates().map((link) => link.getAttribute('href')),
+      ['data:image/png;base64,STUB'],
+      'nothing is left for the browser to re-select over, or re-fetch',
+    );
+    assert.ok(head.contains(touch), 'apple-touch-icon was never a candidate, and stays');
+    await act(async () => root.unmount());
+    assert.deepStrictEqual(candidates().map((link) => link.getAttribute('href')), ['/favicon.ico']);
+  } finally {
+    shortcut.remove();
+    touch.remove();
+  }
+});
+
+test("useFavicon: switching off hands the page's icons back without an unmount", async () => {
+  const shortcut = dom.window.document.createElement('link');
+  shortcut.rel = 'icon';
+  shortcut.href = '/favicon.ico';
+  dom.window.document.head.appendChild(shortcut);
+  try {
+    const { update } = await render({ icon: 'data:image/png;base64,STUB' });
+    assert.strictEqual(candidates().length, 1);
+    await update({});
+    assert.deepStrictEqual(candidates().map((link) => link.getAttribute('href')), ['/favicon.ico']);
+  } finally {
+    shortcut.remove();
+  }
 });
 
 test('useFavicon: an href that does not carry its type is given no type hint', async () => {

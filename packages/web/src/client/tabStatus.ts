@@ -131,7 +131,7 @@ export function progressFavicon(progress: RunProgress): string {
 
 interface Scratch { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D }
 
-/** One canvas for the life of the page: a breathing run repaints ten times a second, and a fresh
+/** One canvas for the life of the page: a breathing run repaints five times a second, and a fresh
  *  canvas per frame is the only cost in that loop that grows. `null` wherever the environment will
  *  not hand out a 2D context — the icon falls back to `progressFavicon`, which needs none. */
 let scratch: Scratch | null = null;
@@ -185,7 +185,7 @@ export function paintFavicon(progress: RunProgress, dotScale = 1): string | unde
 }
 
 const PULSE_PERIOD_MS = 1600;
-const PULSE_FRAME_MS = 100;
+const PULSE_FRAME_MS = 200;
 /** How far the dot shrinks at the bottom of a breath. Shallow deliberately: a tab strip is
  *  peripheral vision, and a dot that collapses reads as a second status rather than a heartbeat. */
 const PULSE_DEPTH = 0.28;
@@ -238,18 +238,41 @@ function iconType(href: string): string | undefined {
   return /^data:([^;,]+)/.exec(href)?.[1];
 }
 
-/** Show `href` as the tab's icon. Appended as a second `<link rel="icon">`
- *  rather than written into the page's own: browsers honour the last icon
- *  declared, so dropping ours restores whatever the page shipped with. */
+interface Held<T> { current: T | null }
+
+/** Detach the page's own icons, so ours is the only one the browser has to choose between.
+ *
+ *  Sitting ours after theirs and trusting "the last icon declared wins" leaves both in the
+ *  candidate set, and the browser re-runs that choice on every swap — with a `/favicon.ico` it
+ *  can still go and fetch sitting in it. An icon that changes several times a second turns that
+ *  into a standing cost. `rel~="icon"` is the candidate set exactly: it takes `shortcut icon`
+ *  along with `icon`, and leaves `apple-touch-icon`, which was never competing, alone. */
+function seizeIcons(): HTMLLinkElement[] {
+  const theirs = [...document.head.querySelectorAll<HTMLLinkElement>('link[rel~="icon"]')];
+  theirs.forEach((link) => link.remove());
+  return theirs;
+}
+
+/** Drop ours and hand the page its own icons back, in the order it declared them. */
+function releaseIcons(ours: Held<HTMLLinkElement>, theirs: Held<HTMLLinkElement[]>): void {
+  ours.current?.remove();
+  ours.current = null;
+  theirs.current?.forEach((link) => document.head.appendChild(link));
+  theirs.current = null;
+}
+
+/** Show `href` as the tab's icon, for as long as the viewer wants it — the page's own icons come
+ *  down for the duration and go back up when it stops. */
 export function useFavicon(href: string | undefined): void {
   const link = useRef<HTMLLinkElement | null>(null);
+  const theirs = useRef<HTMLLinkElement[] | null>(null);
   useEffect(() => {
     if (href === undefined) {
-      link.current?.remove();
-      link.current = null;
+      releaseIcons(link, theirs);
       return;
     }
     if (!link.current) {
+      theirs.current = seizeIcons();
       link.current = document.createElement('link');
       link.current.rel = 'icon';
       document.head.appendChild(link.current);
@@ -263,13 +286,13 @@ export function useFavicon(href: string | undefined): void {
       link.current.setAttribute('href', href);
     }
   }, [href]);
-  useEffect(() => () => { link.current?.remove(); link.current = null; }, []);
+  useEffect(() => () => releaseIcons(link, theirs), []);
 }
 
 /** Put the run in the tab's icon: rastered and breathing where a canvas allows it, flat SVG where
  *  it does not. `undefined` leaves the page's own icon alone. */
 export function useProgressFavicon(progress: RunProgress | undefined): void {
-  // Only the raster carries the breath, and a pulse the SVG cannot show is a timer waking ten
+  // Only the raster carries the breath, and a pulse the SVG cannot show is a timer waking five
   // times a second to redraw the icon it already drew.
   const dotScale = usePulse(progress?.inProgress === true && scratchIcon() !== null);
   useFavicon(progress && (paintFavicon(progress, dotScale) ?? progressFavicon(progress)));

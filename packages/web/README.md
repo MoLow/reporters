@@ -181,12 +181,15 @@ failure turns it red.
 While the run is still going the dot **breathes** — a slow pulse that stops the
 moment the run lands, so the tab has a sign of life once the arcs stop moving.
 `prefers-reduced-motion: reduce` turns it off, and a hidden tab clamps the
-timer behind it to roughly a second, where it coarsens into a blink rather than
-stopping.
+timer behind it — five frames a second — to roughly one, where it coarsens into
+a blink rather than stopping.
 
-The icon goes on a `<link rel="icon">` of the viewer's own, appended after the
-page's — browsers honour the last icon declared, so removing it restores
-whatever the page shipped with. It is drawn on a canvas and handed over as a
+The icon goes on a `<link rel="icon">` of the viewer's own, and the page's own
+icons come down for as long as it is up — leaving them in place keeps them in
+the set the browser re-chooses from on every swap, with a `/favicon.ico` in it
+that it can still go and fetch. They are handed back, in the order the page
+declared them, when the viewer stops or unmounts. `apple-touch-icon` was never
+a candidate and is left alone. The icon is drawn on a canvas and handed over as a
 PNG `data:` URI, falling back to SVG where no 2D context is available: a
 browser decodes a new icon asynchronously and keeps painting the next-best
 candidate it already holds until that lands, which for an icon repainting many
