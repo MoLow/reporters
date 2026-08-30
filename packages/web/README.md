@@ -167,13 +167,21 @@ It receives the same progress the header renders — `counts`, `progress` (the
 finished share of the tests discovered *so far*), `inProgress`, `idle` — plus
 the title the page was serving when the viewer mounted.
 
-`favicon` draws the run as a ring: failed, passed, skipped, todo and running
-arcs over the not-yet-run remainder, with failed at 12 o'clock so a failing run
-always paints red in the same place. It is an SVG `data:` URI on a `<link
-rel="icon">` of the viewer's own, appended after the page's — browsers honour
-the last icon declared, so removing it restores whatever the page shipped with.
-Safari has historically ignored favicons swapped at runtime; the title works
-everywhere.
+`favicon` draws the run as a dot inside a ring. The **dot** is the verdict —
+red if anything has failed, amber while the run is going, green once it lands
+clean — and it is what survives being scaled to 16px. The **ring** is the
+breakdown: failed, passed, skipped, todo and running arcs over the not-yet-run
+remainder, failed first so red lands at 12 o'clock.
+
+Splitting the two matters more than it sounds. A run that fails 2 of 364 tests
+paints half a percent of the ring red — two pixels in a tab strip — and a ring
+alone would read as passing. The dot does not care about proportion: one
+failure turns it red.
+
+It is an SVG `data:` URI on a `<link rel="icon">` of the viewer's own, appended
+after the page's — browsers honour the last icon declared, so removing it
+restores whatever the page shipped with. Safari has historically ignored
+favicons swapped at runtime; the title works everywhere.
 
 Both are **off by default** in the component: an embedded viewer shares the tab
 with its host, and the host owns what the tab says. Both restore the page's

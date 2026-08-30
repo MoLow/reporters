@@ -84,10 +84,14 @@ const svg = (uri: string): string => {
   return decodeURIComponent(uri.slice('data:image/svg+xml,'.length));
 };
 
-test('favicon: an idle run is the bare track ring', () => {
+const RING_CIRCUMFERENCE = Math.round(2 * Math.PI * 6.5 * 100) / 100;
+/** The verdict dot is the last circle drawn, and the only filled one. */
+const dotColor = (markup: string): string | undefined => /<circle[^>]*fill="(#[0-9a-f]{6})"/.exec(markup)?.[1];
+
+test('favicon: an idle run is the bare track ring around the dot', () => {
   const markup = svg(progressFavicon(runProgress(snapshot({}), true)));
   assert.match(markup, /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" viewBox="0 0 16 16">/);
-  assert.strictEqual(markup.match(/<circle/g)?.length, 1);
+  assert.strictEqual(markup.match(/<circle/g)?.length, 2, 'the track and the dot, no arcs');
 });
 
 test('favicon: one arc per non-empty status, failed first and laid end to end', () => {
@@ -100,14 +104,38 @@ test('favicon: one arc per non-empty status, failed first and laid end to end', 
   const lengths = [...markup.matchAll(/stroke-dasharray="([\d.]+) /g)].map((m) => Number(m[1]));
   assert.deepStrictEqual(offsets, [0, -lengths[0], -(lengths[0] + lengths[1])].map((n) => Math.round(n * 100) / 100));
   // Queued is the only status left unpainted: it is what the track shows.
-  assert.ok(lengths.reduce((a, b) => a + b, 0) < 2 * Math.PI * 6);
+  assert.ok(lengths.reduce((a, b) => a + b, 0) < RING_CIRCUMFERENCE);
 });
 
 test('favicon: an all-passing run closes the ring', () => {
   const markup = svg(progressFavicon(runProgress(snapshot({ passed: 4, total: 4 }, true), false)));
   const [dash, gap] = [...markup.matchAll(/stroke-dasharray="([\d.]+) ([\d.]+)"/g)][0].slice(1).map(Number);
-  assert.strictEqual(dash, Math.round(2 * Math.PI * 6 * 100) / 100);
+  assert.strictEqual(dash, RING_CIRCUMFERENCE);
   assert.strictEqual(gap, 0);
+});
+
+test('favicon: the dot is the verdict — one failure in a sea of passes still reads red', () => {
+  const markup = svg(progressFavicon(runProgress(snapshot({
+    passed: 347, failed: 2, skipped: 9, todo: 6, total: 364,
+  }, true), false)));
+  assert.strictEqual(dotColor(markup), '#fb5a6a');
+  // The arc that colour stands in for is half a percent of the ring — two pixels at favicon size.
+  const [failedArc] = [...markup.matchAll(/stroke-dasharray="([\d.]+) /g)].map((m) => Number(m[1]));
+  assert.ok(failedArc < RING_CIRCUMFERENCE / 100, `failed arc is ${failedArc} of ${RING_CIRCUMFERENCE}`);
+});
+
+test('favicon: a clean run is amber while it runs and green once it lands', () => {
+  const live = svg(progressFavicon(runProgress(snapshot({ passed: 5, running: 1, queued: 4, total: 10 }), true)));
+  assert.strictEqual(dotColor(live), '#ffb13d');
+  const done = svg(progressFavicon(runProgress(snapshot({ passed: 10, total: 10 }, true), false)));
+  assert.strictEqual(dotColor(done), '#34d27b');
+});
+
+test('favicon: a failure outranks a run still in progress', () => {
+  const markup = svg(progressFavicon(runProgress(snapshot({
+    passed: 4, failed: 1, running: 1, queued: 4, total: 10,
+  }), true)));
+  assert.strictEqual(dotColor(markup), '#fb5a6a');
 });
 
 const mounted: Root[] = [];

@@ -13,19 +13,28 @@ export interface RunProgress {
   inProgress: boolean;
 }
 
-/** Statuses that get an arc, outermost first — failed leads so a failing run
- *  always paints red at 12 o'clock, wherever the rest of the ring lands. */
-const RING: readonly (readonly [keyof Counts, string])[] = [
-  ['failed', '#fb5a6a'],
-  ['passed', '#34d27b'],
-  ['skipped', '#8a93a1'],
-  ['todo', '#7c9cff'],
-  ['running', '#ffb13d'],
-];
-/** The not-yet-run remainder. A favicon is its own document, with no access to
- *  the page's CSS variables, so the ring's palette is spelled out here. */
-const TRACK = '#5d6573';
-const RADIUS = 6;
+/** The favicon's palette. A favicon is its own document, with no access to the page's CSS
+ *  variables, so the colours are spelled out here. */
+const COLOR = {
+  failed: '#fb5a6a',
+  passed: '#34d27b',
+  skipped: '#8a93a1',
+  todo: '#7c9cff',
+  running: '#ffb13d',
+  /** Discovered but not yet run — the ring's unspent remainder. */
+  queued: '#5d6573',
+} as const;
+
+/** Statuses that get an arc, in ring order — failed leads so a failing run paints red at 12
+ *  o'clock, wherever the rest of the ring lands. `queued` is the track they are drawn over. */
+const RING: readonly (keyof Counts & keyof typeof COLOR)[] = ['failed', 'passed', 'skipped', 'todo', 'running'];
+
+const RADIUS = 6.5;
+const RING_WIDTH = 3;
+/** The verdict dot, sized to leave a gap inside the arcs so the two never read as one shape. It is
+ *  the part that survives being scaled to a favicon: at 16px the arcs are texture, and a run that
+ *  fails two of four hundred tests would otherwise paint two red pixels and read as passing. */
+const DOT_RADIUS = 3.5;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
 export function runProgress(snapshot: TreeSnapshot, streaming: boolean): RunProgress {
@@ -53,28 +62,35 @@ export function progressTitle(progress: RunProgress, baseTitle: string): string 
 const round = (n: number): number => Math.round(n * 100) / 100;
 
 function arc(color: string, length: number, offset: number): string {
-  return `<circle cx="8" cy="8" r="${RADIUS}" fill="none" stroke="${color}" stroke-width="4"`
+  return `<circle cx="8" cy="8" r="${RADIUS}" fill="none" stroke="${color}" stroke-width="${RING_WIDTH}"`
     + ` stroke-dasharray="${round(length)} ${round(CIRCUMFERENCE - length)}"`
     + ` stroke-dashoffset="${round(-offset)}" transform="rotate(-90 8 8)"/>`;
 }
 
-/** A `data:` URI for the run as a ring: one arc per status over the track, so
- *  the tab carries how far along the run is and how much of it is red without
- *  being read as text. */
+/** The colour the run as a whole is going: one failure makes it red, whatever the other counts. */
+function verdictColor(progress: RunProgress): string {
+  if (progress.counts.failed > 0) return COLOR.failed;
+  return progress.inProgress ? COLOR.running : COLOR.passed;
+}
+
+/** A `data:` URI for the run: a filled dot in the verdict's colour, ringed by the breakdown — one
+ *  arc per status over the not-yet-run remainder. */
 export function progressFavicon(progress: RunProgress): string {
   const total = Math.max(progress.counts.total, 1);
   const arcs: string[] = [];
   let offset = 0;
-  for (const [status, color] of RING) {
+  for (const status of RING) {
     const length = (progress.counts[status] / total) * CIRCUMFERENCE;
     if (length > 0) {
-      arcs.push(arc(color, length, offset));
+      arcs.push(arc(COLOR[status], length, offset));
       offset += length;
     }
   }
   const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">'
-    + `<circle cx="8" cy="8" r="${RADIUS}" fill="none" stroke="${TRACK}" stroke-width="4"/>`
-    + `${arcs.join('')}</svg>`;
+    + `<circle cx="8" cy="8" r="${RADIUS}" fill="none" stroke="${COLOR.queued}" stroke-width="${RING_WIDTH}"/>`
+    + arcs.join('')
+    + `<circle cx="8" cy="8" r="${DOT_RADIUS}" fill="${verdictColor(progress)}"/>`
+    + '</svg>';
   return `data:image/svg+xml,${encodeURIComponent(svg)}`;
 }
 
