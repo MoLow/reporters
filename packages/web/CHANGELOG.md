@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.0](https://github.com/MoLow/reporters/compare/web-v3.2.0...web-v3.3.0) (2026-08-30)
+
+
+### Features
+
+* **web:** reflect the run in the browser tab ([#293](https://github.com/MoLow/reporters/issues/293)) ([53c06c1](https://github.com/MoLow/reporters/commit/53c06c115e956ab4f2e108a601a3fa693a8fa503))
+
 ## [3.2.0](https://github.com/MoLow/reporters/compare/web-v3.1.1...web-v3.2.0) (2026-08-20)
 
 
