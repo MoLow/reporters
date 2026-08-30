@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.0](https://github.com/MoLow/reporters/compare/web-v3.3.1...web-v3.4.0) (2026-08-30)
+
+
+### Features
+
+* **web:** stop the favicon flickering, and give its dot a pulse ([#296](https://github.com/MoLow/reporters/issues/296)) ([6bc4339](https://github.com/MoLow/reporters/commit/6bc4339ecda744f48179fc17a3c90cf362abf596))
+
 ## [3.3.1](https://github.com/MoLow/reporters/compare/web-v3.3.0...web-v3.3.1) (2026-08-30)
 
 
