@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.1](https://github.com/MoLow/reporters/compare/web-v3.4.0...web-v3.4.1) (2026-08-30)
+
+
+### Bug Fixes
+
+* **web:** own the tab's icon rather than sit after the page's ([#298](https://github.com/MoLow/reporters/issues/298)) ([39cb37f](https://github.com/MoLow/reporters/commit/39cb37f83d88ee31a19de5ce3b5b1211465dd792))
+
 ## [3.4.0](https://github.com/MoLow/reporters/compare/web-v3.3.1...web-v3.4.0) (2026-08-30)
 
 
