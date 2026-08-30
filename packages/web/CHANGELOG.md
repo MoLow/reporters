@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.1](https://github.com/MoLow/reporters/compare/web-v3.3.0...web-v3.3.1) (2026-08-30)
+
+
+### Bug Fixes
+
+* **web:** make the favicon's verdict survive a mostly-passing run ([#294](https://github.com/MoLow/reporters/issues/294)) ([24eba89](https://github.com/MoLow/reporters/commit/24eba8996b16d743f059ba71f67332164de18181))
+
 ## [3.3.0](https://github.com/MoLow/reporters/compare/web-v3.2.0...web-v3.3.0) (2026-08-30)
 
 
