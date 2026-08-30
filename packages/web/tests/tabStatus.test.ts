@@ -1,7 +1,26 @@
-import { test } from 'node:test';
+import { afterEach, test } from 'node:test';
 import assert from 'node:assert';
-import { progressFavicon, progressTitle, runProgress } from '../src/client/tabStatus.ts';
+import { JSDOM } from 'jsdom';
+import type ReactTypes from 'react';
+import type { Root } from 'react-dom/client';
+import {
+  progressFavicon, progressTitle, runProgress, useDocumentTitle, useFavicon,
+} from '../src/client/tabStatus.ts';
 import type { Counts, TreeSnapshot } from '@reporters/tree-core';
+
+const dom = new JSDOM('', { url: 'http://localhost/' });
+(globalThis as any).window = dom.window;
+(globalThis as any).document = dom.window.document;
+Object.defineProperty(globalThis, 'navigator', { value: dom.window.navigator, configurable: true });
+(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+
+// react-dom snapshots the environment at module evaluation, so it loads only
+// once the DOM globals above exist. The hooks under test are the source
+// module's, not the bundle's — they own the page's title and icon, which no
+// pure assertion can reach.
+const React = (await import('react')).default;
+const { act } = await import('react');
+const { createRoot } = await import('react-dom/client');
 
 const counts = (over: Partial<Counts> = {}): Counts => ({
   passed: 0, failed: 0, skipped: 0, todo: 0, running: 0, queued: 0, carried: 0, total: 0, ...over,
@@ -89,4 +108,86 @@ test('favicon: an all-passing run closes the ring', () => {
   const [dash, gap] = [...markup.matchAll(/stroke-dasharray="([\d.]+) ([\d.]+)"/g)][0].slice(1).map(Number);
   assert.strictEqual(dash, Math.round(2 * Math.PI * 6 * 100) / 100);
   assert.strictEqual(gap, 0);
+});
+
+const mounted: Root[] = [];
+afterEach(async () => {
+  const roots = mounted.splice(0);
+  await act(async () => { for (const r of roots) r.unmount(); });
+});
+
+interface HarnessProps { title?: string; baseTitle?: string; icon?: string }
+
+function Harness({ title, baseTitle = '', icon }: HarnessProps) {
+  useDocumentTitle(title, baseTitle);
+  useFavicon(icon);
+  return null;
+}
+
+async function render(props: HarnessProps): Promise<{ root: Root; update: (next: HarnessProps) => Promise<void> }> {
+  const root = createRoot(dom.window.document.createElement('div'));
+  mounted.push(root);
+  const draw = (p: HarnessProps) => act(async () => {
+    root.render(React.createElement(Harness as ReactTypes.FunctionComponent<HarnessProps>, p));
+  });
+  await draw(props);
+  return { root, update: draw };
+}
+
+const icons = () => [...dom.window.document.head.querySelectorAll('link[rel="icon"]')] as HTMLLinkElement[];
+
+test('useDocumentTitle: follows the title it is given', async () => {
+  dom.window.document.title = 'host app';
+  const { update } = await render({ title: '10% · host app', baseTitle: 'host app' });
+  assert.strictEqual(dom.window.document.title, '10% · host app');
+  await update({ title: '90% 2✕ · host app', baseTitle: 'host app' });
+  assert.strictEqual(dom.window.document.title, '90% 2✕ · host app');
+});
+
+test('useDocumentTitle: hands the base title back when switched off, and again on unmount', async () => {
+  dom.window.document.title = 'host app';
+  const { root, update } = await render({ title: '10% · host app', baseTitle: 'host app' });
+  await update({ baseTitle: 'host app' });
+  assert.strictEqual(dom.window.document.title, 'host app');
+
+  // Switched off, the hook owns nothing: a title the host sets afterwards has
+  // to survive the unmount that follows.
+  dom.window.document.title = 'host app, elsewhere';
+  await act(async () => root.unmount());
+  assert.strictEqual(dom.window.document.title, 'host app, elsewhere');
+});
+
+test('useDocumentTitle: restores on unmount', async () => {
+  dom.window.document.title = 'host app';
+  const { root } = await render({ title: '10% · host app', baseTitle: 'host app' });
+  await act(async () => root.unmount());
+  assert.strictEqual(dom.window.document.title, 'host app');
+});
+
+test('useDocumentTitle: leaves a page it was never given a title for alone', async () => {
+  dom.window.document.title = 'host app';
+  const { root } = await render({ baseTitle: 'host app' });
+  assert.strictEqual(dom.window.document.title, 'host app');
+  await act(async () => root.unmount());
+  assert.strictEqual(dom.window.document.title, 'host app');
+});
+
+test('useFavicon: adds one icon link and re-points that same element', async () => {
+  const { update } = await render({ icon: 'data:image/svg+xml,%3Csvg%3E' });
+  assert.strictEqual(icons().length, 1);
+  const [link] = icons();
+  assert.strictEqual(link.getAttribute('type'), 'image/svg+xml');
+  await update({ icon: 'data:image/svg+xml,%3Csvg%20id%3D%222%22%3E' });
+  assert.deepStrictEqual(icons(), [link], 'the same link, re-pointed');
+  assert.strictEqual(link.getAttribute('href'), 'data:image/svg+xml,%3Csvg%20id%3D%222%22%3E');
+});
+
+test('useFavicon: drops its link when switched off, and on unmount', async () => {
+  const { root, update } = await render({ icon: 'data:image/svg+xml,%3Csvg%3E' });
+  await update({});
+  assert.deepStrictEqual(icons(), []);
+  await update({ icon: 'data:image/svg+xml,%3Csvg%3E' });
+  assert.strictEqual(icons().length, 1);
+  await act(async () => root.unmount());
+  assert.deepStrictEqual(icons(), []);
 });
