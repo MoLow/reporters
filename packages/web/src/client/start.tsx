@@ -9,14 +9,14 @@ import { STYLES } from '../template.ts';
 import { TreeView, type Density, type RenderHeaderActions, type RenderNodeActions } from './TreeView.tsx';
 import { initTooltips } from './tooltip.ts';
 import {
-  progressFavicon, progressTitle, runProgress, useDocumentTitle, useFavicon, type RunProgress,
+  progressTitle, runProgress, useDocumentTitle, useProgressFavicon, type RunProgress,
 } from './tabStatus.ts';
 import type { FilterStore } from './urlState.ts';
 
 export type { ReportSource } from '../source.ts';
 export type { FetchLike } from '../poll.ts';
 export type { Density, RenderHeaderActions, RenderNodeActions } from './TreeView.tsx';
-export { progressFavicon, progressTitle, type RunProgress } from './tabStatus.ts';
+export { paintFavicon, progressFavicon, progressTitle, type RunProgress } from './tabStatus.ts';
 export type { TestNode } from '@reporters/tree-core';
 export { memoryFilterState, urlFilterState, type FilterState, type FilterStore } from './urlState.ts';
 
@@ -150,8 +150,9 @@ export interface TestReportViewerProps {
    *  which owns what the tab says. */
   documentTitle?: DocumentTitle;
   /** Put the run in the browser tab's icon — a ring of failed/passed/skipped/
-   *  todo/running arcs over the not-yet-run remainder — restoring the page's
-   *  own icon on unmount. Off by default, for the same reason. */
+   *  todo/running arcs over the not-yet-run remainder, its centre dot breathing
+   *  while the run is still going — restoring the page's own icon on unmount.
+   *  Off by default, for the same reason. */
   favicon?: boolean;
 }
 
@@ -177,7 +178,7 @@ export function TestReportViewer({
   const [baseTitle] = useState(() => document.title);
   const progress = runProgress(snapshot, streaming);
   useDocumentTitle(titleFor(documentTitle, progress, baseTitle), baseTitle);
-  useFavicon(favicon ? progressFavicon(progress) : undefined);
+  useProgressFavicon(favicon ? progress : undefined);
   return (
     <TreeView
       snapshot={snapshot}

@@ -178,9 +178,21 @@ paints half a percent of the ring red — two pixels in a tab strip — and a ri
 alone would read as passing. The dot does not care about proportion: one
 failure turns it red.
 
-It is an SVG `data:` URI on a `<link rel="icon">` of the viewer's own, appended
-after the page's — browsers honour the last icon declared, so removing it
-restores whatever the page shipped with. Safari has historically ignored
+While the run is still going the dot **breathes** — a slow pulse that stops the
+moment the run lands, so the tab has a sign of life once the arcs stop moving.
+`prefers-reduced-motion: reduce` turns it off, and a hidden tab clamps the
+timer behind it to roughly a second, where it coarsens into a blink rather than
+stopping.
+
+The icon goes on a `<link rel="icon">` of the viewer's own, appended after the
+page's — browsers honour the last icon declared, so removing it restores
+whatever the page shipped with. It is drawn on a canvas and handed over as a
+PNG `data:` URI, falling back to SVG where no 2D context is available: a
+browser decodes a new icon asynchronously and keeps painting the next-best
+candidate it already holds until that lands, which for an icon repainting many
+times a second is a constant visible flicker back to the page's own favicon.
+The ring's arcs are rounded to whole pixels for the same reason — a boundary no
+display can resolve is not worth an icon swap. Safari has historically ignored
 favicons swapped at runtime; the title works everywhere.
 
 Both are **off by default** in the component: an embedded viewer shares the tab

@@ -4,7 +4,8 @@ import { JSDOM } from 'jsdom';
 import type ReactTypes from 'react';
 import type { Root } from 'react-dom/client';
 import {
-  progressFavicon, progressTitle, runProgress, useDocumentTitle, useFavicon,
+  paintFavicon, progressFavicon, progressTitle, runProgress,
+  useDocumentTitle, useFavicon, useProgressFavicon, type RunProgress,
 } from '../src/client/tabStatus.ts';
 import type { Counts, TreeSnapshot } from '@reporters/tree-core';
 
@@ -13,6 +14,30 @@ const dom = new JSDOM('', { url: 'http://localhost/' });
 (globalThis as any).document = dom.window.document;
 Object.defineProperty(globalThis, 'navigator', { value: dom.window.navigator, configurable: true });
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+
+// jsdom draws nothing, and the rastered icon is the one a browser actually gets. A recording
+// context stands in for the real one: every arc the painter asks for, in the order it asks.
+interface Painted { color: string; args: number[] }
+const painted: Painted[] = [];
+let pending: number[] = [];
+const recorder = {
+  strokeStyle: '',
+  fillStyle: '',
+  lineWidth: 0,
+  setTransform() {},
+  clearRect() { painted.length = 0; },
+  beginPath() { pending = []; },
+  arc(...args: number[]) { pending = args; },
+  stroke() { painted.push({ color: recorder.strokeStyle, args: pending }); },
+  fill() { painted.push({ color: recorder.fillStyle, args: pending }); },
+};
+const PNG = 'data:image/png;base64,STUB';
+let context2d: unknown = recorder;
+dom.window.HTMLCanvasElement.prototype.getContext = (() => context2d) as never;
+dom.window.HTMLCanvasElement.prototype.toDataURL = (() => PNG) as never;
+
+/** Radius of the last shape painted — the verdict dot is always drawn last. */
+const dotRadius = (): number => painted[painted.length - 1].args[2];
 
 // react-dom snapshots the environment at module evaluation, so it loads only
 // once the DOM globals above exist. The hooks under test are the source
@@ -119,9 +144,9 @@ test('favicon: the dot is the verdict — one failure in a sea of passes still r
     passed: 347, failed: 2, skipped: 9, todo: 6, total: 364,
   }, true), false)));
   assert.strictEqual(dotColor(markup), '#fb5a6a');
-  // The arc that colour stands in for is half a percent of the ring — two pixels at favicon size.
+  // The arc that colour stands in for is the ring's rounding floor: one unit of red in forty.
   const [failedArc] = [...markup.matchAll(/stroke-dasharray="([\d.]+) /g)].map((m) => Number(m[1]));
-  assert.ok(failedArc < RING_CIRCUMFERENCE / 100, `failed arc is ${failedArc} of ${RING_CIRCUMFERENCE}`);
+  assert.strictEqual(failedArc, 1);
 });
 
 test('favicon: a clean run is amber while it runs and green once it lands', () => {
@@ -136,6 +161,30 @@ test('favicon: a failure outranks a run still in progress', () => {
     passed: 4, failed: 1, running: 1, queued: 4, total: 10,
   }), true)));
   assert.strictEqual(dotColor(markup), '#fb5a6a');
+});
+
+test('favicon: the ring is quantised, so a change no pixel can show does not mint a new icon', () => {
+  const icon = (passed: number) => progressFavicon(runProgress(snapshot({
+    passed, queued: 1000 - passed, total: 1000,
+  }), true));
+  assert.strictEqual(icon(501), icon(500), 'one test in a thousand moves no boundary');
+  assert.notStrictEqual(icon(520), icon(500), 'two percent of the ring is a pixel, and does');
+});
+
+test('favicon: quantised arcs still tile the ring end to end', () => {
+  const markup = svg(progressFavicon(runProgress(snapshot({
+    passed: 137, failed: 11, skipped: 3, todo: 2, running: 4, queued: 43, total: 200,
+  }), true)));
+  const lengths = [...markup.matchAll(/stroke-dasharray="([\d.]+) /g)].map((m) => Number(m[1]));
+  const offsets = [...markup.matchAll(/stroke-dashoffset="(-?[\d.]+)"/g)].map((m) => Number(m[1]));
+  // Each arc begins exactly where the one before it ended: no seams, no overlap.
+  let end = 0;
+  lengths.forEach((length, i) => {
+    assert.strictEqual(Math.abs(offsets[i]), end, `arc ${i} starts at ${-offsets[i]}, not ${end}`);
+    assert.strictEqual(length, Math.round(length), `arc ${i} is ${length}, not a whole unit`);
+    end += length;
+  });
+  assert.ok(end <= RING_CIRCUMFERENCE, `arcs total ${end}, past the ring's ${RING_CIRCUMFERENCE}`);
 });
 
 const mounted: Root[] = [];
@@ -217,5 +266,94 @@ test('useFavicon: drops its link when switched off, and on unmount', async () =>
   await update({ icon: 'data:image/svg+xml,%3Csvg%3E' });
   assert.strictEqual(icons().length, 1);
   await act(async () => root.unmount());
+  assert.deepStrictEqual(icons(), []);
+});
+
+interface IconProps { progress?: RunProgress }
+
+function IconHarness({ progress }: IconProps) {
+  useProgressFavicon(progress);
+  return null;
+}
+
+async function renderIcon(props: IconProps): Promise<{ update: (next: IconProps) => Promise<void> }> {
+  const root = createRoot(dom.window.document.createElement('div'));
+  mounted.push(root);
+  const draw = (p: IconProps) => act(async () => {
+    root.render(React.createElement(IconHarness as ReactTypes.FunctionComponent<IconProps>, p));
+  });
+  await draw(props);
+  return { update: draw };
+}
+
+const DOT = 3.5;
+const PULSE_DEPTH = 0.28;
+
+// Everything below paints, and the module keeps the first canvas it is given a context for — so
+// the environment that has none has to be asked about before any of it runs.
+test('paintFavicon: with no 2D context there is no raster, and the SVG stands in', async () => {
+  context2d = null;
+  try {
+    const progress = runProgress(snapshot({ passed: 1, queued: 1, total: 2 }), true);
+    assert.strictEqual(paintFavicon(progress), undefined);
+    await renderIcon({ progress });
+    assert.strictEqual(icons()[0].getAttribute('href'), progressFavicon(progress));
+    assert.strictEqual(icons()[0].getAttribute('type'), 'image/svg+xml');
+  } finally {
+    context2d = recorder;
+  }
+});
+
+test('paintFavicon: the track, then one arc per status in ring order, then the verdict dot', () => {
+  assert.strictEqual(paintFavicon(runProgress(snapshot({
+    passed: 5, failed: 1, running: 2, queued: 2, total: 10,
+  }), true)), PNG);
+  assert.deepStrictEqual(
+    painted.map((shape) => shape.color),
+    ['#5d6573', '#fb5a6a', '#34d27b', '#ffb13d', '#fb5a6a'],
+  );
+  const arcs = painted.slice(1, -1);
+  assert.strictEqual(arcs[0].args[3], -Math.PI / 2, 'the ring opens at twelve o\'clock');
+  arcs.forEach((shape, i) => {
+    if (i > 0) assert.strictEqual(shape.args[3], arcs[i - 1].args[4], `arc ${i} leaves a seam`);
+  });
+});
+
+test('paintFavicon: dotScale moves the dot and nothing else', () => {
+  const progress = runProgress(snapshot({ passed: 5, running: 1, queued: 4, total: 10 }), true);
+  paintFavicon(progress);
+  const ring = painted.slice(0, -1).map((shape) => shape.args.join());
+  assert.strictEqual(dotRadius(), DOT);
+  paintFavicon(progress, 1 - PULSE_DEPTH);
+  assert.strictEqual(dotRadius(), DOT * (1 - PULSE_DEPTH));
+  assert.deepStrictEqual(painted.slice(0, -1).map((shape) => shape.args.join()), ring);
+});
+
+test('useProgressFavicon: the tab gets the raster, and the link type follows it', async () => {
+  await renderIcon({ progress: runProgress(snapshot({ passed: 5, running: 1, queued: 4, total: 10 }), true) });
+  assert.strictEqual(icons().length, 1);
+  assert.strictEqual(icons()[0].getAttribute('href'), PNG);
+  assert.strictEqual(icons()[0].getAttribute('type'), 'image/png');
+});
+
+test('useProgressFavicon: the dot breathes while the run does, and holds still once it lands', async (t) => {
+  t.mock.timers.enable({ apis: ['setInterval', 'Date'] });
+  const { update } = await renderIcon({
+    progress: runProgress(snapshot({ passed: 5, running: 1, queued: 4, total: 10 }), true),
+  });
+  assert.strictEqual(dotRadius(), DOT, 'a breath starts full');
+  await act(async () => { t.mock.timers.tick(800); });
+  assert.strictEqual(dotRadius(), DOT * (1 - PULSE_DEPTH), 'half a period in, at its smallest');
+  await act(async () => { t.mock.timers.tick(800); });
+  assert.strictEqual(dotRadius(), DOT, 'and back');
+
+  await update({ progress: runProgress(snapshot({ passed: 10, total: 10 }, true), false) });
+  assert.strictEqual(dotRadius(), DOT, 'a landed run sits at full');
+  await act(async () => { t.mock.timers.tick(5_000); });
+  assert.strictEqual(painted.length, 3, 'and is not repainted again');
+});
+
+test('useProgressFavicon: no progress leaves the page\'s own icon alone', async () => {
+  await renderIcon({});
   assert.deepStrictEqual(icons(), []);
 });
