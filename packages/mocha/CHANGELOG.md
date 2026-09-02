@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.3](https://github.com/MoLow/reporters/compare/mocha-v2.0.2...mocha-v2.0.3) (2026-09-02)
+
+
+### Bug Fixes
+
+* **mocha:** report suite hook failures ([#301](https://github.com/MoLow/reporters/issues/301)) ([22df3b9](https://github.com/MoLow/reporters/commit/22df3b9a2e8fefbf0284dc3c0f87eae262325748))
+
 ## [2.0.2](https://github.com/MoLow/reporters/compare/mocha-v2.0.1...mocha-v2.0.2) (2026-07-02)
 
 
