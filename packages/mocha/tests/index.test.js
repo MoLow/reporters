@@ -142,3 +142,12 @@ test('preserves incoming completion order for concurrent children', async () => 
   });
   await snapshot(child);
 });
+
+test('reports an after hook failure and its failing suite', async () => {
+  const child = spawnSync(process.execPath, [
+    '--test-reporter',
+    './index.js',
+    './tests/fixtures/after-hook-failure.js',
+  ], { env: {}, cwd: pkgDir });
+  await snapshot(child);
+});

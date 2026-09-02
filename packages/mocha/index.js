@@ -276,6 +276,10 @@ class Runner extends EventEmitter {
     node.applyTestEvent(event, passed);
 
     if (event.data.details?.type === 'suite' || node.children.length > 0) {
+      if (!passed && event.data.details?.error?.failureType === 'hookFailed') {
+        this.stats.failures += 1;
+        this.emit(EVENT_TEST_FAIL, node, node.err);
+      }
       this.#closeSuite(node);
     } else {
       this.#reportTest(node);

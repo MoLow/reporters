@@ -1,0 +1,22 @@
+Object {
+  "exitCode": 1,
+  "stderr": "",
+  "stdout": "
+
+  suite with a failing after hook
+    ✔ passes its test
+    1) suite with a failing after hook
+
+
+  1 passing (*ms)
+  1 failing
+
+  1) 
+       suite with a failing after hook:
+     Error: after hook failed
+      *
+
+
+
+",
+}
