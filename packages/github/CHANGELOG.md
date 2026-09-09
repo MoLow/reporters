@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.4](https://github.com/MoLow/reporters/compare/github-v2.1.3...github-v2.1.4) (2026-09-09)
+
+
+### Miscellaneous Chores
+
+* update snapshots ([#304](https://github.com/MoLow/reporters/issues/304)) ([6200e7a](https://github.com/MoLow/reporters/commit/6200e7a7d4646db90c6a4ff70e64026767d55709))
+
 ## [2.1.3](https://github.com/MoLow/reporters/compare/github-v2.1.2...github-v2.1.3) (2026-08-30)
 
 
