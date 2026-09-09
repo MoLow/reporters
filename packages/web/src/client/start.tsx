@@ -127,8 +127,10 @@ export interface TestReportViewerProps {
    *  Omit (e.g. while the host is still resolving where the report lives and
    *  has nothing to show) to render the load-error screen. */
   src?: string;
-  /** Transport for reads; defaults to the global fetch. Receives the reader's
-   *  Range header and must return a standard Response. */
+  /** Transport for reads; defaults to the global fetch. Must return a standard
+   *  Response. Carries the reader's Range header on incremental reads and none
+   *  on the first, so it must pass whatever headers it is given straight through
+   *  rather than assume a Range is always there to forward. */
   fetch?: FetchLike;
   /** Poll cadence while the run is live. */
   pollMs?: number;

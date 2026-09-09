@@ -21,7 +21,7 @@ function mockFetch(responses: MockResponse[]) {
 
 test('range-supporting source returns only newly appended events', async () => {
   const { fetchImpl, ranges } = mockFetch([
-    { status: 206, body: '{"type":"a"}\n{"type":"b"}\n' },
+    { status: 200, body: '{"type":"a"}\n{"type":"b"}\n' },
     { status: 206, body: '{"type":"c"}\n' },
   ]);
   const reader = createNdjsonReader('http://x/run.ndjson', fetchImpl);
@@ -36,9 +36,39 @@ test('range-supporting source returns only newly appended events', async () => {
   assert.match(ranges[1]!, /^bytes=26-/);
 });
 
+test('the first read sends no Range, so a host may compress it', async () => {
+  const { fetchImpl, ranges } = mockFetch([
+    { status: 200, body: '{"type":"a"}\n' },
+    { status: 206, body: '{"type":"b"}\n' },
+  ]);
+  const reader = createNdjsonReader('http://x/run.ndjson', fetchImpl);
+
+  await reader.pull();
+  await reader.pull();
+  assert.strictEqual(ranges[0], null);
+  assert.match(ranges[1]!, /^bytes=13-/);
+});
+
+test('an empty stream stays unranged until it has bytes to skip', async () => {
+  const { fetchImpl, ranges } = mockFetch([
+    { status: 200, body: '' },
+    { status: 200, body: '{"type":"a"}\n' },
+  ]);
+  const reader = createNdjsonReader('http://x/run.ndjson', fetchImpl);
+
+  const first = await reader.pull();
+  assert.deepStrictEqual(first.events, []);
+  assert.strictEqual(first.reset, false);
+
+  const second = await reader.pull();
+  assert.deepStrictEqual(second.events.map((e) => e.type), ['a']);
+  assert.strictEqual(second.reset, false);
+  assert.deepStrictEqual(ranges, [null, null]);
+});
+
 test('a truncated trailing line is buffered until completed', async () => {
   const { fetchImpl } = mockFetch([
-    { status: 206, body: '{"type":"a"}\n{"type":"b' },
+    { status: 200, body: '{"type":"a"}\n{"type":"b' },
     { status: 206, body: '"}\n' },
   ]);
   const reader = createNdjsonReader('http://x/run.ndjson', fetchImpl);
@@ -50,19 +80,25 @@ test('a truncated trailing line is buffered until completed', async () => {
   assert.deepStrictEqual(second.events.map((e) => e.type), ['b']);
 });
 
-test('a non-range source (200) returns all events and flags a reset', async () => {
-  const { fetchImpl } = mockFetch([
+test('a source that ignores Range is re-read in full and flags a reset', async () => {
+  const { fetchImpl, ranges } = mockFetch([
     { status: 200, body: '{"type":"a"}\n{"type":"b"}\n' },
   ]);
   const reader = createNdjsonReader('http://x/run.ndjson', fetchImpl);
-  const result = await reader.pull();
-  assert.strictEqual(result.reset, true);
-  assert.deepStrictEqual(result.events.map((e) => e.type), ['a', 'b']);
+
+  const first = await reader.pull();
+  assert.strictEqual(first.reset, false);
+  assert.deepStrictEqual(first.events.map((e) => e.type), ['a', 'b']);
+
+  const second = await reader.pull();
+  assert.match(ranges[1]!, /^bytes=26-/);
+  assert.strictEqual(second.reset, true);
+  assert.deepStrictEqual(second.events.map((e) => e.type), ['a', 'b']);
 });
 
 test('blank and malformed lines are skipped, valid ones still parsed', async () => {
   const { fetchImpl } = mockFetch([
-    { status: 206, body: '{"type":"a"}\n\n   \nnot json\n{"type":"b"}\n' },
+    { status: 200, body: '{"type":"a"}\n\n   \nnot json\n{"type":"b"}\n' },
   ]);
   const reader = createNdjsonReader('http://x/run.ndjson', fetchImpl);
   const { events } = await reader.pull();
@@ -83,7 +119,7 @@ test('defaults to the global fetch when none is provided', async () => {
 
 test('416 (nothing new) yields no events', async () => {
   const { fetchImpl } = mockFetch([
-    { status: 206, body: '{"type":"a"}\n' },
+    { status: 200, body: '{"type":"a"}\n' },
     { status: 416, body: '' },
   ]);
   const reader = createNdjsonReader('http://x/run.ndjson', fetchImpl);

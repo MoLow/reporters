@@ -2,8 +2,10 @@ import type { TestEvent } from '@reporters/tree-core';
 
 export interface PullResult {
   events: TestEvent[];
-  /** True when the source did not honor Range and was re-read in full; the
-   *  caller should rebuild its store from scratch before applying `events`. */
+  /** True when a read that asked for a Range got the whole body back, so
+   *  `events` repeats what was already applied; the caller should rebuild its
+   *  store from scratch before applying them. The unranged first read of a
+   *  stream has nothing to rebuild and never sets it. */
   reset: boolean;
 }
 
@@ -30,25 +32,30 @@ function byteLength(text: string): number {
 }
 
 /**
- * Incrementally reads an append-only NDJSON stream over HTTP. Uses a Range
- * request to fetch only newly appended bytes; if the host ignores Range and
- * returns the whole body (200), it reports `reset` so the caller can rebuild.
- * A truncated trailing line is buffered until the next pull completes it.
+ * Incrementally reads an append-only NDJSON stream over HTTP. Reads the stream
+ * whole once, then Ranges from the offset reached to fetch only newly appended
+ * bytes; if the host ignores Range and returns the whole body (200), it reports
+ * `reset` so the caller can rebuild. A truncated trailing line is buffered
+ * until the next pull completes it.
  */
 export function createNdjsonReader(url: string, fetchImpl: FetchLike = fetch) {
   let offset = 0;
   let buffer = '';
 
   async function pull(): Promise<PullResult> {
-    const res = await fetchImpl(url, { headers: { Range: `bytes=${offset}-` } });
+    // Only a non-zero offset is worth a Range: a browser drops `Accept-Encoding` to `identity` on
+    // any ranged request, so asking for `bytes=0-` forfeits compression and pulls the whole stream
+    // raw - on a multi-megabyte NDJSON report that is an order of magnitude more bytes than a 200.
+    const ranged = offset > 0;
+    const res = await fetchImpl(url, ranged ? { headers: { Range: `bytes=${offset}-` } } : {});
     if (res.status === 416) return { events: [], reset: false };
 
     const text = await res.text();
     let reset = false;
     if (res.status !== 206) {
+      reset = ranged;
       offset = 0;
       buffer = '';
-      reset = true;
     }
     offset += byteLength(text);
     buffer += text;
