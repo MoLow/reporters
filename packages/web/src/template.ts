@@ -209,7 +209,8 @@ button { font-family: inherit; } input { font-family: inherit; }
 .pop-head { display: flex; align-items: center; gap: 10px; padding: 12px 12px 11px 16px; border-bottom: 1px solid var(--line); }
 .pop-badge { width: 22px; height: 22px; flex: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; }
 .pop-heading { flex: 1; min-width: 0; }
-.pop-title { font-size: 13.5px; font-weight: 650; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pop-titlerow { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.pop-title { min-width: 0; font-size: 13.5px; font-weight: 650; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pop-path { font-size: 11.5px; font-family: var(--mono); color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pop-tools { flex: none; display: flex; gap: 6px; align-items: center; }
 .pbtn { background: var(--panel-2); border: 1px solid var(--line); color: var(--dim); border-radius: 9px; padding: 6px 11px; font-size: 12px; font-family: inherit; cursor: pointer; transition: background .13s, color .13s, border-color .13s; }
