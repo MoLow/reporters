@@ -109,7 +109,7 @@ const filters = memoryFilterState();
 
 <TestReportViewer
   src={reportUrl}
-  fetch={authenticatedFetch}  // optional; receives the Range header
+  fetch={authenticatedFetch}  // optional; receives the Range header, bar the first read
   pollMs={250}                // optional; default 1000
   filters={filters}           // optional; defaults to the shareable page URL
   dense="cozy"                // optional; 'compact' (default) or 'cozy'
@@ -226,10 +226,12 @@ startViewer({
 
 `resolveSource` runs before anything renders. Return `null`/`undefined` to fall
 through to the default `?src=` handling; return `{ url, fetch?, pollMs? }` to
-take over. The custom `fetch` receives the reader's `Range` header and must
-return a standard `Response`; a thrown error shows the viewer's load-error
-screen, and a promise that never resolves is fine while an auth redirect is in
-flight.
+take over. The custom `fetch` must return a standard `Response`; a thrown error
+shows the viewer's load-error screen, and a promise that never resolves is fine
+while an auth redirect is in flight. It is handed the reader's `Range` header on
+incremental reads and none on the first - the first read is deliberately
+unranged, so a host can compress it - so pass the headers you are given through
+as they come.
 
 ### `renderNodeActions`
 

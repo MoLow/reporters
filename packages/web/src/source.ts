@@ -3,8 +3,10 @@ import { resolvePollMs, type FetchLike } from './poll.ts';
 export interface ReportSource {
   /** Passed to the NDJSON reader as the URL/identifier. */
   url: string;
-  /** Transport for reads; defaults to the global fetch. Receives the reader's
-   *  Range header and must return a standard Response. */
+  /** Transport for reads; defaults to the global fetch. Must return a standard
+   *  Response. Carries the reader's Range header on incremental reads and none
+   *  on the first, so it must pass whatever headers it is given straight through
+   *  rather than assume a Range is always there to forward. */
   fetch?: FetchLike;
   /** Poll cadence override; else resolved from ?poll= as today. */
   pollMs?: number;
