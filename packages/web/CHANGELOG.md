@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.2](https://github.com/MoLow/reporters/compare/web-v3.4.1...web-v3.4.2) (2026-09-09)
+
+
+### Bug Fixes
+
+* **web:** read the stream whole once, so a host can compress it ([#303](https://github.com/MoLow/reporters/issues/303)) ([5cdc35e](https://github.com/MoLow/reporters/commit/5cdc35e3402a4415d4299fb59b0a84b8f31e20fe))
+
 ## [3.4.1](https://github.com/MoLow/reporters/compare/web-v3.4.0...web-v3.4.1) (2026-08-30)
 
 
