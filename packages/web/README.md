@@ -259,15 +259,21 @@ Same contract as `renderNodeActions`: called on every render, so keep it cheap.
 
 ### `renderHeaderTitle`
 
-Renders custom content on its own full-width row at the top of the header,
-above the verdict and status chips, wrapped in a `.header-title` element. Same
-contract as the other two: called on every render, so keep it cheap.
+Renders custom content directly above the status chips, beside the verdict,
+wrapped in a `.header-title` element. Same contract as the other two: called on
+every render, so keep it cheap.
 
 This is where a host says *what run this is* — a PR number and title, a branch,
 a link back to the job that produced the log. The viewer's own header answers
 "how did it go"; nothing in it answers "of what", and a host that puts its own
 bar above `<TestReportViewer>` gets a second scroll container and a seam
 between two headers that are really one.
+
+It costs almost nothing vertically. The verdict block is already two lines
+tall, so a title line stacked over the chips fits in height the header was
+spending anyway — about 5px, against the ~30px a row of its own would take.
+That also leaves no empty band beside the title for the toolbar to float in:
+verdict, title-and-chips, and toolbar stay on one centre line.
 
 ```tsx
 <TestReportViewer
@@ -280,9 +286,11 @@ between two headers that are really one.
 />
 ```
 
-The wrapper carries the header's own horizontal padding and nothing else — no
-border, no background — so the row reads as part of the header rather than a
-strip stacked on it. Styling what you put inside it is yours.
+The wrapper adds no border, background or padding of its own — the header row
+already supplies the gutter — so the line reads as part of the header rather
+than a strip stacked on it. Styling what you put inside it is yours. Give long
+text `min-width: 0` and `text-overflow: ellipsis`: the column truncates rather
+than pushing the toolbar off the edge.
 
 It is not rendered on the load-error screen, which replaces the whole header
 with a centred message; the run's identity comes back with the header when a

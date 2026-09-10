@@ -111,7 +111,12 @@ button { font-family: inherit; } input { font-family: inherit; }
 
 /* header */
 .hdr { flex: none; background: var(--panel); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 5; }
-.header-title { display: flex; align-items: center; min-width: 0; padding: 11px 18px 0; font-size: 13px; }
+/* The title rides beside the verdict rather than on a row of its own: the verdict block is already
+   two lines tall, so a title line stacked over the chips costs the header a few pixels instead of a
+   whole row, and leaves no empty band for the toolbar to float in. */
+.hdr-ident { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.hdr-status { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.header-title { display: flex; align-items: center; min-width: 0; font-size: 13px; }
 .hdr-row { display: flex; align-items: center; gap: 16px; padding: 13px 18px 11px; flex-wrap: wrap; }
 .verdict { display: inline-flex; align-items: center; gap: 9px; padding: 6px 13px 6px 10px; border-radius: 11px; }
 .verdict-glyph { font-size: 15px; font-weight: 800; line-height: 1; }
@@ -278,8 +283,10 @@ button { font-family: inherit; } input { font-family: inherit; }
   .caret { width: 20px; align-self: stretch; }
   /* one content column: headline row, breakdown pills, controls, progress bar —
      stacked on a single 12px gutter and spacing step */
-  .header-title { padding: 12px 12px 0; }
   .hdr-row { flex-direction: column; align-items: stretch; gap: 12px; padding: 12px 12px 0; }
+  /* Stacked, width is the cross axis, where min-width: 0 does not stop a nowrap child (a host's
+     header title) from sizing the flex line past the viewport. Capping the children does. */
+  .hdr-row > * { max-width: 100%; }
   .verdict { align-self: flex-start; }
   .chips { gap: 8px; }
   .tools { margin-left: 0; }
