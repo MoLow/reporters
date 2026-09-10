@@ -911,35 +911,39 @@ export function TreeView({
   return (
     <div className="app" data-dense={dense}>
       <header className="hdr">
-        {renderHeaderTitle ? (
-          <div className="header-title">{renderHeaderTitle()}</div>
-        ) : null}
         <div className="hdr-row">
           <Verdict counts={counts} inProgress={inProgress} duration={duration} />
-          <div className="chips">
-            {statChips.map((s) => (
-              <button
-                type="button"
-                className="chip"
-                data-soft={s}
-                data-active={statuses.has(s) ? 'true' : undefined}
-                aria-pressed={statuses.has(s)}
-                data-tip={statuses.has(s) ? `Stop filtering by ${STATUS_LABEL[s]}` : chipTip(s, counts[s], counts.total)}
-                onClick={() => toggleStatus(s)}
-                key={s}
-              >
-                <span className="chip-dot" data-stf={s} />
-                {counts[s]}
-                <span className="chip-label">{STATUS_LABEL[s]}</span>
-              </button>
-            ))}
+          <div className="hdr-ident">
+            {renderHeaderTitle ? (
+              <div className="header-title">{renderHeaderTitle()}</div>
+            ) : null}
+            <div className="hdr-status">
+              <div className="chips">
+                {statChips.map((s) => (
+                  <button
+                    type="button"
+                    className="chip"
+                    data-soft={s}
+                    data-active={statuses.has(s) ? 'true' : undefined}
+                    aria-pressed={statuses.has(s)}
+                    data-tip={statuses.has(s) ? `Stop filtering by ${STATUS_LABEL[s]}` : chipTip(s, counts[s], counts.total)}
+                    onClick={() => toggleStatus(s)}
+                    key={s}
+                  >
+                    <span className="chip-dot" data-stf={s} />
+                    {counts[s]}
+                    <span className="chip-label">{STATUS_LABEL[s]}</span>
+                  </button>
+                ))}
+              </div>
+              {carriedRun ? (
+                <span className="carry-sum">
+                  {runAttempt != null ? `attempt ${runAttempt + 1} of ${runAttempt + 1} · ` : ''}
+                  {freshCount} re-run · {counts.carried} carried{summaryAttempt != null ? ` from attempt ${summaryAttempt + 1}` : ''}
+                </span>
+              ) : null}
+            </div>
           </div>
-          {carriedRun ? (
-            <span className="carry-sum">
-              {runAttempt != null ? `attempt ${runAttempt + 1} of ${runAttempt + 1} · ` : ''}
-              {freshCount} re-run · {counts.carried} carried{summaryAttempt != null ? ` from attempt ${summaryAttempt + 1}` : ''}
-            </span>
-          ) : null}
           <div className="tools">
             <div className="search">
               <SearchIcon />

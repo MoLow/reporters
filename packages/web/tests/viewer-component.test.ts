@@ -141,11 +141,13 @@ test('renderNodeActions, renderHeaderActions and renderHeaderTitle render in the
   await tick(30);
   assert.ok(el.querySelector('.node-actions .x-node'), 'node action button should render');
   assert.ok(el.querySelector('.header-actions .x-header'), 'header action button should render');
-  const header = el.querySelector('.hdr')!;
-  assert.ok(header.querySelector('.header-title .x-title'), 'header title should render inside the header');
-  // The slot exists to sit above the verdict and chips; anywhere else and an
-  // embedder is back to reaching into the DOM for the position it wanted.
-  assert.strictEqual(header.firstElementChild!.className, 'header-title');
+  const ident = el.querySelector('.hdr-ident')!;
+  assert.ok(ident.querySelector('.header-title .x-title'), 'header title should render inside the header');
+  // The title leads a column that sits beside the verdict with the status chips beneath it. Costing
+  // the header a row instead would leave a band of empty space for the toolbar to float in.
+  assert.strictEqual(ident.firstElementChild!.className, 'header-title');
+  assert.ok(ident.querySelector('.hdr-status .chips'), 'the chips sit under the title, same column');
+  assert.strictEqual(ident.previousElementSibling!.className, 'verdict');
   await act(async () => root.unmount());
 });
 
