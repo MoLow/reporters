@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.5.0](https://github.com/MoLow/reporters/compare/web-v3.4.2...web-v3.5.0) (2026-09-10)
+
+
+### Features
+
+* **web:** renderHeaderTitle, a slot at the top of the viewer header ([#306](https://github.com/MoLow/reporters/issues/306)) ([ee9f439](https://github.com/MoLow/reporters/commit/ee9f439098b47c4396ef20eeb671dd32d844ef16))
+
 ## [3.4.2](https://github.com/MoLow/reporters/compare/web-v3.4.1...web-v3.4.2) (2026-09-09)
 
 
