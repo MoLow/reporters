@@ -119,6 +119,7 @@ const filters = memoryFilterState();
     ? <button onClick={() => rerun(node)}>↻ rerun</button>
     : null)}
   renderHeaderActions={() => <button onClick={rerunAll}>↻ rerun all</button>}
+  renderHeaderTitle={() => <a href={pullUrl}>PR #841 · fix: handle empty tags</a>}
 />
 ```
 
@@ -219,8 +220,9 @@ startViewer({
     const credentials = await acquireCredentialsSomehow();
     return { url: params.get('key')!, fetch: authenticatedFetch(credentials) };
   },
-  renderNodeActions: ...,   // both hooks work here too
+  renderNodeActions: ...,   // every hook works here too
   renderHeaderActions: ...,
+  renderHeaderTitle: ...,
 });
 ```
 
@@ -254,3 +256,34 @@ Visibility is yours to style — e.g. reveal on row hover:
 Renders custom content in the header toolbar, to the right of the built-in
 buttons (search, theme, collapse all), wrapped in a `.header-actions` element.
 Same contract as `renderNodeActions`: called on every render, so keep it cheap.
+
+### `renderHeaderTitle`
+
+Renders custom content on its own full-width row at the top of the header,
+above the verdict and status chips, wrapped in a `.header-title` element. Same
+contract as the other two: called on every render, so keep it cheap.
+
+This is where a host says *what run this is* — a PR number and title, a branch,
+a link back to the job that produced the log. The viewer's own header answers
+"how did it go"; nothing in it answers "of what", and a host that puts its own
+bar above `<TestReportViewer>` gets a second scroll container and a seam
+between two headers that are really one.
+
+```tsx
+<TestReportViewer
+  src={reportUrl}
+  renderHeaderTitle={() => (
+    <a className="run-src" href={pullUrl} target="_blank" rel="noreferrer">
+      <GitHubLogo /> PR #841 · fix: handle empty tags
+    </a>
+  )}
+/>
+```
+
+The wrapper carries the header's own horizontal padding and nothing else — no
+border, no background — so the row reads as part of the header rather than a
+strip stacked on it. Styling what you put inside it is yours.
+
+It is not rendered on the load-error screen, which replaces the whole header
+with a centred message; the run's identity comes back with the header when a
+report loads.
