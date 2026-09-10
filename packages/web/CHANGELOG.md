@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.5.1](https://github.com/MoLow/reporters/compare/web-v3.5.0...web-v3.5.1) (2026-09-10)
+
+
+### Bug Fixes
+
+* **web:** seat the header title beside the verdict instead of on its own row ([#308](https://github.com/MoLow/reporters/issues/308)) ([9af8df9](https://github.com/MoLow/reporters/commit/9af8df95979b9a0d0a7e2fab0d873b57ebbd8862))
+
 ## [3.5.0](https://github.com/MoLow/reporters/compare/web-v3.4.2...web-v3.5.0) (2026-09-10)
 
 
