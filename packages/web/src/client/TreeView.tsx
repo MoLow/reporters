@@ -476,6 +476,11 @@ export type RenderNodeActions = (node: TestNode) => React.ReactNode;
  *  built-in buttons. Called on every render, so it must be cheap. */
 export type RenderHeaderActions = () => React.ReactNode;
 
+/** Embedder hook: render custom content on its own row at the top of the
+ *  header, above the verdict and status chips. Called on every render, so it
+ *  must be cheap. */
+export type RenderHeaderTitle = () => React.ReactNode;
+
 interface RowViewProps {
   row: FlatRow;
   toggle: (key: string, current: boolean) => void;
@@ -726,6 +731,8 @@ export interface TreeViewProps {
   renderNodeActions?: RenderNodeActions;
   /** Render custom content at the end of the header toolbar. */
   renderHeaderActions?: RenderHeaderActions;
+  /** Render custom content on its own row at the top of the header. */
+  renderHeaderTitle?: RenderHeaderTitle;
   /** Where filter state lives; defaults to the shareable page URL (?q,
    *  ?status, ?rerun). Pass memoryFilterState() (or your own store) when the
    *  host app owns the address bar. Must be stable across renders. */
@@ -737,7 +744,7 @@ export interface TreeViewProps {
 }
 
 export function TreeView({
-  snapshot, streaming = false, pending = false, loadError = false, onRetry, renderNodeActions, renderHeaderActions, filters, dense = 'compact',
+  snapshot, streaming = false, pending = false, loadError = false, onRetry, renderNodeActions, renderHeaderActions, renderHeaderTitle, filters, dense = 'compact',
 }: TreeViewProps) {
   const [theme, toggleTheme] = useTheme();
   // The default store is per-mount so its debounce timer dies with the view.
@@ -904,6 +911,9 @@ export function TreeView({
   return (
     <div className="app" data-dense={dense}>
       <header className="hdr">
+        {renderHeaderTitle ? (
+          <div className="header-title">{renderHeaderTitle()}</div>
+        ) : null}
         <div className="hdr-row">
           <Verdict counts={counts} inProgress={inProgress} duration={duration} />
           <div className="chips">

@@ -6,7 +6,9 @@ import { createTreeStore, type TreeSnapshot } from '@reporters/tree-core';
 import { createNdjsonReader, DEFAULT_POLL_MS, type FetchLike } from '../poll.ts';
 import { resolveReportSource, type ViewerOptions as SourceOptions } from '../source.ts';
 import { STYLES } from '../template.ts';
-import { TreeView, type Density, type RenderHeaderActions, type RenderNodeActions } from './TreeView.tsx';
+import {
+  TreeView, type Density, type RenderHeaderActions, type RenderHeaderTitle, type RenderNodeActions,
+} from './TreeView.tsx';
 import { initTooltips } from './tooltip.ts';
 import {
   progressTitle, runProgress, useDocumentTitle, useProgressFavicon, type RunProgress,
@@ -15,7 +17,9 @@ import type { FilterStore } from './urlState.ts';
 
 export type { ReportSource } from '../source.ts';
 export type { FetchLike } from '../poll.ts';
-export type { Density, RenderHeaderActions, RenderNodeActions } from './TreeView.tsx';
+export type {
+  Density, RenderHeaderActions, RenderHeaderTitle, RenderNodeActions,
+} from './TreeView.tsx';
 export { paintFavicon, progressFavicon, progressTitle, type RunProgress } from './tabStatus.ts';
 export type { TestNode } from '@reporters/tree-core';
 export { memoryFilterState, urlFilterState, type FilterState, type FilterStore } from './urlState.ts';
@@ -38,6 +42,11 @@ export interface ViewerOptions extends SourceOptions {
    *  buttons (search, theme, collapse all), inside a `.header-actions` wrapper.
    *  Called on each render (frequent during a live run), so keep it cheap. */
   renderHeaderActions?: RenderHeaderActions;
+  /** Render custom content on its own full-width row at the top of the header,
+   *  above the verdict and status chips, inside a `.header-title` wrapper —
+   *  what run this is, where it came from. Called on each render, so keep it
+   *  cheap. Not rendered on the load-error screen, which has no header. */
+  renderHeaderTitle?: RenderHeaderTitle;
   /** Keep the run in the page's title. On by default — the page is the
    *  viewer's own. Pass `false` to leave the title alone. */
   documentTitle?: DocumentTitle;
@@ -136,6 +145,7 @@ export interface TestReportViewerProps {
   pollMs?: number;
   renderNodeActions?: RenderNodeActions;
   renderHeaderActions?: RenderHeaderActions;
+  renderHeaderTitle?: RenderHeaderTitle;
   /** Where filter state (?q, ?status, ?rerun) lives; defaults to the
    *  shareable page URL. Pass memoryFilterState() when the host app owns the
    *  address bar, or your own store to bind filters to a router or state
@@ -167,7 +177,8 @@ function titleFor(option: DocumentTitle, progress: RunProgress, baseTitle: strin
  *  Polls `src`, live-updates until the run's summary, and stops polling on
  *  unmount. Injects its stylesheet into document.head before first paint. */
 export function TestReportViewer({
-  src, fetch: fetchImpl, pollMs = DEFAULT_POLL_MS, renderNodeActions, renderHeaderActions, filters, onRetry, dense,
+  src, fetch: fetchImpl, pollMs = DEFAULT_POLL_MS, renderNodeActions, renderHeaderActions, renderHeaderTitle,
+  filters, onRetry, dense,
   documentTitle = false, favicon = false,
 }: TestReportViewerProps) {
   useInsertionEffect(() => { injectStyles(); }, []);
@@ -190,6 +201,7 @@ export function TestReportViewer({
       onRetry={onRetry ?? (src ? retry : undefined)}
       renderNodeActions={renderNodeActions}
       renderHeaderActions={renderHeaderActions}
+      renderHeaderTitle={renderHeaderTitle}
       filters={filters}
       dense={dense}
     />
@@ -214,6 +226,7 @@ export async function startViewer(options: ViewerOptions = {}): Promise<void> {
       pollMs={source?.pollMs}
       renderNodeActions={options.renderNodeActions}
       renderHeaderActions={options.renderHeaderActions}
+      renderHeaderTitle={options.renderHeaderTitle}
       documentTitle={options.documentTitle ?? true}
       favicon={options.favicon ?? true}
       // No usable source (missing/rejected ?src=): a retry must re-run source

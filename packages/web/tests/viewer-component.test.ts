@@ -125,7 +125,7 @@ test('tags collapse to one chip whose tooltip and row label carry the names', as
   await act(async () => root.unmount());
 });
 
-test('renderNodeActions and renderHeaderActions render in the embedded component', async () => {
+test('renderNodeActions, renderHeaderActions and renderHeaderTitle render in the embedded component', async () => {
   const { fetchImpl } = fakeSource(`${LOG}\n${SUMMARY}\n`);
   const { root, el } = mount();
   await act(async () => {
@@ -135,11 +135,29 @@ test('renderNodeActions and renderHeaderActions render in the embedded component
       pollMs: 10,
       renderNodeActions: (node) => React.createElement('button', { className: 'x-node' }, `go ${node.name}`),
       renderHeaderActions: () => React.createElement('button', { className: 'x-header' }, 'all'),
+      renderHeaderTitle: () => React.createElement('a', { className: 'x-title' }, 'run #7'),
     }));
   });
   await tick(30);
   assert.ok(el.querySelector('.node-actions .x-node'), 'node action button should render');
   assert.ok(el.querySelector('.header-actions .x-header'), 'header action button should render');
+  const header = el.querySelector('.hdr')!;
+  assert.ok(header.querySelector('.header-title .x-title'), 'header title should render inside the header');
+  // The slot exists to sit above the verdict and chips; anywhere else and an
+  // embedder is back to reaching into the DOM for the position it wanted.
+  assert.strictEqual(header.firstElementChild!.className, 'header-title');
+  await act(async () => root.unmount());
+});
+
+test('renderHeaderTitle is absent on the load-error screen, which has no header', async () => {
+  const { root, el } = mount();
+  await act(async () => {
+    root.render(React.createElement(TestReportViewer, {
+      renderHeaderTitle: () => React.createElement('a', { className: 'x-title' }, 'run #7'),
+    }));
+  });
+  assert.strictEqual(el.querySelector('.hdr'), null);
+  assert.strictEqual(el.querySelector('.x-title'), null);
   await act(async () => root.unmount());
 });
 
