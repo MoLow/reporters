@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
 import { createTreeStore } from '@reporters/tree-core';
-import type { Counts, TestEvent, TestNode } from '@reporters/tree-core';
+import type { Counts, TestEvent, TestNode, TestStatus } from '@reporters/tree-core';
 import {
   buildRows, collectContainerKeys, computeMatches, displayName, hasDiagnostics,
   hasFailChip, isCancelled, isExpanded, isPassingTodo, isSubtestsRollup, liveNodeDuration, logCount, nodeDuration, outputLines, reasonOf, realError, rollup,
@@ -589,4 +589,35 @@ test('a file failed by its own wrapper matches the failed filter', () => {
 
 test('realError surfaces a file wrapper own failure', () => {
   assert.deepStrictEqual(realError(ownFailedFile()), { message: 'test failed' });
+});
+
+// The counterpart of the own-failed file, one level down: a test that failed in
+// its own body after its subtests passed is the failure its counts include, and
+// nothing under it is red to stand for it. Filtering by `failed` on such a run
+// must not come back empty. Driven through the real store — the filter and the
+// counts have to agree about what a failure is.
+test('a test failed by its own body matches the failed filter', () => {
+  const ENTRY = '/repo/s3.test.js';
+  const parent = { name: 'should scan s3', nesting: 0, file: ENTRY, testId: 1, parentId: 0 };
+  const child = { name: 'should detect annotations', nesting: 1, file: ENTRY, testId: 2, parentId: 1 };
+  const store = createTreeStore();
+  for (const e of [
+    { type: 'test:enqueue', data: { name: 's3.test.js', file: ENTRY, nesting: 0 } },
+    { type: 'test:start', data: parent },
+    { type: 'test:start', data: child },
+    { type: 'test:pass', data: { ...child, details: { duration_ms: 1 } } },
+    { type: 'test:fail', data: { ...parent, details: { duration_ms: 3, error: { message: 'not indexed yet' } } } },
+  ] as TestEvent[]) store.apply(e);
+
+  const files = store.getSnapshot().root.children.filter((n) => n.type === 'file');
+  const statuses = new Set<TestStatus>(['failed']);
+  const matches = computeMatches(files, '', statuses);
+  const rows = buildRows(files, {
+    overrides: new Map(), query: '', statuses, matches,
+  });
+
+  const scan = rows.find((r) => r.node.name === 'should scan s3');
+  assert.ok(scan, 'the failing test is the one row the failed filter must keep');
+  assert.strictEqual(scan.status, 'failed');
+  assert.ok(!rows.some((r) => r.node.name === 'should detect annotations'), 'its passing subtest is not a failed match');
 });
