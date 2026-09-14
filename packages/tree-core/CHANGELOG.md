@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.1](https://github.com/MoLow/reporters/compare/tree-core-v2.1.0...tree-core-v2.1.1) (2026-09-14)
+
+
+### Bug Fixes
+
+* **tree-core:** count a test that fails in its own body after its subtests passed ([#310](https://github.com/MoLow/reporters/issues/310)) ([422d8fb](https://github.com/MoLow/reporters/commit/422d8fbcaa37f9ef5a285defd5d794bc2d90e055))
+
 ## [2.1.0](https://github.com/MoLow/reporters/compare/tree-core-v2.0.0...tree-core-v2.1.0) (2026-08-09)
 
 
