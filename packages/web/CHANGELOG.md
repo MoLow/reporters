@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.5.2](https://github.com/MoLow/reporters/compare/web-v3.5.1...web-v3.5.2) (2026-09-14)
+
+
+### Bug Fixes
+
+* **web:** rebundle tree-core so an own-body failure renders red ([#312](https://github.com/MoLow/reporters/issues/312)) ([f9e9427](https://github.com/MoLow/reporters/commit/f9e94275bec71d3fb8a123126bb994713e61f148))
+
 ## [3.5.1](https://github.com/MoLow/reporters/compare/web-v3.5.0...web-v3.5.1) (2026-09-10)
 
 
