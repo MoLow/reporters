@@ -260,11 +260,16 @@ export function computeMatches(files: TestNode[], query: string, statuses: Reado
     const openContainer = node.children.length > 0
       && (node.type === 'test' || node.type === 'suite')
       && (node.status === 'running' || node.status === 'queued');
-    // Same rule for a file failed by its own wrapper (hook, process exit): its
-    // failure is in the counts with no failed leaf underneath to stand for it.
-    const ownFailedFile = node.type === 'file' && node.status === 'failed'
+    // Same rule for a node that failed on its own rather than through a
+    // descendant: its failure is in the counts with nothing failed underneath
+    // to stand for it, so filtering by `failed` would otherwise hide the only
+    // node that is actually red. A file fails this way from a hook or a
+    // process exit, a test or suite from its own body after its subtests
+    // passed. One whose failure is merely the rollup of a failed descendant
+    // stays out — that descendant is the match.
+    const ownFailed = node.status === 'failed'
       && !node.children.some((child) => child.counts.failed > 0);
-    const leafMatch = (node.children.length === 0 || openContainer || ownFailedFile) && textOk && statusOk(node)
+    const leafMatch = (node.children.length === 0 || openContainer || ownFailed) && textOk && statusOk(node)
       && (!onlyRerun || node.passedOnAttempt == null);
     if (leafMatch || descVis) {
       visible.add(node.key);
