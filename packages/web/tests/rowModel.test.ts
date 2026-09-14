@@ -104,6 +104,37 @@ test('rollup: a container whose own status is still open outranks settled descen
   assert.strictEqual(rollup(wrapperOpen), 'running');
 });
 
+// `rollup` reads the counts and deliberately ignores a settled container's own
+// status, so a test that failed in its own body after its subtests passed can
+// only render red if the store counted it. Driven through the real store rather
+// than a hand-built node: the render and the counts have to agree, and it was
+// their disagreement that once painted such a run entirely green.
+test('rollup: a test that failed in its own body after its subtests passed renders failed', () => {
+  const ENTRY = '/repo/s3.test.js';
+  const parent = { name: 'should scan s3', nesting: 0, file: ENTRY, testId: 1, parentId: 0 };
+  const child = { name: 'should detect annotations', nesting: 1, file: ENTRY, testId: 2, parentId: 1 };
+  const boom = { message: 'not indexed yet', name: 'Error' };
+  const store = createTreeStore();
+  for (const e of [
+    { type: 'test:enqueue', data: { name: 's3.test.js', file: ENTRY, nesting: 0 } },
+    { type: 'test:start', data: parent },
+    { type: 'test:start', data: child },
+    { type: 'test:pass', data: { ...child, details: { duration_ms: 1 } } },
+    { type: 'test:fail', data: { ...parent, details: { duration_ms: 3, error: boom } } },
+  ] as TestEvent[]) store.apply(e);
+
+  const file = store.getSnapshot().root.children.find((n) => n.type === 'file')!;
+  assert.strictEqual(rollup(file), 'failed');
+  const scan = file.children[0];
+  assert.strictEqual(scan.name, 'should scan s3');
+  assert.strictEqual(rollup(scan), 'failed', 'the failing parent is red even though its only subtest passed');
+  assert.strictEqual(rollup(scan.children[0]), 'passed', 'the passing subtest keeps its own status');
+
+  // The failure is reachable without a click: the path to it opens by default.
+  const rows = buildRows([file], { overrides: new Map(), query: '', matches: null });
+  assert.ok(rows.some((r) => r.node.name === 'should scan s3' && r.status === 'failed'), 'the failing row is on screen');
+});
+
 test('reasonOf returns the skip/todo string, or undefined', () => {
   assert.strictEqual(reasonOf(node({ skip: 'not ready' })), 'not ready');
   assert.strictEqual(reasonOf(node({ todo: 'later' })), 'later');
