@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.5.3](https://github.com/MoLow/reporters/compare/web-v3.5.2...web-v3.5.3) (2026-09-14)
+
+
+### Bug Fixes
+
+* **web:** match a test failed by its own body in the failed filter ([#314](https://github.com/MoLow/reporters/issues/314)) ([1ad4119](https://github.com/MoLow/reporters/commit/1ad411979f4dbae7ea02ba761a6a16216137e0b4))
+
 ## [3.5.2](https://github.com/MoLow/reporters/compare/web-v3.5.1...web-v3.5.2) (2026-09-14)
 
 
