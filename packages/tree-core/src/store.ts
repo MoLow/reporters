@@ -638,6 +638,17 @@ export function createTreeStore(): TreeStore {
         counts[internal.status] += 1;
         counts.total += 1;
       }
+      // A parent that failed in its own body after its subtests passed has no
+      // failed leaf to stand for it, so leaves-only totals would lose the
+      // failure entirely and every ancestor would roll up green. Count it —
+      // it is the failed test. A parent that failed *because* a child did
+      // already has that child in the counts and stays out, so the same
+      // failure is never counted twice.
+      if ((internal.type === 'test' || internal.type === 'suite')
+        && internal.status === 'failed' && counts.failed === 0) {
+        counts.failed += 1;
+        counts.total += 1;
+      }
     }
     // File and root nodes have no result event of their own; derive their
     // status from their descendants — and from the wrapper's own liveness,
