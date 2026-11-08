@@ -6,8 +6,6 @@ Object {
 
 Error: Bail
     *
-    at bail.next (<anonymous>)
-    *
 Emitted 'error' event on Duplex instance at:
     *
 
@@ -15,5 +13,7 @@ Node.js *
 ",
   "stdout": "X
 ✖ Bailing on failed test: fail
+  Error: the reason this test failed
+      *
 ",
 }

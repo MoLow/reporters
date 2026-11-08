@@ -1,0 +1,22 @@
+Object {
+  "exitCode": 7,
+  "stderr": "node:internal/test_runner/harness:*
+      throw err;
+      ^
+
+Error: Bail
+    *
+Emitted 'error' event on Duplex instance at:
+    *
+
+Node.js *
+",
+  "stdout": "▶ suite with a failing hook
+  ✔ pass (*ms)
+✖ suite with a failing hook (*ms)
+
+✖ Bailing on failed test: suite with a failing hook
+  Error: the reason this hook failed
+      *
+",
+}
