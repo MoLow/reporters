@@ -22,3 +22,12 @@ test('fail should stop after failed test', async () => {
   ], { env: {}, cwd: pkgDir });
   await snapshot(child);
 });
+
+test('fail in a hook should print the error before bailing', async () => {
+  const child = spawnSync(process.execPath, [
+    '--test-reporter', 'spec', '--test-reporter-destination', 'stdout',
+    '--test-reporter', './index.js', '--test-reporter-destination', 'stdout',
+    'tests/fixtures/fail-hook.js', 'tests/fixtures/pass.js',
+  ], { env: {}, cwd: pkgDir });
+  await snapshot(child);
+});

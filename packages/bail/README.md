@@ -40,10 +40,17 @@ node \
   --test
 ```
 
-When a test fails you'll see the log up to that point, then:
+When a test fails you'll see the log up to that point, then the failing test and
+the error that caused it:
 
 ```
 ✖ Bailing on failed test: applies the loyalty discount for gold members
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  90 !== 80
+
+      at TestContext.<anonymous> (file:///app/test/checkout.test.js:12:12)
+      ...
 ```
 
 …and the process exits immediately with a non-zero code.
