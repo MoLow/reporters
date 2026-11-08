@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.3](https://github.com/MoLow/reporters/compare/bail-v2.0.2...bail-v2.0.3) (2026-11-08)
+
+
+### Bug Fixes
+
+* **bail:** print the failing test's error before bailing ([#317](https://github.com/MoLow/reporters/issues/317)) ([bb9d8d1](https://github.com/MoLow/reporters/commit/bb9d8d197fc449762341a50bb7cfe3f5f9c9265b)), closes [#316](https://github.com/MoLow/reporters/issues/316)
+
 ## [2.0.2](https://github.com/MoLow/reporters/compare/bail-v2.0.1...bail-v2.0.2) (2026-07-02)
 
 
