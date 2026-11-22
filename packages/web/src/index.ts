@@ -37,6 +37,19 @@ export default async function* web(
     hint(`\n@reporters/web: live report at ${server.url}`);
   }
 
+  const flag = '--experimental-test-tag-filter';
+  const tagFilters: string[] = [];
+  for (let i = 0; i < process.execArgv.length; i += 1) {
+    const arg = process.execArgv[i];
+    if (arg === flag && process.execArgv[i + 1]) tagFilters.push(process.execArgv[++i]);
+    else if (arg.startsWith(`${flag}=`)) tagFilters.push(arg.slice(flag.length + 1));
+  }
+  if (tagFilters.length) {
+    const line = serializeWireLine({ type: 'reporters:run', data: { tagFilters } });
+    server?.push(line);
+    if (dest || !server) yield line;
+  }
+
   for await (const event of source) {
     const line = serializeWireLine(event);
     server?.push(line);

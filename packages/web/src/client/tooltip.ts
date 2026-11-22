@@ -1,3 +1,11 @@
+const tooltipContents = new WeakMap<Element, () => Node>();
+
+/** Defer expensive tooltip content until the tooltip actually opens. */
+export function registerTooltipContent(element: Element, render: () => Node): () => void {
+  tooltipContents.set(element, render);
+  return () => { tooltipContents.delete(element); };
+}
+
 /**
  * One shared tooltip element, appended to `document.body` and positioned with
  * `position:fixed` + `getBoundingClientRect()`, driven by `data-tip` and event
@@ -27,9 +35,12 @@ export function initTooltips(): void {
   let current: Element | null = null;
 
   const place = (el: Element): void => {
+    if (!el.isConnected || current !== el) return;
     const text = textFor(el);
     if (!text) return;
-    tip.textContent = text;
+    const render = tooltipContents.get(el);
+    if (render) tip.replaceChildren(render());
+    else tip.textContent = text;
     tip.style.display = 'block';
     const r = el.getBoundingClientRect();
     const t = tip.getBoundingClientRect();
