@@ -115,6 +115,24 @@ button { font-family: inherit; } input { font-family: inherit; }
    two lines tall, so a title line stacked over the chips costs the header a few pixels instead of a
    whole row, and leaves no empty band for the toolbar to float in. */
 .hdr-ident { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.run-tag-filter { min-width: 0; font-size: 12px; color: var(--dim); }
+.condition-modal { width: min(760px, calc(100vw - 32px)); max-height: 80dvh; padding: 0; margin: auto; border: 1px solid var(--line-2); border-radius: 12px; background: var(--panel); color: var(--fg); box-shadow: 0 24px 80px rgba(0,0,0,.4); }
+.condition-modal[open] { display: flex; flex-direction: column; }
+.condition-modal::backdrop { background: var(--scrim); }
+.condition-modal .pop-head { flex: none; }
+.condition-body { min-height: 0; overflow: auto; padding: 18px; background: var(--panel-2); }
+.condition-help { margin-bottom: 8px; font-size: 11px; }
+.condition-expression { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px; border: 1px solid var(--line); border-radius: 6px; }
+.condition-tag { padding: 3px 8px; border-radius: 5px; background: var(--accent-soft); color: var(--fg); overflow-wrap: anywhere; min-width: 0; }
+.condition-operator, .condition-join { font-size: 10px; font-weight: 700; letter-spacing: .06em; color: var(--accent); }
+.condition-operator[data-operator="AND"], .condition-join { color: var(--ansi-cyan); }
+.condition-operator[data-operator="OR"] { color: var(--ansi-magenta); }
+.condition-operator[data-operator="NOT"] { color: var(--st-failed); }
+.condition-join { padding: 6px 8px; }
+.condition-punctuation { font: 18px var(--mono); color: var(--fg); }
+.condition-source { margin-top: 8px; }
+.condition-source summary { cursor: pointer; }
+.condition-source pre { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--fg); }
 .hdr-status { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .header-title { display: flex; align-items: center; min-width: 0; font-size: 13px; }
 .hdr-row { display: flex; align-items: center; gap: 16px; padding: 13px 18px 11px; flex-wrap: wrap; }
@@ -187,6 +205,12 @@ button { font-family: inherit; } input { font-family: inherit; }
 .todotag { flex: none; font-size: 10.5px; font-weight: 600; border-radius: 6px; padding: 1px 7px; }
 .tagchip { flex: none; display: inline-flex; align-items: center; gap: 2px; color: var(--faint); line-height: 1; cursor: default; transition: color .13s; }
 .tagchip:hover { color: var(--dim); }
+.tagchip[data-in-rules="true"] { color: var(--accent); }
+.tip-tag { display: block; opacity: .65; }
+.tip-tag[data-contributing="true"] { opacity: 1; font-weight: 600; }
+.tip-tag-total { display: block; font-weight: 700; margin-top: 4px; }
+.tip-tag-reasons { display: block; font-weight: 400; }
+.tip-tag-note { display: block; margin-top: 6px; font-size: 10px; opacity: .65; }
 .tagchip-n { font-size: 10px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .spacer { flex: 1; min-width: 10px; }
 .pills { display: inline-flex; gap: 5px; flex: none; margin-right: 9px; }

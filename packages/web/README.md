@@ -29,6 +29,26 @@ node --test-reporter=@reporters/web --test-reporter-destination=run.ndjson --tes
 On a dev machine that command does everything: it writes the NDJSON log **and**
 opens a live-updating browser view of the run.
 
+When the command includes `--experimental-test-tag-filter`, the header shows
+the **Tag conditions** button, which opens a modal with the requested tag-filter
+expressions: tag chips, AND/OR/NOT operators, and parentheses. Long expressions
+wrap and scroll inside the modal, with the original expressions available.
+These are saved in the NDJSON log as a `reporters:run` event, so reopening the
+report retains them. Repeated flags are shown as separate numbered values,
+combined with AND. Older logs without this metadata omit the button.
+Test tag icons are highlighted when their tags appear in the command rules;
+hover or keyboard-focus the icon to evaluate the full conditions. The tooltip
+groups tags that **support the match** separately from other tags and explains
+each flag value using present/absent conditions. Failed OR branches do not
+contribute tags; all successful alternatives do. A negated condition can match
+through an absent tag, so a matching test can have zero supporting tags.
+Repeated flags must all match. If any fails, the tooltip reports no overall
+match rather than highlighting partial success.
+
+Expressions are compiled once without `eval`; explanations are computed lazily
+and cached by normalized tag set for the current run and filters. The icon itself
+still indicates a reference, including negations, rather than a match verdict.
+
 ## Viewing a run
 
 The NDJSON is rendered by the tree viewer, reached three ways:
@@ -69,9 +89,16 @@ the same run state, rendered in the browser instead of the terminal.
 
 ## Consuming the NDJSON from your own tooling
 
-Every line is one JSON-encoded `node:test` event, so the log is easy to feed
-into dashboards, notifiers or CI annotations — not just the viewer. Failure
-events carry the error on `data.details.error`:
+Every line is one JSON-encoded event, so the log is easy to feed into dashboards,
+notifiers or CI annotations — not just the viewer. Alongside `node:test` events,
+tag-filtered runs start with reporter metadata:
+
+```json
+{"type":"reporters:run","t":1794990224396,"data":{"tagFilters":["smoke && !slow","api || unit"]}}
+```
+
+Each `tagFilters` entry is one `--experimental-test-tag-filter` value, in command
+order. Failure events carry the error on `data.details.error`:
 
 ```jsonc
 {

@@ -92,6 +92,8 @@ export interface SummaryData {
 
 export interface TreeSnapshot {
   version: number;
+  /** The command's tag-filter expressions, when recorded by the reporter. */
+  tagFilters?: string[];
   root: TestNode;
   counts: Counts;
   summary?: SummaryData;
@@ -107,6 +109,8 @@ export interface TreeSnapshot {
 
 /** The fields of a `node:test` reporter event that the store consumes. */
 export interface TestEventData {
+  /** `reporters:run` only: the command's tag-filter expressions. */
+  tagFilters?: string[];
   name?: string;
   nesting?: number;
   file?: string;

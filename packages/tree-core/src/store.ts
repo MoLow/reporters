@@ -92,6 +92,7 @@ export function createTreeStore(): TreeStore {
   let autoId = 0;
   let sawFileWrapper = false;
   let summary: SummaryData | undefined;
+  let tagFilters: string[] | undefined;
   let runAttempt: number | undefined;
   // Wall-clock stamps from the writer (`event.t`). `currentT` is the stamp of
   // the event being applied, so the helpers that mark a node running can record
@@ -424,6 +425,11 @@ export function createTreeStore(): TreeStore {
     // `file`; map it to the resolved absolute path so both group together.
     if (resolver.isFileLevel(data) && data.name !== data.file) fileAlias.set(data.name!, data.file!);
     switch (type) {
+      case 'reporters:run':
+        if (Array.isArray(data.tagFilters) && data.tagFilters.every((value) => typeof value === 'string')) {
+          tagFilters = data.tagFilters;
+        }
+        break;
       case 'test:enqueue':
       case 'test:dequeue':
         // enqueue/dequeue are emitted EAGERLY (before a concurrent test's
@@ -705,6 +711,7 @@ export function createTreeStore(): TreeStore {
       root: rootNode,
       counts: rootNode.counts,
       summary,
+      ...(tagFilters != null ? { tagFilters } : {}),
       ...(runAttempt != null ? { attempt: runAttempt } : {}),
       // firstT and lastT are always set together (same stamped event).
       ...(firstT != null ? { clock: { firstT, lastT: lastT! } } : {}),

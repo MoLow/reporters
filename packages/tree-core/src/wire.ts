@@ -112,6 +112,7 @@ export function toWireEvent(event: TestEvent): TestEvent {
   const d = event.data ?? {};
   const data: TestEventData = {};
   const t = event.t;
+  if (d.tagFilters != null) data.tagFilters = d.tagFilters;
   if (d.name != null) data.name = d.name;
   if (d.nesting != null) data.nesting = d.nesting;
   if (d.file != null) data.file = d.file;

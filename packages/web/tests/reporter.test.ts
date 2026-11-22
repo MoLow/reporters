@@ -35,6 +35,27 @@ test('web emits no HTML and every line ends with a newline', async () => {
   }
 });
 
+test('web records every command tag filter and preserves it through store replay', async () => {
+  const origArgv = process.execArgv;
+  process.execArgv = [
+    '--test', '--experimental-test-tag-filter=smoke && !slow',
+    '--experimental-test-tag-filter', 'api || unit',
+  ];
+  try {
+    const out = await collect();
+    const parsed = out.map((line) => JSON.parse(line));
+    assert.strictEqual(parsed[0].type, 'reporters:run');
+    assert.deepStrictEqual(parsed[0].data.tagFilters, ['smoke && !slow', 'api || unit']);
+    assert.strictEqual(parsed[1].type, 'test:start');
+    const store = createTreeStore();
+    for (const event of parsed) store.apply(event);
+    assert.deepStrictEqual(store.getSnapshot().tagFilters, ['smoke && !slow', 'api || unit']);
+    assert.strictEqual(store.getSnapshot().counts.total, 1);
+  } finally {
+    process.execArgv = origArgv;
+  }
+});
+
 test('web with open:true and no file destination serves + opens, and keeps stdout quiet', async () => {
   const origOpen = internals.openInBrowser;
   let opened: string | undefined;

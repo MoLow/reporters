@@ -71,6 +71,7 @@ test('renders rows from the stream and stops polling at the summary', async () =
   });
   await tick(20);
   assert.ok(el.textContent!.includes('adds'), 'test row should render');
+  assert.strictEqual(el.querySelector('.run-tag-filter'), null, 'older logs have no command tag filter');
   assert.ok(el.textContent!.includes('Running'), 'run should still stream without a summary');
 
   state.body += `${SUMMARY}\n`;
@@ -99,6 +100,7 @@ test('unmount stops polling a live stream', async () => {
 test('tags collapse to one chip whose tooltip and row label carry the names', async () => {
   const tags = ['aws-rds-workflow-test', 'rds-tests-workflow-test'];
   const tagged = [
+    '{"type":"reporters:run","data":{"tagFilters":["smoke && !slow","api || unit"]}}',
     `{"type":"test:pass","data":{"name":"tagged","nesting":0,"file":"t.test.js","tags":${JSON.stringify(tags)},"details":{"duration_ms":1},"testNumber":1}}`,
     '{"type":"test:pass","data":{"name":"single","nesting":0,"file":"t.test.js","tags":["smoke"],"details":{"duration_ms":1},"testNumber":2}}',
     '{"type":"test:pass","data":{"name":"plain","nesting":0,"file":"t.test.js","details":{"duration_ms":1},"testNumber":3}}',
@@ -110,19 +112,130 @@ test('tags collapse to one chip whose tooltip and row label carry the names', as
     root.render(React.createElement(TestReportViewer, { src: '/run.ndjson', fetch: fetchImpl, pollMs: 10 }));
   });
   await tick(30);
+  assert.strictEqual(el.querySelector('header .run-tag-filter > button')?.textContent, 'Tag conditions');
   const rowOf = (name: string) => [...el.querySelectorAll('.row')]
     .find((r) => r.querySelector('.name')?.textContent === name)!;
   const many = rowOf('tagged');
   assert.strictEqual(many.querySelectorAll('.tagchip').length, 1, 'one chip stands for every tag');
-  assert.ok(!many.textContent!.includes(tags[0]), 'tag names stay out of the row title');
-  assert.strictEqual(many.querySelector('.tagchip')!.getAttribute('data-tip'), `2 tags: ${tags.join(' · ')}`);
+  assert.strictEqual(many.querySelector('.name')!.textContent, 'tagged', 'tag names stay out of the row title');
+  assert.strictEqual(many.querySelector('.tagchip')!.getAttribute('data-tip'), `2 tags:\n0 tags in rules: None\n2 tags not in rules: ${tags.join(', ')}`);
   assert.strictEqual(many.querySelector('.tagchip-n')!.textContent, '2');
-  assert.ok(many.getAttribute('aria-label')!.includes(`2 tags: ${tags.join(' · ')}`));
+  assert.ok(many.getAttribute('aria-label')!.includes(`2 tags not in rules: ${tags.join(', ')}`));
   const one = rowOf('single');
-  assert.strictEqual(one.querySelector('.tagchip')!.getAttribute('data-tip'), 'Tag: smoke');
+  assert.strictEqual(one.querySelector('.tagchip')!.getAttribute('data-tip'), '1 tag:\n1 tag in rules: smoke\n0 tags not in rules: None');
   assert.strictEqual(one.querySelector('.tagchip-n'), null, 'a lone tag needs no count');
   assert.strictEqual(rowOf('plain').querySelector('.tagchip'), null);
   await act(async () => root.unmount());
+});
+
+test('test tag chips mark references while hover explains only successful conditions', async () => {
+  const tags = ['SMOKE', 'aws-rds', 'flaky', 'unrelated', '<tag>'];
+  const log = [
+    JSON.stringify({ type: 'reporters:run', data: { tagFilters: ['smoke or aws-* or !flaky or <tag>'] } }),
+    JSON.stringify({ type: 'test:pass', data: { name: 'tagged', nesting: 0, file: 't.test.js', tags } }),
+    SUMMARY,
+  ].join('\n');
+  const { fetchImpl } = fakeSource(`${log}\n`);
+  const { root, el } = mount();
+  await act(async () => {
+    root.render(React.createElement(TestReportViewer, { src: '/tags.ndjson', fetch: fetchImpl, pollMs: 10 }));
+  });
+  await tick(30);
+  const chip = el.querySelector('.tagchip')!;
+  assert.strictEqual(chip.getAttribute('data-in-rules'), 'true');
+  assert.match(el.querySelector('.row[aria-label*="tagged"]')!.getAttribute('aria-label')!, /4 tags in rules: SMOKE, aws-rds, flaky, <tag>/);
+  chip.dispatchEvent(new dom.window.MouseEvent('pointerover', { bubbles: true }));
+  await tick(160);
+  const tooltip = document.getElementById('rt-tooltip')!;
+  assert.strictEqual(tooltip.style.display, 'block');
+  assert.strictEqual(tooltip.querySelector('.tip-tag-total')!.textContent, '5 tags:');
+  assert.strictEqual(tooltip.querySelector('.tip-tag[data-contributing="true"]')!.textContent, '3 tags supporting match: SMOKE, aws-rds, <tag>');
+  assert.strictEqual(tooltip.querySelector('.tip-tag:not([data-contributing])')!.textContent, '2 tags not supporting match: flaky, unrelated');
+  assert.strictEqual(tooltip.querySelector('tag'), null, 'tag names remain text, never HTML');
+  assert.match(tooltip.textContent!, /Flag value 1: matched/);
+  assert.doesNotMatch(tooltip.querySelector('.tip-tag-reasons')!.textContent!, /flaky/);
+  chip.dispatchEvent(new dom.window.MouseEvent('pointerout', { bubbles: true }));
+});
+
+test('keyboard focus lazily explains the successful wildcard branch, including after filters change', async () => {
+  const tags = ['smoke', 'flaky', 'aws-rds'];
+  const testEvent = JSON.stringify({ type: 'test:pass', data: { name: 'tagged', nesting: 0, file: 't.test.js', tags } });
+  const source = (filters: string[]) => fakeSource([
+    JSON.stringify({ type: 'reporters:run', data: { tagFilters: filters } }), testEvent, SUMMARY, '',
+  ].join('\n'));
+  const { root, el } = mount();
+  const first = source(['(smoke && api && !flaky) || (aws-*)']);
+  await act(async () => {
+    root.render(React.createElement(TestReportViewer, { src: '/first.ndjson', fetch: first.fetchImpl }));
+  });
+  await tick(30);
+  assert.strictEqual(el.querySelector('.tip-tag-reasons'), null, 'no evaluation content is rendered before focus');
+  let chip = el.querySelector<HTMLElement>('.tagchip')!;
+  assert.strictEqual(chip.tabIndex, 0, 'the tooltip is keyboard accessible');
+  await act(async () => { chip.focus(); });
+  await tick(160);
+  const tooltip = document.getElementById('rt-tooltip')!;
+  assert.strictEqual(tooltip.querySelector('.tip-tag[data-contributing]')!.textContent, '1 tag supporting match: aws-rds');
+  assert.strictEqual(tooltip.querySelector('.tip-tag-reasons')!.textContent, 'aws-*: present (aws-rds)');
+  await act(async () => { chip.blur(); });
+
+  const second = source(['smoke && !flaky']);
+  await act(async () => {
+    root.render(React.createElement(TestReportViewer, { src: '/second.ndjson', fetch: second.fetchImpl }));
+  });
+  await tick(30);
+  chip = el.querySelector<HTMLElement>('.tagchip')!;
+  await act(async () => { chip.focus(); });
+  await tick(160);
+  assert.strictEqual(tooltip.querySelector('.tip-tag[data-contributing]')!.textContent, '0 tags supporting match: None');
+  assert.match(tooltip.textContent!, /Does not match all flag values/);
+  assert.strictEqual(tooltip.querySelector('.tip-tag-reasons')!.textContent, 'flaky: present');
+  await act(async () => { chip.blur(); });
+});
+
+test('command conditions render operators, tag labels, grouping and long expressions without losing source', async () => {
+  const filters = [
+    '(android and (api OR unit)) && not slow || !flaky',
+    `constructor and ${'long-tag-'.repeat(80)} and aws-*`,
+  ];
+  const metadata = JSON.stringify({ type: 'reporters:run', data: { tagFilters: filters } });
+  const { fetchImpl } = fakeSource(`${metadata}\n${LOG}\n${SUMMARY}\n`);
+  const { root, el } = mount();
+  await act(async () => {
+    root.render(React.createElement(TestReportViewer, { src: '/conditions.ndjson', fetch: fetchImpl, pollMs: 10 }));
+  });
+  await tick(30);
+  const conditions = el.querySelector<HTMLDialogElement>('.condition-modal')!;
+  // JSDOM has no native dialog lifecycle; verify the controls call that API.
+  conditions.showModal = () => { conditions.setAttribute('open', ''); };
+  conditions.close = () => { conditions.removeAttribute('open'); };
+  assert.strictEqual(conditions.open, false, 'conditions start in a closed modal');
+  await act(async () => { el.querySelector<HTMLButtonElement>('.run-tag-filter > button')!.click(); });
+  assert.strictEqual(conditions.open, true);
+  const expressions = [...conditions.querySelectorAll('.condition-expression')];
+  assert.deepStrictEqual(expressions.map((expression) => expression.getAttribute('aria-label')), filters);
+  assert.deepStrictEqual(
+    [...expressions[0].querySelectorAll('.condition-tag')].map((tag) => tag.textContent),
+    ['android', 'api', 'unit', 'slow', 'flaky'],
+  );
+  assert.deepStrictEqual(
+    [...expressions[0].querySelectorAll('.condition-operator')].map((operator) => operator.textContent),
+    ['AND', 'OR', 'AND', 'NOT', 'OR', 'NOT'],
+  );
+  assert.strictEqual(expressions[0].querySelectorAll('.condition-punctuation').length, 4);
+  assert.strictEqual(expressions[1].querySelector('.condition-tag')!.textContent, 'constructor');
+  assert.strictEqual(conditions.querySelector('.condition-join')!.textContent, 'AND');
+  assert.match(conditions.querySelector('.condition-help')!.textContent!, /2 separate --experimental-test-tag-filter values, combined with AND/);
+  assert.deepStrictEqual(
+    [...conditions.querySelectorAll('.condition-source pre')].map((source) => source.textContent),
+    filters,
+  );
+  assert.deepStrictEqual(
+    [...conditions.querySelectorAll('.condition-source .condition-help')].map((label) => label.textContent),
+    ['Flag value 1', 'Flag value 2'],
+  );
+  await act(async () => { conditions.querySelector<HTMLButtonElement>('[aria-label="Close tag conditions"]')!.click(); });
+  assert.strictEqual(conditions.open, false);
 });
 
 test('renderNodeActions, renderHeaderActions and renderHeaderTitle render in the embedded component', async () => {

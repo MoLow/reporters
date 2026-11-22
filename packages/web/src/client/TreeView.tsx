@@ -15,6 +15,10 @@ import {
   classifyFrame, extractLevel, formatCount, levelSeverity, splitUrls, stripAnsi, type StackLine,
 } from './format.ts';
 import { urlFilterState, type FilterState, type FilterStore } from './urlState.ts';
+import { TagConditions } from './TagConditions.tsx';
+import { compileTagRules, tagRuleMatcher, type EvaluateTagRules } from './tagFilters.ts';
+import { registerTooltipContent } from './tooltip.ts';
+import { tagTooltip } from './tagTooltip.ts';
 
 const GLYPH: Record<TestStatus, string> = {
   passed: '✓', failed: '✕', skipped: '⊘', todo: '◇', running: '◐', queued: '○',
@@ -448,9 +452,7 @@ function useSettle(status: TestStatus): boolean {
 
 const trimTag = (s: string): string => (s.length > 32 ? `${s.slice(0, 31)}…` : s);
 
-const tagTip = (tags: readonly string[]): string => (tags.length === 1
-  ? `Tag: ${tags[0]}`
-  : `${tags.length} tags: ${tags.join(' · ')}`);
+const tagCount = (count: number): string => `${count} ${count === 1 ? 'tag' : 'tags'}`;
 
 /** Focus that arrived from a pointer press gets tagged so CSS can skip the
  *  ring (Safari matches :focus-visible on clicked tabindex elements); we
@@ -482,6 +484,9 @@ export type RenderHeaderActions = () => React.ReactNode;
 export type RenderHeaderTitle = () => React.ReactNode;
 
 interface RowViewProps {
+  inTagRules: (tag: string) => boolean;
+  hasTagRules: boolean;
+  evaluateTagRules: EvaluateTagRules;
   row: FlatRow;
   toggle: (key: string, current: boolean) => void;
   /** Stagger index for the enter animation, or null when the row shouldn't animate in. */
@@ -505,12 +510,20 @@ interface RowViewProps {
 const oneLine = (s: string): string => stripAnsi(s).replace(/\s+/g, ' ').trim();
 
 function RowView({
-  row, toggle, enter, now, since, clock, carriedRun, onlyRerun, renderNodeActions, openLogs, selected,
+  row, toggle, enter, now, since, clock, carriedRun, onlyRerun, renderNodeActions, openLogs, selected, inTagRules, hasTagRules, evaluateTagRules,
 }: RowViewProps) {
   const {
     node, depth, status, expandable, expanded, hasDiag,
   } = row;
   const settled = useSettle(status);
+  const tagsInRules = node.tags?.filter(inTagRules) ?? [];
+  const tagsNotInRules = node.tags?.filter((tag) => !inTagRules(tag)) ?? [];
+  const inRulesText = `${tagCount(tagsInRules.length)} in rules: ${tagsInRules.join(', ') || 'None'}`;
+  const notInRulesText = `${tagCount(tagsNotInRules.length)} not in rules: ${tagsNotInRules.join(', ') || 'None'}`;
+  const tagsTip = node.tags?.length
+    ? hasTagRules ? `${tagCount(node.tags.length)}:\n${inRulesText}\n${notInRulesText}`
+      : node.tags.length === 1 ? `Tag: ${node.tags[0]}` : `${node.tags.length} tags: ${node.tags.join(' · ')}`
+    : undefined;
   // A container's row is its disclosure; a leaf has nothing to disclose, so its
   // row opens its logs instead. Either way one gesture, one meaning per row.
   const activate = () => {
@@ -566,7 +579,7 @@ function RowView({
       style={rowStyle}
       role="treeitem"
       aria-expanded={expandable ? expanded : undefined}
-      aria-label={`${displayName(node)}, ${status}${container ? `, ${counts.total} tests` : ''}${node.tags?.length ? `, ${tagTip(node.tags)}` : ''}${previewText ? `: ${previewText}` : ''}`}
+      aria-label={`${displayName(node)}, ${status}${container ? `, ${counts.total} tests` : ''}${tagsTip ? `, ${tagsTip}` : ''}${previewText ? `: ${previewText}` : ''}`}
       tabIndex={0}
       data-clickable={expandable || hasDiag}
       data-fail={isTest && status === 'failed' && !cancelled}
@@ -603,7 +616,19 @@ function RowView({
         <span className="todotag" data-soft="skipped">⊘ {trimTag(node.skip)}</span>
       ) : null}
       {node.tags?.length ? (
-        <span className="tagchip" data-tip={tagTip(node.tags)} aria-hidden="true">
+        <span
+          className="tagchip"
+          data-in-rules={tagsInRules.length ? 'true' : undefined}
+          data-tip={tagsTip}
+          role="img"
+          aria-label={tagsTip}
+          tabIndex={0}
+          onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') event.stopPropagation(); }}
+          ref={(element) => {
+            if (!element || !hasTagRules) return undefined;
+            return registerTooltipContent(element, () => tagTooltip(node.tags!, evaluateTagRules));
+          }}
+        >
           <TagIcon />
           {node.tags.length > 1 ? <span className="tagchip-n">{node.tags.length}</span> : null}
         </span>
@@ -772,6 +797,8 @@ export function TreeView({
   const [, setTick] = useState(0);
 
   const files = snapshot.root.children;
+  const inTagRules = useMemo(() => tagRuleMatcher(snapshot.tagFilters), [snapshot.tagFilters]);
+  const evaluateTagRules = useMemo(() => compileTagRules(snapshot.tagFilters), [snapshot.tagFilters]);
   const { counts } = snapshot;
   const q = query.trim().toLowerCase();
   const carriedRun = counts.carried > 0;
@@ -917,6 +944,9 @@ export function TreeView({
             {renderHeaderTitle ? (
               <div className="header-title">{renderHeaderTitle()}</div>
             ) : null}
+            {snapshot.tagFilters?.length ? (
+              <TagConditions filters={snapshot.tagFilters} />
+            ) : null}
             <div className="hdr-status">
               <div className="chips">
                 {statChips.map((s) => (
@@ -1011,6 +1041,9 @@ export function TreeView({
         {rows.length > 0 ? (
           rows.map((row) => (
             <RowView
+              inTagRules={inTagRules}
+              hasTagRules={Boolean(snapshot.tagFilters?.length)}
+              evaluateTagRules={evaluateTagRules}
               key={row.node.key}
               row={row}
               toggle={toggle}
