@@ -620,10 +620,7 @@ function RowView({
           className="tagchip"
           data-in-rules={tagsInRules.length ? 'true' : undefined}
           data-tip={tagsTip}
-          role="img"
-          aria-label={tagsTip}
-          tabIndex={0}
-          onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') event.stopPropagation(); }}
+          aria-hidden="true"
           ref={(element) => {
             if (!element || !hasTagRules) return undefined;
             return registerTooltipContent(element, () => tagTooltip(node.tags!, evaluateTagRules));

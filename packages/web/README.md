@@ -37,7 +37,7 @@ These are saved in the NDJSON log as a `reporters:run` event, so reopening the
 report retains them. Repeated flags are shown as separate numbered values,
 combined with AND. Older logs without this metadata omit the button.
 Test tag icons are highlighted when their tags appear in the command rules;
-hover or keyboard-focus the icon to evaluate the full conditions. The tooltip
+hover over the icon to evaluate the full conditions. The tooltip
 groups tags that **support the match** separately from other tags and explains
 each flag value using present/absent conditions. Failed OR branches do not
 contribute tags; all successful alternatives do. A negated condition can match

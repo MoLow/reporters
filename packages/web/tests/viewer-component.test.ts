@@ -157,7 +157,7 @@ test('test tag chips mark references while hover explains only successful condit
   chip.dispatchEvent(new dom.window.MouseEvent('pointerout', { bubbles: true }));
 });
 
-test('keyboard focus lazily explains the successful wildcard branch, including after filters change', async () => {
+test('hover lazily explains the successful wildcard branch, including after filters change', async () => {
   const tags = ['smoke', 'flaky', 'aws-rds'];
   const testEvent = JSON.stringify({ type: 'test:pass', data: { name: 'tagged', nesting: 0, file: 't.test.js', tags } });
   const source = (filters: string[]) => fakeSource([
@@ -169,15 +169,15 @@ test('keyboard focus lazily explains the successful wildcard branch, including a
     root.render(React.createElement(TestReportViewer, { src: '/first.ndjson', fetch: first.fetchImpl }));
   });
   await tick(30);
-  assert.strictEqual(el.querySelector('.tip-tag-reasons'), null, 'no evaluation content is rendered before focus');
+  assert.strictEqual(el.querySelector('.tip-tag-reasons'), null, 'no evaluation content is rendered before hover');
   let chip = el.querySelector<HTMLElement>('.tagchip')!;
-  assert.strictEqual(chip.tabIndex, 0, 'the tooltip is keyboard accessible');
-  await act(async () => { chip.focus(); });
+  assert.strictEqual(chip.hasAttribute('tabindex'), false, 'tag icons do not add tab stops');
+  chip.dispatchEvent(new dom.window.MouseEvent('pointerover', { bubbles: true }));
   await tick(160);
   const tooltip = document.getElementById('rt-tooltip')!;
   assert.strictEqual(tooltip.querySelector('.tip-tag[data-contributing]')!.textContent, '1 tag supporting match: aws-rds');
   assert.strictEqual(tooltip.querySelector('.tip-tag-reasons')!.textContent, 'aws-*: present (aws-rds)');
-  await act(async () => { chip.blur(); });
+  chip.dispatchEvent(new dom.window.MouseEvent('pointerout', { bubbles: true }));
 
   const second = source(['smoke && !flaky']);
   await act(async () => {
@@ -185,12 +185,38 @@ test('keyboard focus lazily explains the successful wildcard branch, including a
   });
   await tick(30);
   chip = el.querySelector<HTMLElement>('.tagchip')!;
-  await act(async () => { chip.focus(); });
+  chip.dispatchEvent(new dom.window.MouseEvent('pointerover', { bubbles: true }));
   await tick(160);
   assert.strictEqual(tooltip.querySelector('.tip-tag[data-contributing]')!.textContent, '0 tags supporting match: None');
   assert.match(tooltip.textContent!, /Does not match all flag values/);
   assert.strictEqual(tooltip.querySelector('.tip-tag-reasons')!.textContent, 'flaky: present');
-  await act(async () => { chip.blur(); });
+  chip.dispatchEvent(new dom.window.MouseEvent('pointerout', { bubbles: true }));
+});
+
+test('without command tag filters, tagged tests keep their original icon and tooltip', async () => {
+  const { fetchImpl } = fakeSource([
+    JSON.stringify({ type: 'test:pass', data: { name: 'tagged', nesting: 0, file: 't.test.js', tags: ['smoke', 'api'] } }),
+    SUMMARY, '',
+  ].join('\n'));
+  const { root, el } = mount();
+  await act(async () => {
+    root.render(React.createElement(TestReportViewer, { src: '/unfiltered.ndjson', fetch: fetchImpl }));
+  });
+  await tick(30);
+  const chip = el.querySelector('.tagchip')!;
+  assert.strictEqual(el.querySelector('.run-tag-filter'), null);
+  assert.strictEqual(chip.hasAttribute('tabindex'), false);
+  assert.strictEqual(chip.getAttribute('aria-hidden'), 'true');
+  assert.strictEqual(chip.hasAttribute('data-in-rules'), false);
+  assert.strictEqual(chip.getAttribute('data-tip'), '2 tags: smoke · api');
+  assert.strictEqual(chip.querySelector('.tagchip-n')!.textContent, '2');
+  assert.match(el.querySelector('.row[aria-label*="tagged"]')!.getAttribute('aria-label')!, /2 tags: smoke · api/);
+  chip.dispatchEvent(new dom.window.MouseEvent('pointerover', { bubbles: true }));
+  await tick(160);
+  const tooltip = document.getElementById('rt-tooltip')!;
+  assert.strictEqual(tooltip.textContent, '2 tags: smoke · api');
+  assert.strictEqual(tooltip.querySelector('.tip-tag-reasons'), null);
+  chip.dispatchEvent(new dom.window.MouseEvent('pointerout', { bubbles: true }));
 });
 
 test('command conditions render operators, tag labels, grouping and long expressions without losing source', async () => {
